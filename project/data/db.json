@@ -1,0 +1,78 @@
+{
+  "venues": [
+    {
+      "id": 1,
+      "name": "Sân Bóng Đá Thành Công",
+      "sport": "Bóng đá",
+      "address": "18 Thành Công, Ba Đình, Hà Nội",
+      "price": 300000,
+      "courts": 3,
+      "image": "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75"
+    },
+    {
+      "id": 2,
+      "name": "Tennis Club Cầu Giấy",
+      "sport": "Tennis",
+      "address": "68 Cầu Giấy, Hà Nội",
+      "price": 250000,
+      "courts": 4,
+      "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400&q=75"
+    },
+    {
+      "id": 3,
+      "name": "Nhà Thi Đấu Cầu Lông Mỹ Đình",
+      "sport": "Cầu lông",
+      "address": "Lê Đức Thọ, Nam Từ Liêm, Hà Nội",
+      "price": 120000,
+      "courts": 6,
+      "image": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=75"
+    },
+    {
+      "id": 4,
+      "name": "Pickleball Arena Q.1",
+      "sport": "Pickleball",
+      "address": "28 Thảo Điền, Thủ Đức, TP.HCM",
+      "price": 180000,
+      "courts": 2,
+      "image": "https://images.unsplash.com/photo-1593085512500-5d55148d6f0d?w=400&q=75"
+    },
+    {
+      "id": 5,
+      "name": "Sân Bóng Rổ Tây Hồ",
+      "sport": "Bóng rổ",
+      "address": "Ngõ 431 Âu Cơ, Tây Hồ, Hà Nội",
+      "price": 200000,
+      "courts": 2,
+      "image": "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=75"
+    },
+    {
+      "id": 6,
+      "name": "Sân Bóng Chuyền Hoàng Hoa Thám",
+      "sport": "Bóng chuyền",
+      "address": "290 Hoàng Hoa Thám, Ba Đình, Hà Nội",
+      "price": 150000,
+      "courts": 2,
+      "image": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=75"
+    },
+    {
+      "id": 7,
+      "name": "Bóng Đá Mini Đầm Hồng",
+      "sport": "Bóng đá",
+      "address": "KĐT Đầm Hồng, Thanh Xuân, Hà Nội",
+      "price": 400000,
+      "courts": 5,
+      "image": "https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75"
+    },
+    {
+      "id": 8,
+      "name": "Ace Pickleball Club",
+      "sport": "Pickleball",
+      "address": "Pullman Hanoi, Cát Linh, Đống Đa, Hà Nội",
+      "price": 220000,
+      "courts": 2,
+      "image": "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&q=75"
+    }
+  ],
+  "users": [],
+  "bookings": []
+}
