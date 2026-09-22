@@ -1,0 +1,272 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --ink: #1d2b23;
+    --line: #e5e7eb;
+    --hover: #f0f8f3;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--ink);
+    background: #fff;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* =========================
+   CONTAINER
+========================= */
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+header {
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    height: 72px;
+}
+
+/* =========================
+   LOGO
+========================= */
+
+.logo {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.logo span {
+    color: var(--green);
+}
+
+/* =========================
+   MENU
+========================= */
+
+.menu {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+}
+
+.menu > a,
+.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.menu > a:hover,
+.dropdown-toggle:hover {
+    color: var(--green);
+}
+
+/* =========================
+   DROPDOWN
+========================= */
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    cursor: pointer;
+}
+
+/* Mũi tên */
+
+.caret {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+/* Khi dropdown mở */
+
+.dropdown.open .caret {
+    transform: rotate(180deg);
+}
+
+/* =========================
+   DROPDOWN MENU
+========================= */
+
+.dropdown-menu {
+    position: absolute;
+
+    top: calc(100% + 10px);
+    left: 0;
+
+    min-width: 260px;
+
+    background: #fff;
+
+    border: 1px solid var(--line);
+    border-radius: 12px;
+
+    box-shadow: 0 12px 30px rgba(16, 38, 26, 0.12);
+
+    padding: 8px;
+
+    /* Ẩn menu ban đầu */
+    opacity: 0;
+    visibility: hidden;
+
+    transform: translateY(6px);
+
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease,
+        visibility 0.15s ease;
+}
+
+/* Hiện menu khi có class open */
+
+.dropdown.open .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Các item trong dropdown */
+
+.dropdown-menu a {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 11px 14px;
+
+    border-radius: 9px;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    color: var(--ink);
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.dropdown-menu a:hover {
+    background: var(--hover);
+    color: var(--green);
+}
+
+/* =========================
+   RIGHT
+========================= */
+
+.right {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+
+    gap: 28px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.right a:hover {
+    color: var(--green);
+}
+
+/* =========================
+   BUTTON
+========================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 12px 22px;
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.btn-green {
+    background: var(--green);
+    color: #fff;
+}
+
+.btn-green:hover {
+    background: var(--green-dark);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1100px) {
+
+    .menu,
+    .right {
+        display: none;
+    }
+
+    .container {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 500px) {
+
+    .nav {
+        height: 64px;
+    }
+
+    .logo {
+        font-size: 24px;
+    }
+}
