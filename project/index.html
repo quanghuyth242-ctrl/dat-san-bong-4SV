@@ -20,7 +20,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <!-- NAVBAR -->
@@ -173,11 +173,7 @@
 
     <!-- SEARCH BOX -->
     <div class="container search-box-wrap" id="tim-san">
-      <form
-        class="search-box"
-        id="searchForm"
-        onsubmit="return handleSearch(event);"
-      >
+      <form class="search-box" id="searchForm">
         <div class="search-box-title">
           <i class="fa-solid fa-magnifying-glass"></i> Tìm sân thể thao ngay
         </div>
@@ -373,7 +369,7 @@
               src="https://www.openstreetmap.org/export/embed.html?bbox=105.75%2C20.95%2C105.9%2C21.05&layer=mapnik&marker=21.0285%2C105.8542"
               loading="lazy"
             ></iframe>
-            <button type="button" class="btn-locate" onclick="locateMe()">
+            <button type="button" class="btn-locate" id="btnLocate">
               <i class="fa-solid fa-location-crosshairs"></i> Vị trí của tôi
             </button>
           </div>
@@ -610,7 +606,7 @@
             <p class="footer-note">
               Nhận ngay voucher giảm 20% cho lần đặt sân đầu tiên
             </p>
-            <form class="footer-form" onsubmit="return subscribe(event);">
+            <form class="footer-form" id="footerForm">
               <input type="email" placeholder="Email của bạn" required />
               <button type="submit">Đăng ký</button>
             </form>
@@ -628,6 +624,6 @@
       </div>
     </footer>
 
-    <script src="js/main.js"></script>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
