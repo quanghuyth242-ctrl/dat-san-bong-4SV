@@ -1,6 +1,7 @@
 const pages = [
   { href: 'index.html', label: 'Trang chủ' },
   { href: 'gioi-thieu.html', label: 'Giới thiệu' },
+  { href: 'dang-nhap.html', label: 'Đăng nhập' },
 ]
 
 function logo() {
