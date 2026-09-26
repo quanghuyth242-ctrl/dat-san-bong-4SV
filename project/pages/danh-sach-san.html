@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="../css/san-bong.css" />
   </head>
   <body>
-    <!-- HEADER -->
+    
     <header class="site-header">
       <div class="container nav-inner">
         <a class="nav-brand" href="../index.html">4<span>SV</span>.vn<small>Đặt sân bóng</small></a>
@@ -28,17 +28,18 @@
         <ul class="nav-links">
           <li><a href="../index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
           <li><a href="danh-sach-san.html" class="active"><i class="fa-solid fa-futbol"></i> Danh sách sân</a></li>
+          <li><a href="dashboard.html"><i class="fa-solid fa-user-shield"></i> Quản trị</a></li>
           <li><a href="#booking"><i class="fa-solid fa-calendar-check"></i> Đặt sân</a></li>
         </ul>
 
         <div class="nav-actions">
-          <a href="../index.html" class="btn-header primary"><i class="fa-solid fa-magnifying-glass"></i> Tìm sân</a>
+          <a href="../index.html" class="btn-header"><i class="fa-solid fa-magnifying-glass"></i> Tìm sân</a>
+          <a href="dashboard.html" class="btn-header primary"><i class="fa-solid fa-gauge"></i> Admin Dashboard</a>
         </div>
       </div>
     </header>
 
-    <!-- HERO + SEARCH -->
-    <section class="page-hero">
+<section class="page-hero">
       <div class="hero-title">Danh sách sân bóng</div>
       <p class="hero-sub">Tìm và đặt sân bóng đá 5, 7, 11 người phù hợp nhất với bạn</p>
       <form class="search-bar" id="searchForm" novalidate>
@@ -53,9 +54,8 @@
       </form>
     </section>
 
-    <!-- MAIN LAYOUT -->
-    <main class="container san-layout">
-      <!-- FILTER -->
+<main class="container san-layout">
+      
       <aside class="filter-sidebar">
         <details class="filter-card" open>
           <summary>
@@ -96,8 +96,7 @@
         </details>
       </aside>
 
-      <!-- RESULT -->
-      <div class="san-content">
+<div class="san-content">
         <div class="san-toolbar">
           <div class="result-count">
             Tìm thấy <strong id="resultCount">0</strong> sân
@@ -123,16 +122,14 @@
       </div>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="site-footer">
+<footer class="site-footer">
       <div class="container footer-inner">
         <div class="fb">4<span>SV</span>.vn</div>
         <p>© <span id="year"></span> 4SV.vn - Nền tảng đặt sân bóng đá trực tuyến.</p>
       </div>
     </footer>
 
-    <!-- MODAL CHI TIẾT -->
-    <div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Chi tiết sân">
+<div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Chi tiết sân">
       <div class="modal">
         <div class="modal-head">
           <h3><i class="fa-solid fa-circle-info" style="color: #16a34a"></i> Chi tiết sân</h3>
@@ -142,8 +139,7 @@
       </div>
     </div>
 
-    <!-- MODAL ĐẶT SÂN -->
-    <div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
+<div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
       <div class="modal">
         <div class="modal-head">
           <h3><i class="fa-solid fa-calendar-check" style="color: #16a34a"></i> Đặt sân</h3>
@@ -153,8 +149,7 @@
       </div>
     </div>
 
-    <!-- TOAST -->
-    <div class="toast" id="toast" role="status" aria-live="polite">
+<div class="toast" id="toast" role="status" aria-live="polite">
       <i class="fa-solid fa-circle-check"></i>
       <div>
         <div class="t-title" id="toastTitle">Thành công</div>
