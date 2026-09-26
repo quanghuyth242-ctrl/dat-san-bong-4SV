@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách sân bóng - 4SV.vn</title>
+    <meta
+      name="description"
+      content="Tìm và đặt sân bóng đá 5, 7, 11 người nhanh chóng. Sắp xếp theo giá, lọc theo loại sân, đặt sân online chỉ trong vài giây."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/san-bong.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container nav-inner">
+        <a class="nav-brand" href="../index.html">4<span>SV</span>.vn<small>Đặt sân bóng</small></a>
+
+        <ul class="nav-links">
+          <li><a href="../index.html"><i class="fa-solid fa-house"></i> Trang chủ</a></li>
+          <li><a href="danh-sach-san.html" class="active"><i class="fa-solid fa-futbol"></i> Danh sách sân</a></li>
+          <li><a href="#booking"><i class="fa-solid fa-calendar-check"></i> Đặt sân</a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <a href="../index.html" class="btn-header primary"><i class="fa-solid fa-magnifying-glass"></i> Tìm sân</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO + SEARCH -->
+    <section class="page-hero">
+      <div class="hero-title">Danh sách sân bóng</div>
+      <p class="hero-sub">Tìm và đặt sân bóng đá 5, 7, 11 người phù hợp nhất với bạn</p>
+      <form class="search-bar" id="searchForm" novalidate>
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Tìm theo tên sân hoặc địa chỉ..."
+          autocomplete="off"
+        />
+        <button type="submit">Tìm ngay</button>
+      </form>
+    </section>
+
+    <!-- MAIN LAYOUT -->
+    <main class="container san-layout">
+      <!-- FILTER -->
+      <aside class="filter-sidebar">
+        <details class="filter-card" open>
+          <summary>
+            <span><i class="fa-solid fa-sliders"></i> Bộ lọc</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </summary>
+          <div class="filter-content">
+            <div class="filter-block" id="formType">
+              <div class="filter-title">Loại sân</div>
+              <div class="chip-group">
+                <label class="chip"><input type="radio" name="type" value="5" /><span>Sân 5</span></label>
+                <label class="chip"><input type="radio" name="type" value="7" /><span>Sân 7</span></label>
+                <label class="chip"><input type="radio" name="type" value="11" /><span>Sân 11</span></label>
+              </div>
+            </div>
+
+            <div class="filter-block" id="formPrice">
+              <div class="filter-title">Khoảng giá (giờ)</div>
+              <div class="chip-group">
+                <label class="chip"><input type="checkbox" value="p1" /><span>Dưới 500.000đ</span></label>
+                <label class="chip"><input type="checkbox" value="p2" /><span>500.000đ – 1.000.000đ</span></label>
+                <label class="chip"><input type="checkbox" value="p3" /><span>Trên 1.000.000đ</span></label>
+              </div>
+            </div>
+
+            <div class="filter-block">
+              <div class="filter-title">Trạng thái</div>
+              <label class="check-item">
+                <input type="checkbox" id="onlyAvailable" />
+                <span><i class="fa-solid fa-circle-check" style="color: #16a34a"></i> Chỉ hiển thị sân còn trống</span>
+              </label>
+            </div>
+
+            <button type="button" class="btn-reset" id="resetBtn">
+              <i class="fa-solid fa-rotate-left"></i> Đặt lại bộ lọc
+            </button>
+          </div>
+        </details>
+      </aside>
+
+      <!-- RESULT -->
+      <div class="san-content">
+        <div class="san-toolbar">
+          <div class="result-count">
+            Tìm thấy <strong id="resultCount">0</strong> sân
+          </div>
+          <div class="sort-box">
+            <label for="sortSelect">Sắp xếp:</label>
+            <select id="sortSelect">
+              <option value="default">Mặc định</option>
+              <option value="price-asc">Giá thấp → cao</option>
+              <option value="price-desc">Giá cao → thấp</option>
+              <option value="name-asc">Tên sân A → Z</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="san-grid" id="sanGrid"></div>
+
+        <div class="empty-state" id="emptyState" style="display: none">
+          <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <h3>Không tìm thấy sân phù hợp</h3>
+          <p>Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn.</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="fb">4<span>SV</span>.vn</div>
+        <p>© <span id="year"></span> 4SV.vn - Nền tảng đặt sân bóng đá trực tuyến.</p>
+      </div>
+    </footer>
+
+    <!-- MODAL CHI TIẾT -->
+    <div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Chi tiết sân">
+      <div class="modal">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-circle-info" style="color: #16a34a"></i> Chi tiết sân</h3>
+          <button type="button" class="modal-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="detailBody"></div>
+      </div>
+    </div>
+
+    <!-- MODAL ĐẶT SÂN -->
+    <div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
+      <div class="modal">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-calendar-check" style="color: #16a34a"></i> Đặt sân</h3>
+          <button type="button" class="modal-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="bookBody"></div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <i class="fa-solid fa-circle-check"></i>
+      <div>
+        <div class="t-title" id="toastTitle">Thành công</div>
+        <div class="t-sub" id="toastSub"></div>
+      </div>
+      <button type="button" class="t-close" id="toastClose" aria-label="Đóng thông báo">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <script src="../js/san-bong.js"></script>
+  </body>
+</html>
