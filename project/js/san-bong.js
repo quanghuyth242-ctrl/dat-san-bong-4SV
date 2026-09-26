@@ -579,6 +579,10 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape')
       $$('.modal-overlay.open').forEach((ov) => closeModal(ov));
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      e.preventDefault();
+      window.location.href = 'dashboard.html';
+    }
   });
 
   // Toast close

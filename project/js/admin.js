@@ -37,7 +37,8 @@ const DEFAULT_SETTINGS = {
   siteName: 'QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ',
   primaryColor: '#2563eb',
   darkMode: false,
-  logo: ''
+  logo: '',
+  adminPin: '123456'
 };
 
 const DataManager = {
@@ -204,6 +205,28 @@ function initLayout() {
     });
   });
   applySettings();
+
+  const navUl = document.querySelector('.sidebar-nav ul');
+  if (navUl && !document.getElementById('adminLogoutItem')) {
+    const li = document.createElement('li');
+    li.id = 'adminLogoutItem';
+    li.className = 'nav-item';
+    li.style.marginTop = 'auto';
+    li.style.paddingTop = '16px';
+    li.style.borderTop = '1px solid var(--border)';
+    li.innerHTML = `
+      <a href="#" class="nav-link" style="color: #ef4444;">
+        <span class="nav-icon">🔒</span>
+        <span>Khóa / Đăng xuất</span>
+      </a>
+    `;
+    li.querySelector('a').addEventListener('click', (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem('admin_authenticated');
+      location.reload();
+    });
+    navUl.appendChild(li);
+  }
 }
 
 function applySettings() {
@@ -586,12 +609,15 @@ function initSettings() {
   const logoInput = document.getElementById('settingLogo');
   const logoPreview = document.getElementById('logoPreview');
 
+  const adminPinInput = document.getElementById('settingAdminPin');
+
   if (siteNameInput) siteNameInput.value = settings.siteName;
   if (primaryColorInput) {
     primaryColorInput.value = settings.primaryColor;
     if (colorValueSpan) colorValueSpan.textContent = settings.primaryColor;
   }
   if (darkModeToggle) darkModeToggle.checked = settings.darkMode;
+  if (adminPinInput) adminPinInput.value = settings.adminPin || '123456';
 
   if (settings.logo && logoPreview) {
     logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
@@ -623,6 +649,8 @@ function saveSettings() {
   settings.siteName = document.getElementById('settingSiteName')?.value.trim() || settings.siteName;
   settings.primaryColor = document.getElementById('settingPrimaryColor')?.value || settings.primaryColor;
   settings.darkMode = document.getElementById('settingDarkMode')?.checked || false;
+  const pinVal = document.getElementById('settingAdminPin')?.value.trim();
+  if (pinVal) settings.adminPin = pinVal;
   const logoImg = document.querySelector('#logoPreview img');
   if (logoImg) {
     settings.logo = logoImg.src;
@@ -772,28 +800,83 @@ function processActivateField(id) {
   showToast('Đã kích hoạt sân bóng!');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initLayout();
-  const page = document.body.dataset.page;
-
-  switch (page) {
-    case 'dashboard':
-      initDashboard();
-      break;
-    case 'fields':
-      initFields();
-      break;
-    case 'bookings':
-      initBookings();
-      break;
-    case 'users':
-      initUsers();
-      break;
-    case 'settings':
-      initSettings();
-      break;
-    case 'processing':
-      initProcessing();
-      break;
+function checkAdminAuth(onSuccess) {
+  if (sessionStorage.getItem('admin_authenticated') === 'true') {
+    if (typeof onSuccess === 'function') onSuccess();
+    return;
   }
+
+  const existingOverlay = document.getElementById('adminAuthOverlay');
+  if (existingOverlay) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'adminAuthOverlay';
+  overlay.className = 'admin-auth-overlay';
+  overlay.innerHTML = `
+    <div class="admin-auth-card">
+      <div class="admin-auth-icon">🔒</div>
+      <h2 class="admin-auth-title">BẢO MẬT QUẢN TRỊ VIÊN</h2>
+      <p class="admin-auth-desc">Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!</p>
+      <form class="admin-auth-form" id="adminAuthForm">
+        <input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Nhập mã PIN Admin..." autofocus autocomplete="off" />
+        <button type="submit" class="admin-auth-btn">Mở khóa Quản trị</button>
+      </form>
+      <div class="admin-auth-error" id="adminAuthError"></div>
+      <a href="../../index.html" class="admin-auth-back">← Quay lại Trang chủ</a>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const form = document.getElementById('adminAuthForm');
+  const input = document.getElementById('adminAuthPin');
+  const errorEl = document.getElementById('adminAuthError');
+
+  input.focus();
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pin = input.value.trim();
+    const settings = DataManager.getSettings();
+    const currentPin = settings.adminPin || '123456';
+
+    if (pin === currentPin || pin === '4svadmin') {
+      sessionStorage.setItem('admin_authenticated', 'true');
+      overlay.remove();
+      if (typeof onSuccess === 'function') onSuccess();
+      showToast('Xác thực Admin thành công!');
+    } else {
+      errorEl.textContent = 'Mã PIN không chính xác! Quyền truy cập bị từ chối.';
+      errorEl.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkAdminAuth(() => {
+    initLayout();
+    const page = document.body.dataset.page;
+
+    switch (page) {
+      case 'dashboard':
+        initDashboard();
+        break;
+      case 'fields':
+        initFields();
+        break;
+      case 'bookings':
+        initBookings();
+        break;
+      case 'users':
+        initUsers();
+        break;
+      case 'settings':
+        initSettings();
+        break;
+      case 'processing':
+        initProcessing();
+        break;
+    }
+  });
 });

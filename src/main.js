@@ -220,6 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navToggle) navToggle.innerHTML = '<i class="fa-solid fa-bars"></i>'
       }
     }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      e.preventDefault()
+      window.location.href = 'project/pages/dashboard.html'
+    }
   })
 
   function closeAllDd() {
