@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cài đặt giao diện Admin - Tên website, logo, màu sắc, chế độ tối">
+  <title>Giao diện Admin - Quản Lý Đặt Sân Bóng Đá</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-page="settings">
+
+  <div class="admin-layout">
+    <div class="sidebar-overlay"></div>
+
+    
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">⚽</div>
+        <div class="brand-text">QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ</div>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a></li>
+          <li class="nav-item"><a href="san-bong.html" class="nav-link"><span class="nav-icon">🏟️</span><span>Quản lý sân</span></a></li>
+          <li class="nav-item"><a href="don-dat.html" class="nav-link"><span class="nav-icon">📋</span><span>Quản lý đơn đặt</span></a></li>
+          <li class="nav-item"><a href="nguoi-dung.html" class="nav-link"><span class="nav-icon">👥</span><span>Quản lý người dùng</span></a></li>
+          <li class="nav-item"><a href="giao-dien.html" class="nav-link active"><span class="nav-icon">🎨</span><span>Giao diện Admin</span></a></li>
+          <li class="nav-item"><a href="xu-ly-admin.html" class="nav-link"><span class="nav-icon">⚙️</span><span>Xử lý Admin</span></a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    
+    <div class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="btn-menu-toggle" aria-label="Toggle menu">☰</button>
+          <h1 class="page-title">Giao diện Admin</h1>
+        </div>
+        <div class="header-right">
+          <div class="admin-info">
+            <span>Admin</span>
+            <div class="admin-avatar">A</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Cài đặt giao diện</h2>
+          </div>
+          <div class="card-body">
+            <form id="settingsForm">
+              
+              <div class="settings-section">
+                <h3 class="section-title">Thông tin website</h3>
+                <div class="form-group">
+                  <label for="settingSiteName">Tên website</label>
+                  <input type="text" id="settingSiteName" placeholder="Nhập tên website">
+                </div>
+              </div>
+
+              
+              <div class="settings-section">
+                <h3 class="section-title">Logo</h3>
+                <div class="form-group">
+                  <div class="logo-preview" id="logoPreview">⚽</div>
+                  <label for="settingLogo">Tải lên logo</label>
+                  <input type="file" id="settingLogo" accept="image/*" style="margin-top: 4px;">
+                </div>
+              </div>
+
+              
+              <div class="settings-section">
+                <h3 class="section-title">Màu giao diện chính</h3>
+                <div class="form-group">
+                  <label>Chọn màu chính</label>
+                  <div class="color-picker-group">
+                    <input type="color" id="settingPrimaryColor" value="#2563eb">
+                    <span class="color-value" id="colorValue">#2563eb</span>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div class="settings-section">
+                <h3 class="section-title">Chế độ hiển thị</h3>
+                <div class="form-group">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="settingDarkMode">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Chế độ tối (Dark Mode)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="padding-top: var(--space-4);">
+                <button type="submit" class="btn btn-primary">💾 Lưu cài đặt</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>
