@@ -45,6 +45,13 @@
               >
             </li>
             <li>
+              <a
+                class="nav-link nav-book"
+                href="project/pages/danh-sach-san.html"
+                ><i class="fa-solid fa-calendar-check"></i> Đặt sân</a
+              >
+            </li>
+            <li>
               <a class="nav-link" href="#ban-do"
                 ><i class="fa-solid fa-map-location-dot"></i> Bản đồ</a
               >
@@ -95,17 +102,45 @@
                 >Loại sân <i class="fa-solid fa-chevron-down dd-caret"></i
               ></a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#tim-san">⚽ Bóng đá</a></li>
-                <li><a class="dropdown-item" href="#tim-san">🎾 Tennis</a></li>
                 <li>
-                  <a class="dropdown-item" href="#tim-san">🏸 Cầu lông</a>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Bóng đá"
+                    >⚽ Bóng đá</a
+                  >
                 </li>
                 <li>
-                  <a class="dropdown-item" href="#tim-san">🏓 Pickleball</a>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Tennis"
+                    >🎾 Tennis</a
+                  >
                 </li>
-                <li><a class="dropdown-item" href="#tim-san">🏀 Bóng rổ</a></li>
                 <li>
-                  <a class="dropdown-item" href="#tim-san">🏐 Bóng chuyền</a>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Cầu lông"
+                    >🏸 Cầu lông</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Pickleball"
+                    >🏓 Pickleball</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Bóng rổ"
+                    >🏀 Bóng rổ</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Bóng chuyền"
+                    >🏐 Bóng chuyền</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-sport="Bóng bàn"
+                    >🏓 Bóng bàn</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-sport=""
+                    >🏅 Tất cả loại sân</a
+                  >
                 </li>
               </ul>
             </li>
@@ -138,8 +173,8 @@
       <div class="container hero-content">
         <div class="hero-text">
           <div class="hero-badge">
-            <i class="fa-solid fa-circle-dot"></i> Hơn <span>442</span> cơ sở
-            trên toàn quốc
+            <i class="fa-solid fa-circle-dot"></i>
+            <span id="heroVenueCount">629</span> cơ sở trên toàn quốc
           </div>
           <h1>
             Đặt sân thể thao<br /><span class="highlight"
@@ -160,15 +195,15 @@
           </div>
           <div class="hero-stats">
             <div>
-              <div class="hero-stat-num">629</div>
+              <div class="hero-stat-num" data-stat="venues">629</div>
               <div class="hero-stat-lbl">Cơ sở</div>
             </div>
             <div>
-              <div class="hero-stat-num">858</div>
+              <div class="hero-stat-num" data-stat="courts">858</div>
               <div class="hero-stat-lbl">Sân thể thao</div>
             </div>
             <div>
-              <div class="hero-stat-num">8</div>
+              <div class="hero-stat-num" data-stat="sports">8</div>
               <div class="hero-stat-lbl">Loại sân</div>
             </div>
           </div>
@@ -198,6 +233,7 @@
               <option value="Bóng đá">⚽ Bóng đá</option>
               <option value="Bóng chuyền">🏐 Bóng chuyền</option>
               <option value="Bóng rổ">🏀 Bóng rổ</option>
+              <option value="Bóng bàn">🏓 Bóng bàn</option>
               <option value="Tennis">🎾 Tennis</option>
               <option value="Cầu lông">🏸 Cầu lông</option>
               <option value="Pickleball">🏓 Pickleball</option>
@@ -293,7 +329,20 @@
             >Xem tất cả <i class="fa-solid fa-arrow-right"></i
           ></a>
         </div>
+        <p class="section-sub" id="venueCountLine">
+          Đang hiển thị <strong id="venueCount">0</strong> cơ sở
+        </p>
         <div class="featured-grid" id="featuredGrid"></div>
+        <div class="empty-state-4sv" id="venueEmpty" style="display: none">
+          <div class="empty-icon-4sv">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <h3>Không tìm thấy sân phù hợp</h3>
+          <p id="venueEmptyDesc"></p>
+          <button type="button" class="btn btn-light-dark" id="venueEmptyReset">
+            <i class="fa-solid fa-rotate-left"></i> Xoá bộ lọc
+          </button>
+        </div>
       </div>
     </section>
 
@@ -420,6 +469,7 @@
           <button class="sport-tab" data-sport="bong-chuyen">
             🏐 Bóng chuyền
           </button>
+          <button class="sport-tab" data-sport="bong-ban">🏓 Bóng bàn</button>
         </div>
         <div class="province-grid" id="provinceGrid"></div>
       </div>
@@ -572,7 +622,8 @@
             <div class="footer-brand">4<span>SV</span>.vn</div>
             <p class="footer-desc">
               Nền tảng đặt sân thể thao trực tuyến hàng đầu Việt Nam. Kết nối
-              người chơi với hơn 800 sân chất lượng trên cả nước.
+              người chơi với <span data-stat="courts">858</span> sân chất lượng
+              trên cả nước.
             </p>
             <div class="social-links">
               <a href="#" class="social-link" aria-label="Facebook"
@@ -628,6 +679,19 @@
         </div>
       </div>
     </footer>
+
+    <!-- MODAL ĐẶT SÂN -->
+    <div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
+      <div class="modal">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-calendar-check"></i> Đặt sân</h3>
+          <button type="button" class="modal-close" aria-label="Đóng">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="bookBody"></div>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

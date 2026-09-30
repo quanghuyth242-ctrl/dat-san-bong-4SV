@@ -38,7 +38,7 @@ const DEFAULT_SETTINGS = {
   primaryColor: '#2563eb',
   darkMode: false,
   logo: '',
-  adminPin: '123456'
+  adminPin: ''
 };
 
 const DataManager = {
@@ -617,7 +617,7 @@ function initSettings() {
     if (colorValueSpan) colorValueSpan.textContent = settings.primaryColor;
   }
   if (darkModeToggle) darkModeToggle.checked = settings.darkMode;
-  if (adminPinInput) adminPinInput.value = settings.adminPin || '123456';
+  if (adminPinInput) adminPinInput.value = '';
 
   if (settings.logo && logoPreview) {
     logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
@@ -650,7 +650,13 @@ function saveSettings() {
   settings.primaryColor = document.getElementById('settingPrimaryColor')?.value || settings.primaryColor;
   settings.darkMode = document.getElementById('settingDarkMode')?.checked || false;
   const pinVal = document.getElementById('settingAdminPin')?.value.trim();
-  if (pinVal) settings.adminPin = pinVal;
+  if (pinVal) {
+    if (!/^\d{6,}$/.test(pinVal)) {
+      showToast('Mã PIN phải là chữ số và có ít nhất 6 ký tự.', 'danger');
+      return;
+    }
+    settings.adminPin = pinVal;
+  }
   const logoImg = document.querySelector('#logoPreview img');
   if (logoImg) {
     settings.logo = logoImg.src;
@@ -809,17 +815,40 @@ function checkAdminAuth(onSuccess) {
   const existingOverlay = document.getElementById('adminAuthOverlay');
   if (existingOverlay) return;
 
+  const settings = DataManager.getSettings();
+  const isSetup = !(settings.adminPin || '').trim();
+
+  const unlock = () => {
+    sessionStorage.setItem('admin_authenticated', 'true');
+    overlay.remove();
+    if (typeof onSuccess === 'function') onSuccess();
+    showToast(isSetup ? 'Đã thiết lập mã PIN quản trị!' : 'Xác thực Admin thành công!');
+  };
+
   const overlay = document.createElement('div');
   overlay.id = 'adminAuthOverlay';
   overlay.className = 'admin-auth-overlay';
   overlay.innerHTML = `
     <div class="admin-auth-card">
       <div class="admin-auth-icon">🔒</div>
-      <h2 class="admin-auth-title">BẢO MẬT QUẢN TRỊ VIÊN</h2>
-      <p class="admin-auth-desc">Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!</p>
+      <h2 class="admin-auth-title">${
+        isSetup ? 'THIẾT LẬP QUẢN TRỊ VIÊN' : 'BẢO MẬT QUẢN TRỊ VIÊN'
+      }h2>
+      <p class="admin-auth-desc">${
+        isSetup
+          ? 'Chưa có mã PIN. Hãy tạo mã PIN để bảo vệ khu vực quản trị.'
+          : 'Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!'
+      }</p>
       <form class="admin-auth-form" id="adminAuthForm">
-        <input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Nhập mã PIN Admin..." autofocus autocomplete="off" />
-        <button type="submit" class="admin-auth-btn">Mở khóa Quản trị</button>
+        ${
+          isSetup
+            ? `<input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Tạo mã PIN (tối thiểu 6 ký tự)" autocomplete="new-password" />
+               <input type="password" id="adminAuthPin2" class="admin-auth-input" placeholder="Nhập lại mã PIN" autocomplete="new-password" />`
+            : `<input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Nhập mã PIN Admin..." autocomplete="off" />`
+        }
+        <button type="submit" class="admin-auth-btn">${
+          isSetup ? 'Tạo PIN & Mở khóa' : 'Mở khóa Quản trị'
+        }</button>
       </form>
       <div class="admin-auth-error" id="adminAuthError"></div>
       <a href="../../index.html" class="admin-auth-back">← Quay lại Trang chủ</a>
@@ -836,20 +865,29 @@ function checkAdminAuth(onSuccess) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const pin = input.value.trim();
-    const settings = DataManager.getSettings();
-    const currentPin = settings.adminPin || '123456';
-
-    if (pin === currentPin || pin === '4svadmin') {
-      sessionStorage.setItem('admin_authenticated', 'true');
-      overlay.remove();
-      if (typeof onSuccess === 'function') onSuccess();
-      showToast('Xác thực Admin thành công!');
-    } else {
-      errorEl.textContent = 'Mã PIN không chính xác! Quyền truy cập bị từ chối.';
+    const fail = (msg) => {
+      errorEl.textContent = msg;
       errorEl.style.display = 'block';
-      input.value = '';
-      input.focus();
+      form.querySelectorAll('input').forEach((i) => (i.value = ''));
+      form.querySelector('input').focus();
+    };
+
+    if (isSetup) {
+      const confirmInput = document.getElementById('adminAuthPin2');
+      if (pin.length < 6)
+        return fail('Mã PIN phải có ít nhất 6 ký tự.');
+      if (pin !== confirmInput.value.trim())
+        return fail('Hai mã PIN không khớp. Vui lòng nhập lại.');
+      if (!/^\d+$/.test(pin))
+        return fail('Mã PIN chỉ được gồm chữ số.');
+
+      DataManager.saveSettings({ ...DataManager.getSettings(), adminPin: pin });
+      return unlock();
     }
+
+    const currentPin = (DataManager.getSettings().adminPin || '').trim();
+    if (pin && pin === currentPin) return unlock();
+    fail('Mã PIN không chính xác! Quyền truy cập bị từ chối.');
   });
 }
 
