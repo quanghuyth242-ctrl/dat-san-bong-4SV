@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node -e \"const fs=require('fs'); fs.cpSync('project', 'dist/project', {recursive: true});\"",
+    "build": "vite build && node -e \"const fs=require('fs'); for (const d of ['project/css','project/js','project/pages']) fs.cpSync(d, 'dist/' + d, {recursive: true});\"",
     "preview": "vite preview"
   },
   "devDependencies": {

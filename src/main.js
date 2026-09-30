@@ -171,10 +171,18 @@ function loadBookings() {
   }
 }
 
+/** Chuẩn hoá mã sân về 'san-N' để đơn cũ (dùng số) và đơn mới cùng nhận diện. */
+function courtKey(id) {
+  const raw = String(id)
+  const n = parseInt(raw.replace(/^san-/, ''), 10)
+  return Number.isFinite(n) ? 'san-' + n : raw
+}
+
 function isSlotTaken(venueId, date, startHour, duration) {
   const endHour = startHour + duration
+  const key = courtKey(venueId)
   return loadBookings().some(
-    (b) => b.courtId === venueId && b.date === date && startHour < b.endHour && endHour > b.startHour
+    (b) => courtKey(b.courtId) === key && b.date === date && startHour < b.endHour && endHour > b.startHour
   )
 }
 
@@ -516,14 +524,15 @@ function submitBooking(venue) {
   const list = loadBookings()
   const booking = {
     id: 'BD' + Date.now(),
-    courtId: venue.id,
+    // Ổn định theo chuỗi để khớp với san-bong.js ('san-N') và đọc được ở admin
+    courtId: 'san-' + venue.id,
     courtName: venue.name,
     date,
     startHour,
     endHour: startHour + duration,
     duration,
     total,
-    customer: { name, phone },
+    customer: { name, phone, email: '' },
     status: 'pending',
   }
 

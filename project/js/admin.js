@@ -41,9 +41,81 @@ const DEFAULT_SETTINGS = {
   adminPin: ''
 };
 
+/**
+ * Đơn đặt từ trang chủ và trang danh sách sân lưu ở key chung '4sv_bookings'
+ * với cấu trúc khác hẳn đơn mẫu của admin (số giờ thay vì chuỗi 'HH:MM',
+ * customer.name thay vì userName...). Hàm này chuyển về đúng schema admin
+ * để bảng và modal chi tiết hiển thị được.
+ */
+const PUBLIC_BOOKING_KEY = '4sv_bookings';
+
+/**
+ * Chỉ lưu mã PIN dạng băm SHA-256 thay vì chữ thuần, để ai mở DevTools cũng
+ * không đọc được PIN gốc. Lưu ý: đây chỉ là rào cản ở phía trình duyệt,
+ * không thay thế việc xác thực phía máy chủ.
+ */
+async function hashPin(pin) {
+  const data = new TextEncoder().encode('4sv-admin-pin:' + pin);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function hourToHHMM(h) {
+  const hh = Math.floor(Number(h));
+  const mm = Math.round((Number(h) - hh) * 60);
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+
+function normalizePublicBooking(b) {
+  return {
+    id: b.id,
+    userName: b.customer?.name || 'Khách vô danh',
+    fieldId: String(b.courtId ?? ''),
+    fieldName: b.courtName || 'Sân không xác định',
+    date: b.date,
+    startTime: hourToHHMM(b.startHour),
+    endTime: hourToHHMM(b.endHour),
+    total: b.total,
+    status: b.status || 'pending',
+    _source: 'public',
+  };
+}
+
 const DataManager = {
   _getKey(key) {
     return 'admin_' + key;
+  },
+
+  /** Đọc đơn từ mốc cộng với các đơn đặt thật do khách gửi từ trang chủ. */
+  _loadPublicBookings() {
+    try {
+      const raw = localStorage.getItem(PUBLIC_BOOKING_KEY);
+      if (!raw) return [];
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return [];
+      return list.map(normalizePublicBooking);
+    } catch (e) {
+      console.warn('Lỗi đọc đơn đặt từ trang chủ:', e);
+      return [];
+    }
+  },
+
+  /** Ghi trạng thái xuống cả hai nguồn để trang chủ và admin không lệch nhau. */
+  _savePublicStatus(id, status) {
+    try {
+      const raw = localStorage.getItem(PUBLIC_BOOKING_KEY);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      const idx = list.findIndex((b) => b.id === id);
+      if (idx === -1) return;
+      list[idx].status = status;
+      localStorage.setItem(PUBLIC_BOOKING_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn('Lỗi cập nhật trạng thái đơn đặt:', e);
+    }
   },
 
   load(key, defaultData) {
@@ -71,8 +143,20 @@ const DataManager = {
   getUsers() { return this.load('users', DEFAULT_USERS); },
   saveUsers(data) { this.save('users', data); },
 
-  getBookings() { return this.load('bookings', DEFAULT_BOOKINGS); },
-  saveBookings(data) { this.save('bookings', data); },
+  getBookings() {
+    const seeded = this.load('bookings', DEFAULT_BOOKINGS);
+    const publicOnes = this._loadPublicBookings();
+    // Đơn đặt thật được ưu tiên: nếu admin đã đổi trạng thái một đơn công khai
+    // thì bản ghi trong mốc cũng phải theo, tránh hiện đơn trùng ở hai nơi.
+    const overridden = new Set(seeded.filter((b) => b._source === 'public').map((b) => b.id));
+    return [...publicOnes.filter((b) => !overridden.has(b.id)), ...seeded];
+  },
+
+  saveBookings(data) {
+    const seeded = data.filter((b) => b._source !== 'public');
+    this.save('bookings', seeded);
+    data.filter((b) => b._source === 'public').forEach((b) => this._savePublicStatus(b.id, b.status));
+  },
 
   getSettings() { return this.load('settings', DEFAULT_SETTINGS); },
   saveSettings(data) { this.save('settings', data); },
@@ -419,9 +503,9 @@ function filterBookings() {
 
   if (keyword) {
     filtered = filtered.filter(b =>
-      b.id.toLowerCase().includes(keyword) ||
-      b.userName.toLowerCase().includes(keyword) ||
-      b.fieldName.toLowerCase().includes(keyword)
+      String(b.id || '').toLowerCase().includes(keyword) ||
+      String(b.userName || '').toLowerCase().includes(keyword) ||
+      String(b.fieldName || '').toLowerCase().includes(keyword)
     );
   }
 
@@ -643,7 +727,7 @@ function initSettings() {
   });
 }
 
-function saveSettings() {
+async function saveSettings() {
   const settings = DataManager.getSettings();
 
   settings.siteName = document.getElementById('settingSiteName')?.value.trim() || settings.siteName;
@@ -655,7 +739,7 @@ function saveSettings() {
       showToast('Mã PIN phải là chữ số và có ít nhất 6 ký tự.', 'danger');
       return;
     }
-    settings.adminPin = pinVal;
+    settings.adminPin = await hashPin(pinVal);
   }
   const logoImg = document.querySelector('#logoPreview img');
   if (logoImg) {
@@ -862,7 +946,7 @@ function checkAdminAuth(onSuccess) {
 
   input.focus();
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const pin = input.value.trim();
     const fail = (msg) => {
@@ -881,12 +965,22 @@ function checkAdminAuth(onSuccess) {
       if (!/^\d+$/.test(pin))
         return fail('Mã PIN chỉ được gồm chữ số.');
 
-      DataManager.saveSettings({ ...DataManager.getSettings(), adminPin: pin });
+      DataManager.saveSettings({ ...DataManager.getSettings(), adminPin: await hashPin(pin) });
       return unlock();
     }
 
     const currentPin = (DataManager.getSettings().adminPin || '').trim();
-    if (pin && pin === currentPin) return unlock();
+    // Đợi hash xong rồi mới so sánh: so sánh bất đồng bộ trong try/catch để hỏng
+    // dữ liệu cũ chỉ báo sai PIN chứ không làm treo trang quản trị.
+    let matched = false;
+    if (pin && currentPin) {
+      try {
+        matched = (await hashPin(pin)) === currentPin;
+      } catch (err) {
+        matched = false;
+      }
+    }
+    if (matched) return unlock();
     fail('Mã PIN không chính xác! Quyền truy cập bị từ chối.');
   });
 }
