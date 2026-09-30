@@ -320,7 +320,7 @@ function renderProvinces(sportKey) {
 let lastResult = VENUES.slice()
 
 /**
- * Điểm vào duy nhất cho mọi thay đổi bộ lọc: submit form, bấm sport-card,
+ * Điểm vào duy nhất cho mọi thay đổi bộ lọc: submit form, dropdown Loại sân,
  * bấm tab tỉnh, bấm nút xoá lọc. Không bao giờ tự đổi sang hiển thị tất cả.
  */
 function applyFilters({ scroll = false, silent = false } = {}) {
@@ -344,13 +344,9 @@ function applyFilters({ scroll = false, silent = false } = {}) {
   if (scroll) document.getElementById('san-noi-bat')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-/** Giữ sport-card, select qSport và dropdown "Loại sân" luôn khớp với bộ lọc đang chạy. */
+/** Giữ select qSport và dropdown "Loại sân" luôn khớp với bộ lọc đang chạy. */
 function syncFilterUI(filters) {
   const sport = filters?.sport ?? document.getElementById('qSport')?.value ?? ''
-
-  document.querySelectorAll('.sport-card').forEach((card) => {
-    card.classList.toggle('active', (card.getAttribute('data-sport') || '') === sport)
-  })
 
   document.querySelectorAll('#ddType .dropdown-item').forEach((item) => {
     item.classList.toggle('active', (item.getAttribute('data-sport') || '') === sport)
@@ -615,7 +611,7 @@ function locateMe() {
 
 // ================================ SỐ LIỆU ================================
 
-/** Ghi số liệu từ một nguồn duy nhất để badge, hero-stats và sport-card không mâu thuẫn. */
+/** Ghi số liệu từ một nguồn duy nhất để badge và hero-stats không mâu thuẫn. */
 function applyStats() {
   const badge = document.getElementById('heroVenueCount')
   if (badge) badge.textContent = String(TOTAL_VENUES)
@@ -626,13 +622,6 @@ function applyStats() {
     if (key === 'venues') el.textContent = String(TOTAL_VENUES)
     if (key === 'courts') el.textContent = String(TOTAL_COURTS)
     if (key === 'sports') el.textContent = String(SPORT_COUNTS.length)
-  })
-
-  document.querySelectorAll('.sport-card').forEach((card) => {
-    const sport = card.getAttribute('data-sport') || ''
-    const entry = SPORT_COUNTS.find((s) => s.sport === sport)
-    const label = card.querySelector('.sport-count')
-    if (entry && label) label.textContent = `${entry.count} sân`
   })
 }
 
@@ -661,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchForm = document.getElementById('searchForm')
   if (searchForm) searchForm.addEventListener('submit', handleSearch)
 
-  // select Loại sân lọc ngay, và đồng bộ ngược lại sport-card
+  // select Loại sân lọc ngay, để đồng bộ với dropdown trên navbar
   const sportSelect = document.getElementById('qSport')
   sportSelect?.addEventListener('change', () => applyFilters({ scroll: true }))
 
@@ -677,16 +666,6 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault()
     toast('Đăng ký thành công! Voucher đã gửi qua email.')
     e.target.reset()
-  })
-
-  // sport-card: chỉ đặt bộ lọc, không tự render riêng -> tránh lệch với form
-  document.querySelectorAll('.sport-card').forEach((card) => {
-    card.addEventListener('click', (e) => {
-      e.preventDefault()
-      const s = card.getAttribute('data-sport') || ''
-      sportSelect.value = s
-      applyFilters({ scroll: true })
-    })
   })
 
   // dropdown "Loại sân" trên navbar
