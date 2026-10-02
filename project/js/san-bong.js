@@ -1,5 +1,5 @@
-// ============================= DỮ LIỆU SÂN BÓNG =============================
-const SAN_DATA = [
+// ============================= DỮ LIỆU SÂN BÓNG MẶC ĐỊNH =============================
+const DEFAULT_SAN_DATA = [
   {
     id: 'san-1',
     name: 'Sân Bóng Galaxy Turf',
@@ -111,6 +111,51 @@ const SAN_DATA = [
     img: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
   },
 ];
+
+// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
+const SAN_IMAGES = [
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
+];
+
+function parseTypeNumber(typeStr) {
+  // "Sân 5" -> "5", "Sân 7" -> "7", "Sân 11" -> "11"
+  const match = typeStr && typeStr.match(/\d+/);
+  return match ? match[0] : '5';
+}
+
+function loadSanDataFromAdmin() {
+  try {
+    const stored = localStorage.getItem('admin_fields');
+    if (!stored) return null;
+    const fields = JSON.parse(stored);
+    if (!Array.isArray(fields) || fields.length === 0) return null;
+
+    return fields.map((f, idx) => ({
+      id: f.id || 'san-' + (idx + 1),
+      name: f.name,
+      address: f.address,
+      type: parseTypeNumber(f.type),
+      price: f.price,
+      status: f.status === 'active' ? 'trong' : 'bao-tri',
+      hours: { open: 6, close: 22 },
+      desc: `${f.name} - ${f.type} tại ${f.address}. Sân chất lượng cao, hệ thống đèn chiếu sáng hiện đại.`,
+      img: SAN_IMAGES[idx % SAN_IMAGES.length],
+    }));
+  } catch (e) {
+    console.warn('Lỗi đọc dữ liệu admin:', e);
+    return null;
+  }
+}
+
+// Ưu tiên dữ liệu từ admin (localStorage), nếu không có thì dùng dữ liệu mặc định
+const SAN_DATA = loadSanDataFromAdmin() || DEFAULT_SAN_DATA;
 
 // ============================= TIỆN ÍCH =============================
 const $ = (s, el) => (el || document).querySelector(s);

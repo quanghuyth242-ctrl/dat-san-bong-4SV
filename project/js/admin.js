@@ -912,32 +912,76 @@ function checkAdminAuth(onSuccess) {
   const overlay = document.createElement('div');
   overlay.id = 'adminAuthOverlay';
   overlay.className = 'admin-auth-overlay';
-  overlay.innerHTML = `
-    <div class="admin-auth-card">
-      <div class="admin-auth-icon">🔒</div>
-      <h2 class="admin-auth-title">${
-        isSetup ? 'THIẾT LẬP QUẢN TRỊ VIÊN' : 'BẢO MẬT QUẢN TRỊ VIÊN'
-      }h2>
-      <p class="admin-auth-desc">${
-        isSetup
-          ? 'Chưa có mã PIN. Hãy tạo mã PIN để bảo vệ khu vực quản trị.'
-          : 'Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!'
-      }</p>
-      <form class="admin-auth-form" id="adminAuthForm">
-        ${
-          isSetup
-            ? `<input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Tạo mã PIN (tối thiểu 6 ký tự)" autocomplete="new-password" />
-               <input type="password" id="adminAuthPin2" class="admin-auth-input" placeholder="Nhập lại mã PIN" autocomplete="new-password" />`
-            : `<input type="password" id="adminAuthPin" class="admin-auth-input" placeholder="Nhập mã PIN Admin..." autocomplete="off" />`
-        }
-        <button type="submit" class="admin-auth-btn">${
-          isSetup ? 'Tạo PIN & Mở khóa' : 'Mở khóa Quản trị'
-        }</button>
-      </form>
-      <div class="admin-auth-error" id="adminAuthError"></div>
-      <a href="../../index.html" class="admin-auth-back">← Quay lại Trang chủ</a>
-    </div>
-  `;
+  const authCard = document.createElement('div');
+  authCard.className = 'admin-auth-card';
+
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'admin-auth-icon';
+  iconDiv.textContent = '🔒';
+  authCard.appendChild(iconDiv);
+
+  const titleEl = document.createElement('h2');
+  titleEl.className = 'admin-auth-title';
+  titleEl.textContent = isSetup ? 'THIẾT LẬP QUẢN TRỊ VIÊN' : 'BẢO MẬT QUẢN TRỊ VIÊN';
+  authCard.appendChild(titleEl);
+
+  const descEl = document.createElement('p');
+  descEl.className = 'admin-auth-desc';
+  descEl.textContent = isSetup
+    ? 'Chưa có mã PIN. Hãy tạo mã PIN để bảo vệ khu vực quản trị.'
+    : 'Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!';
+  authCard.appendChild(descEl);
+
+  const formEl = document.createElement('form');
+  formEl.className = 'admin-auth-form';
+  formEl.id = 'adminAuthForm';
+
+  if (isSetup) {
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.id = 'adminAuthPin';
+    pinInput.className = 'admin-auth-input';
+    pinInput.placeholder = 'Tạo mã PIN (tối thiểu 6 ký tự)';
+    pinInput.autocomplete = 'new-password';
+    formEl.appendChild(pinInput);
+
+    const confirmInput = document.createElement('input');
+    confirmInput.type = 'password';
+    confirmInput.id = 'adminAuthPin2';
+    confirmInput.className = 'admin-auth-input';
+    confirmInput.placeholder = 'Nhập lại mã PIN';
+    confirmInput.autocomplete = 'new-password';
+    formEl.appendChild(confirmInput);
+  } else {
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.id = 'adminAuthPin';
+    pinInput.className = 'admin-auth-input';
+    pinInput.placeholder = 'Nhập mã PIN Admin...';
+    pinInput.autocomplete = 'off';
+    formEl.appendChild(pinInput);
+  }
+
+  const btnEl = document.createElement('button');
+  btnEl.type = 'submit';
+  btnEl.className = 'admin-auth-btn';
+  btnEl.textContent = isSetup ? 'Tạo PIN & Mở khóa' : 'Mở khóa Quản trị';
+  formEl.appendChild(btnEl);
+
+  authCard.appendChild(formEl);
+
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'admin-auth-error';
+  errorDiv.id = 'adminAuthError';
+  authCard.appendChild(errorDiv);
+
+  const backLink = document.createElement('a');
+  backLink.href = '../../index.html';
+  backLink.className = 'admin-auth-back';
+  backLink.textContent = '← Quay lại Trang chủ';
+  authCard.appendChild(backLink);
+
+  overlay.appendChild(authCard);
   document.body.appendChild(overlay);
 
   const form = document.getElementById('adminAuthForm');

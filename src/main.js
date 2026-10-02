@@ -11,6 +11,56 @@ const VENUES = [
   { id: 8, name: 'Ace Pickleball Club', sport: 'Pickleball', addr: 'Pullman Hanoi, Cát Linh, Đống Đa, Hà Nội', price: '220k', per: '/tiếng', courts: 2, hours: { open: 7, close: 23 }, lat: 21.046, lng: 105.838, img: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&q=75', icon: '🏓' },
 ]
 
+// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
+// Ảnh mặc định cho sân bóng đá theo loại sân
+const FIELD_IMAGES = [
+  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&q=75',
+  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&q=75',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&q=75',
+  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&q=75',
+  'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75',
+  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=400&q=75',
+]
+
+function formatPriceShort(price) {
+  if (price >= 1000000) return (price / 1000000).toFixed(price % 1000000 === 0 ? 0 : 1) + 'tr'
+  return Math.round(price / 1000) + 'k'
+}
+
+function loadVenuesFromAdmin() {
+  try {
+    const stored = localStorage.getItem('admin_fields')
+    if (!stored) return null
+    const fields = JSON.parse(stored)
+    if (!Array.isArray(fields) || fields.length === 0) return null
+
+    // Chỉ lấy sân đang hoạt động
+    const activeFields = fields.filter(f => f.status === 'active')
+    if (activeFields.length === 0) return null
+
+    return activeFields.map((f, idx) => ({
+      id: f.id || idx + 1,
+      name: f.name,
+      sport: 'Bóng đá',
+      addr: f.address,
+      price: formatPriceShort(f.price),
+      per: '/tiếng',
+      courts: 1,
+      img: FIELD_IMAGES[idx % FIELD_IMAGES.length],
+      icon: '⚽',
+      type: f.type || 'Sân 5'
+    }))
+  } catch (e) {
+    console.warn('Lỗi đọc dữ liệu admin:', e)
+    return null
+  }
+}
+
+// Ưu tiên dữ liệu từ admin, nếu không có thì dùng mặc định
+const VENUES = loadVenuesFromAdmin() || DEFAULT_VENUES
+
 const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Khánh Hòa','Nghệ An','Thanh Hóa','Huế','Quảng Ninh','Bà Rịa - Vũng Tàu','Lâm Đồng','Kiên Giang','Bắc Ninh','Hải Dương','Hưng Yên','Nam Định','Thái Nguyên','Quảng Nam','Bình Định','Gia Lai','Đắk Lắk','Long An','Tiền Giang','Vĩnh Long','An Giang','Bình Thuận','Ninh Thuận','Phú Yên','Quảng Ngãi','Bình Phước','Tây Ninh']
 
 const SPORT_LABELS = {
