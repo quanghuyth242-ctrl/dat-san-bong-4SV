@@ -42,6 +42,21 @@ const DEFAULT_SETTINGS = {
   adminPassword: ''
 };
 
+const DEFAULT_REVIEWS = [
+  { id: 'DG001', userName: 'Nguyễn Văn An', userAvatar: 'https://i.pravatar.cc/80?img=12', fieldName: 'Sân Thống Nhất 1', rating: 5, comment: 'Sân cỏ đẹp, hệ thống đèn chiếu sáng rất tốt. Phục vụ chu đáo!', date: '2026-09-28', status: 'visible', reply: 'Cảm ơn bạn An đã ủng hộ sân!' },
+  { id: 'DG002', userName: 'Trần Thị Bình', userAvatar: 'https://i.pravatar.cc/80?img=5', fieldName: 'Sân Phú Thọ A', rating: 4, comment: 'Chất lượng mặt sân tạm ổn, tuy nhiên bãi xe hơi chật lúc cao điểm.', date: '2026-09-27', status: 'visible', reply: '' },
+  { id: 'DG003', userName: 'Lê Hoàng Cường', userAvatar: 'https://i.pravatar.cc/80?img=33', fieldName: 'Sân Tao Đàn', rating: 5, comment: 'Sân rộng thoáng, bóng nảy chuẩn, có sẵn nước uống miễn phí.', date: '2026-09-26', status: 'visible', reply: 'Cảm ơn bạn Cường, hẹn gặp lại bạn lần sau!' },
+  { id: 'DG004', userName: 'Phạm Minh Đức', userAvatar: 'https://i.pravatar.cc/80?img=60', fieldName: 'Sân Thống Nhất 2', rating: 2, comment: 'Thái độ nhân viên bảo vệ không thân thiện.', date: '2026-09-25', status: 'hidden', reply: 'BQL đã làm việc lại với bảo vệ. Chân thành xin lỗi bạn.' },
+  { id: 'DG005', userName: 'Hoàng Thị Linh', userAvatar: 'https://i.pravatar.cc/80?img=47', fieldName: 'Sân Kỳ Hòa', rating: 5, comment: 'Đặt sân qua 4SV nhanh chóng tiện lợi. 10/10 điểm!', date: '2026-09-25', status: 'visible', reply: '' }
+];
+
+const DEFAULT_VOUCHERS = [
+  { id: 'MAG001', code: 'WELCOME4SV', discountType: 'percent', discountValue: 20, minOrder: 200000, maxDiscount: 100000, usageLimit: 100, usedCount: 38, expiryDate: '2026-12-31', status: 'active' },
+  { id: 'MAG002', code: 'GIAM50K', discountType: 'fixed', discountValue: 50000, minOrder: 300000, maxDiscount: 50000, usageLimit: 50, usedCount: 50, expiryDate: '2026-10-15', status: 'expired' },
+  { id: 'MAG003', code: 'CUOITUAN', discountType: 'percent', discountValue: 15, minOrder: 400000, maxDiscount: 150000, usageLimit: 200, usedCount: 82, expiryDate: '2026-11-30', status: 'active' },
+  { id: 'MAG004', code: 'SAN5DEM', discountType: 'fixed', discountValue: 30000, minOrder: 250000, maxDiscount: 30000, usageLimit: 30, usedCount: 12, expiryDate: '2026-10-31', status: 'active' }
+];
+
 /**
  * Đơn đặt từ trang chủ và trang danh sách sân lưu ở key chung '4sv_bookings'
  * với cấu trúc khác hẳn đơn mẫu của admin (số giờ thay vì chuỗi 'HH:MM',
@@ -162,6 +177,12 @@ const DataManager = {
   getSettings() { return this.load('settings', DEFAULT_SETTINGS); },
   saveSettings(data) { this.save('settings', data); },
 
+  getReviews() { return this.load('reviews', DEFAULT_REVIEWS); },
+  saveReviews(data) { this.save('reviews', data); },
+
+  getVouchers() { return this.load('vouchers', DEFAULT_VOUCHERS); },
+  saveVouchers(data) { this.save('vouchers', data); },
+
   getNextId(prefix, items) {
     let maxNum = 0;
     items.forEach(item => {
@@ -254,6 +275,15 @@ function getStatusBadge(status, type) {
     user: {
       active: { text: 'Hoạt động', cls: 'badge-success' },
       locked: { text: 'Khóa', cls: 'badge-danger' }
+    },
+    review: {
+      visible: { text: 'Hiển thị', cls: 'badge-success' },
+      hidden: { text: 'Đã ẩn', cls: 'badge-danger' }
+    },
+    voucher: {
+      active: { text: 'Hoạt động', cls: 'badge-success' },
+      expired: { text: 'Hết hạn', cls: 'badge-warning' },
+      disabled: { text: 'Đã tắt', cls: 'badge-danger' }
     }
   };
 
@@ -897,6 +927,345 @@ function processActivateField(id) {
   showToast('Đã kích hoạt sân bóng!');
 }
 
+// ==========================================
+// QUẢN LÝ ĐÁNH GIÁ & BÌNH LUẬN
+// ==========================================
+function initReviews() {
+  const tableBody = document.getElementById('reviewsTableBody');
+  const searchInput = document.getElementById('reviewSearchInput');
+  const ratingFilter = document.getElementById('reviewRatingFilter');
+  const statusFilter = document.getElementById('reviewStatusFilter');
+  const replyForm = document.getElementById('replyForm');
+
+  function renderStats(reviews) {
+    const total = reviews.length;
+    const avg = total > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : '0.0';
+    const pending = reviews.filter(r => !r.reply || !r.reply.trim()).length;
+    const hidden = reviews.filter(r => r.status === 'hidden').length;
+
+    const elTotal = document.getElementById('statTotalReviews');
+    const elAvg = document.getElementById('statAvgRating');
+    const elPending = document.getElementById('statPendingReply');
+    const elHidden = document.getElementById('statHiddenReviews');
+
+    if (elTotal) elTotal.textContent = total;
+    if (elAvg) elAvg.textContent = `${avg}★`;
+    if (elPending) elPending.textContent = pending;
+    if (elHidden) elHidden.textContent = hidden;
+  }
+
+  function renderTable() {
+    if (!tableBody) return;
+    const reviews = DataManager.getReviews();
+    renderStats(reviews);
+
+    const q = searchInput?.value.trim().toLowerCase() || '';
+    const rVal = ratingFilter?.value || '';
+    const sVal = statusFilter?.value || '';
+
+    const filtered = reviews.filter(r => {
+      const matchSearch = r.userName.toLowerCase().includes(q) || r.comment.toLowerCase().includes(q) || r.fieldName.toLowerCase().includes(q);
+      let matchRating = true;
+      if (rVal === '5') matchRating = r.rating === 5;
+      else if (rVal === '4') matchRating = r.rating === 4;
+      else if (rVal === '3') matchRating = r.rating === 3;
+      else if (rVal === 'low') matchRating = r.rating <= 2;
+
+      let matchStatus = true;
+      if (sVal) matchStatus = r.status === sVal;
+
+      return matchSearch && matchRating && matchStatus;
+    });
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy bình luận nào.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = filtered.map(r => {
+      const stars = '⭐'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      const replyBadge = r.reply ? `<span class="badge badge-info" style="font-weight: normal; font-style: italic;">"${r.reply}"</span>` : `<span style="color: var(--gray-400); font-size: 13px;">Chưa phản hồi</span>`;
+      const toggleActionText = r.status === 'visible' ? 'Ẩn' : 'Hiện';
+      const toggleActionClass = r.status === 'visible' ? 'btn-outline' : 'btn-success';
+
+      return `
+        <tr>
+          <td><strong>${r.id}</strong></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="${r.userAvatar || 'https://i.pravatar.cc/80'}" alt="${r.userName}" style="width: 28px; height: 28px; border-radius: 50%;">
+              <span>${r.userName}</span>
+            </div>
+          </td>
+          <td>${r.fieldName}</td>
+          <td><span style="color: #f59e0b; font-weight: 600;">${stars}</span></td>
+          <td style="max-width: 280px; word-wrap: break-word;">${r.comment}</td>
+          <td>${r.date}</td>
+          <td>${getStatusBadge(r.status, 'review')}</td>
+          <td style="max-width: 220px;">${replyBadge}</td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-primary btn-sm" onclick="openReplyModal('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Phản hồi</button>
+              <button class="btn ${toggleActionClass} btn-sm" onclick="toggleReviewStatus('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleActionText}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  if (searchInput) searchInput.addEventListener('input', renderTable);
+  if (ratingFilter) ratingFilter.addEventListener('change', renderTable);
+  if (statusFilter) statusFilter.addEventListener('change', renderTable);
+
+  if (replyForm) {
+    replyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('replyReviewId').value;
+      const replyText = document.getElementById('replyContentInput').value.trim();
+
+      const reviews = DataManager.getReviews();
+      const idx = reviews.findIndex(r => r.id === id);
+      if (idx !== -1) {
+        reviews[idx].reply = replyText;
+        DataManager.saveReviews(reviews);
+        closeModal('replyModal');
+        renderTable();
+        showToast('Đã gửi phản hồi bình luận!');
+      }
+    });
+  }
+
+  window.openReplyModal = function(id) {
+    const reviews = DataManager.getReviews();
+    const r = reviews.find(x => x.id === id);
+    if (!r) return;
+
+    document.getElementById('replyReviewId').value = r.id;
+    document.getElementById('modalCustomerName').textContent = r.userName;
+    document.getElementById('modalFieldName').textContent = r.fieldName;
+    document.getElementById('modalReviewContent').textContent = `"${r.comment}"`;
+    document.getElementById('replyContentInput').value = r.reply || '';
+
+    openModal('replyModal');
+  };
+
+  window.toggleReviewStatus = function(id) {
+    const reviews = DataManager.getReviews();
+    const idx = reviews.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      reviews[idx].status = reviews[idx].status === 'visible' ? 'hidden' : 'visible';
+      DataManager.saveReviews(reviews);
+      renderTable();
+      showToast(reviews[idx].status === 'visible' ? 'Đã hiển thị bình luận!' : 'Đã ẩn bình luận!');
+    }
+  };
+
+  window.deleteReview = function(id) {
+    showConfirm('Xóa bình luận', 'Bạn có chắc chắn muốn xóa bình luận này không?', () => {
+      let reviews = DataManager.getReviews();
+      reviews = reviews.filter(r => r.id !== id);
+      DataManager.saveReviews(reviews);
+      renderTable();
+      showToast('Đã xóa bình luận!', 'danger');
+    });
+  };
+
+  renderTable();
+}
+
+// ==========================================
+// QUẢN LÝ MÃ GIẢM GIÁ (VOUCHERS)
+// ==========================================
+function initVouchers() {
+  const tableBody = document.getElementById('vouchersTableBody');
+  const searchInput = document.getElementById('voucherSearchInput');
+  const statusFilter = document.getElementById('voucherStatusFilter');
+  const btnOpenAdd = document.getElementById('btnOpenAddVoucher');
+  const voucherForm = document.getElementById('voucherForm');
+
+  function renderStats(vouchers) {
+    const total = vouchers.length;
+    const active = vouchers.filter(v => v.status === 'active').length;
+    const totalUsed = vouchers.reduce((sum, v) => sum + (v.usedCount || 0), 0);
+    const expired = vouchers.filter(v => v.status === 'expired').length;
+
+    const elTotal = document.getElementById('statTotalVouchers');
+    const elActive = document.getElementById('statActiveVouchers');
+    const elUsed = document.getElementById('statUsedVouchers');
+    const elExpired = document.getElementById('statExpiredVouchers');
+
+    if (elTotal) elTotal.textContent = total;
+    if (elActive) elActive.textContent = active;
+    if (elUsed) elUsed.textContent = totalUsed;
+    if (elExpired) elExpired.textContent = expired;
+  }
+
+  function renderTable() {
+    if (!tableBody) return;
+    const vouchers = DataManager.getVouchers();
+    renderStats(vouchers);
+
+    const q = searchInput?.value.trim().toLowerCase() || '';
+    const sVal = statusFilter?.value || '';
+
+    const filtered = vouchers.filter(v => {
+      const matchSearch = v.code.toLowerCase().includes(q);
+      const matchStatus = sVal ? v.status === sVal : true;
+      return matchSearch && matchStatus;
+    });
+
+    if (filtered.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy mã giảm giá nào.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = filtered.map(v => {
+      const typeText = v.discountType === 'percent' ? 'Phần trăm (%)' : 'Cố định (VNĐ)';
+      const valueText = v.discountType === 'percent' ? `${v.discountValue}%` : formatCurrency(v.discountValue);
+      const minOrderText = v.minOrder > 0 ? formatCurrency(v.minOrder) : 'Không có';
+      const maxDiscountText = v.maxDiscount > 0 ? formatCurrency(v.maxDiscount) : 'Không giới hạn';
+      const usageText = `${v.usedCount || 0} / ${v.usageLimit}`;
+      const toggleText = v.status === 'active' ? 'Tắt' : 'Bật';
+      const toggleClass = v.status === 'active' ? 'btn-outline' : 'btn-success';
+
+      return `
+        <tr>
+          <td><strong style="color: var(--primary); font-size: 15px; letter-spacing: 0.5px; background: var(--gray-100); padding: 2px 8px; border-radius: 4px;">${v.code}</strong></td>
+          <td>${typeText}</td>
+          <td><strong style="color: var(--success);">${valueText}</strong></td>
+          <td>${minOrderText}</td>
+          <td>${maxDiscountText}</td>
+          <td>${usageText}</td>
+          <td>${v.expiryDate}</td>
+          <td>${getStatusBadge(v.status, 'voucher')}</td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-primary btn-sm" onclick="editVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Sửa</button>
+              <button class="btn ${toggleClass} btn-sm" onclick="toggleVoucherStatus('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleText}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  if (searchInput) searchInput.addEventListener('input', renderTable);
+  if (statusFilter) statusFilter.addEventListener('change', renderTable);
+
+  if (btnOpenAdd) {
+    btnOpenAdd.addEventListener('click', () => {
+      document.getElementById('voucherForm').reset();
+      document.getElementById('voucherEditId').value = '';
+      document.getElementById('voucherModalTitle').textContent = 'Thêm mã giảm giá mới';
+      openModal('voucherModal');
+    });
+  }
+
+  if (voucherForm) {
+    voucherForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('voucherEditId').value;
+      const code = document.getElementById('voucherCode').value.trim().toUpperCase();
+      const discountType = document.getElementById('voucherType').value;
+      const discountValue = Number(document.getElementById('voucherValue').value);
+      const minOrder = Number(document.getElementById('voucherMinOrder').value || 0);
+      const maxDiscount = Number(document.getElementById('voucherMaxDiscount').value || 0);
+      const usageLimit = Number(document.getElementById('voucherLimit').value);
+      const expiryDate = document.getElementById('voucherExpiry').value;
+      const status = document.getElementById('voucherStatus').value;
+
+      let vouchers = DataManager.getVouchers();
+
+      if (editId) {
+        const idx = vouchers.findIndex(v => v.id === editId);
+        if (idx !== -1) {
+          vouchers[idx] = {
+            ...vouchers[idx],
+            code,
+            discountType,
+            discountValue,
+            minOrder,
+            maxDiscount,
+            usageLimit,
+            expiryDate,
+            status
+          };
+          showToast('Đã cập nhật mã giảm giá!');
+        }
+      } else {
+        if (vouchers.some(v => v.code === code)) {
+          showToast('Mã khuyến mãi này đã tồn tại!', 'danger');
+          return;
+        }
+
+        const newVoucher = {
+          id: DataManager.getNextId('MAG', vouchers),
+          code,
+          discountType,
+          discountValue,
+          minOrder,
+          maxDiscount,
+          usageLimit,
+          usedCount: 0,
+          expiryDate,
+          status
+        };
+        vouchers.unshift(newVoucher);
+        showToast('Đã thêm mã giảm giá mới!');
+      }
+
+      DataManager.saveVouchers(vouchers);
+      closeModal('voucherModal');
+      renderTable();
+    });
+  }
+
+  window.editVoucher = function(id) {
+    const vouchers = DataManager.getVouchers();
+    const v = vouchers.find(x => x.id === id);
+    if (!v) return;
+
+    document.getElementById('voucherEditId').value = v.id;
+    document.getElementById('voucherCode').value = v.code;
+    document.getElementById('voucherType').value = v.discountType;
+    document.getElementById('voucherValue').value = v.discountValue;
+    document.getElementById('voucherMinOrder').value = v.minOrder || '';
+    document.getElementById('voucherMaxDiscount').value = v.maxDiscount || '';
+    document.getElementById('voucherLimit').value = v.usageLimit;
+    document.getElementById('voucherExpiry').value = v.expiryDate;
+    document.getElementById('voucherStatus').value = v.status;
+
+    document.getElementById('voucherModalTitle').textContent = 'Sửa mã giảm giá';
+    openModal('voucherModal');
+  };
+
+  window.toggleVoucherStatus = function(id) {
+    const vouchers = DataManager.getVouchers();
+    const idx = vouchers.findIndex(v => v.id === id);
+    if (idx !== -1) {
+      vouchers[idx].status = vouchers[idx].status === 'active' ? 'disabled' : 'active';
+      DataManager.saveVouchers(vouchers);
+      renderTable();
+      showToast(vouchers[idx].status === 'active' ? 'Đã bật mã giảm giá!' : 'Đã tắt mã giảm giá!');
+    }
+  };
+
+  window.deleteVoucher = function(id) {
+    showConfirm('Xóa mã giảm giá', 'Bạn có chắc muốn xóa mã giảm giá này không?', () => {
+      let vouchers = DataManager.getVouchers();
+      vouchers = vouchers.filter(v => v.id !== id);
+      DataManager.saveVouchers(vouchers);
+      renderTable();
+      showToast('Đã xóa mã giảm giá!', 'danger');
+    });
+  };
+
+  renderTable();
+}
+
 function checkAdminAuth(onSuccess) {
   if (sessionStorage.getItem('admin_authenticated') === 'true') {
     if (typeof onSuccess === 'function') onSuccess();
@@ -1041,6 +1410,12 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       case 'users':
         initUsers();
+        break;
+      case 'reviews':
+        initReviews();
+        break;
+      case 'vouchers':
+        initVouchers();
         break;
       case 'settings':
         initSettings();
