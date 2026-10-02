@@ -1,6 +1,6 @@
 import './style.css'
 
-const VENUES = [
+const DEFAULT_VENUES = [
   { id: 1, name: 'Sân Bóng Đá Thành Công', sport: 'Bóng đá', addr: '18 Thành Công, Ba Đình, Hà Nội', price: '300k', per: '/tiếng', courts: 3, hours: { open: 6, close: 22 }, lat: 21.0465, lng: 105.8069, img: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75', icon: '⚽' },
   { id: 2, name: 'Tennis Club Cầu Giấy', sport: 'Tennis', addr: '68 Cầu Giấy, Hà Nội', price: '250k', per: '/tiếng', courts: 4, hours: { open: 6, close: 23 }, lat: 21.0409, lng: 105.7822, img: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400&q=75', icon: '🎾' },
   { id: 3, name: 'Nhà Thi Đấu Cầu Lông Mỹ Đình', sport: 'Cầu lông', addr: 'Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: '120k', per: '/tiếng', courts: 6, hours: { open: 5, close: 22 }, lat: 21.0285, lng: 105.78, img: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=75', icon: '🏸' },
