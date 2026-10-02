@@ -98,10 +98,14 @@
               </div>
 
               <div class="settings-section">
-                <h3 class="section-title">Bảo mật Quản trị viên</h3>
+                <h3 class="section-title">Tài khoản Quản trị viên</h3>
                 <div class="form-group">
-                  <label for="settingAdminPin">Mã PIN bảo mật Admin (dùng mở khóa trang Quản trị)</label>
-                  <input type="password" id="settingAdminPin" placeholder="Để trống nếu không đổi. Chỉ gồm chữ số, tối thiểu 6 ký tự" style="max-width: 260px;">
+                  <label for="settingAdminUsername">Tên đăng nhập</label>
+                  <input type="text" id="settingAdminUsername" placeholder="Tên đăng nhập admin" style="max-width: 260px;" autocomplete="username">
+                </div>
+                <div class="form-group">
+                  <label for="settingAdminPassword">Mật khẩu mới (để trống nếu không đổi)</label>
+                  <input type="password" id="settingAdminPassword" placeholder="Tối thiểu 6 ký tự" style="max-width: 260px;" autocomplete="new-password">
                 </div>
               </div>
 
