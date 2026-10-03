@@ -170,14 +170,16 @@ a {
   color: var(--gray-400);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  transition: all var(--transition);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   cursor: pointer;
   border-left: 3px solid transparent;
+  position: relative;
 }
 
 .sidebar-nav .nav-link:hover {
   background: rgba(255,255,255,0.05);
   color: #f8fafc;
+  transform: translateX(4px);
 }
 
 .sidebar-nav .nav-link.active {
@@ -285,11 +287,22 @@ a {
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  transition: box-shadow var(--transition);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: default;
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-md);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.12), 0 4px 10px -4px rgba(0, 0, 0, 0.06);
+  border-color: var(--gray-300);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+.stat-card .stat-icon {
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .stat-card .stat-icon {
@@ -342,6 +355,11 @@ a {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--gray-200);
   margin-bottom: var(--space-6);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
 }
 
 .card-header {
@@ -464,10 +482,21 @@ table tbody td {
   color: var(--gray-700);
   border-bottom: 1px solid var(--gray-100);
   vertical-align: middle;
+  transition: all 0.25s ease;
+}
+
+table tbody tr {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
 }
 
 table tbody tr:hover {
-  background: var(--gray-50);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.04) 0%, var(--gray-50) 100%);
+  transform: scale(1.005);
+}
+
+table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 table tbody tr:last-child td {
@@ -482,6 +511,12 @@ table tbody tr:last-child td {
   font-size: var(--font-size-xs);
   font-weight: 600;
   white-space: nowrap;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.badge:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .badge-success {
@@ -489,14 +524,26 @@ table tbody tr:last-child td {
   color: var(--success);
 }
 
+.badge-success:hover {
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
 .badge-warning {
   background: var(--warning-light);
   color: #b45309;
 }
 
+.badge-warning:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
 .badge-danger {
   background: var(--danger-light);
   color: var(--danger);
+}
+
+.badge-danger:hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 
 .badge-info {
@@ -521,13 +568,17 @@ table tbody tr:last-child td {
   font-family: var(--font-family);
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all var(--transition);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   white-space: nowrap;
   height: 38px;
 }
 
+.btn:hover {
+  transform: translateY(-2px);
+}
+
 .btn:active {
-  transform: scale(0.98);
+  transform: translateY(0) scale(0.97);
 }
 
 .btn-primary {
@@ -537,6 +588,7 @@ table tbody tr:last-child td {
 
 .btn-primary:hover {
   background: var(--primary-dark);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
 .btn-success {
@@ -546,6 +598,7 @@ table tbody tr:last-child td {
 
 .btn-success:hover {
   background: #15803d;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
 }
 
 .btn-warning {
@@ -555,6 +608,7 @@ table tbody tr:last-child td {
 
 .btn-warning:hover {
   background: #d97706;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
 }
 
 .btn-danger {
@@ -564,6 +618,7 @@ table tbody tr:last-child td {
 
 .btn-danger:hover {
   background: #b91c1c;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
 }
 
 .btn-outline {
@@ -1279,7 +1334,7 @@ body.dark-mode .voucher-modal__header {
   border: 1px solid var(--gray-200);
   border-radius: 12px;
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .voucher-section:last-child {
@@ -1287,7 +1342,9 @@ body.dark-mode .voucher-modal__header {
 }
 
 .voucher-section:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary);
+  transform: translateY(-2px);
 }
 
 .voucher-section__label {
