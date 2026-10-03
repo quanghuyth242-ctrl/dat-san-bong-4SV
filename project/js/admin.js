@@ -1160,6 +1160,10 @@ function initVouchers() {
       document.getElementById('voucherForm').reset();
       document.getElementById('voucherEditId').value = '';
       document.getElementById('voucherModalTitle').textContent = 'Thêm mã giảm giá mới';
+      // Reset radio to active
+      const activeRadio = document.querySelector('input[name="voucherStatusRadio"][value="active"]');
+      if (activeRadio) activeRadio.checked = true;
+      document.getElementById('voucherStatus').value = 'active';
       openModal('voucherModal');
     });
   }
@@ -1175,7 +1179,8 @@ function initVouchers() {
       const maxDiscount = Number(document.getElementById('voucherMaxDiscount').value || 0);
       const usageLimit = Number(document.getElementById('voucherLimit').value);
       const expiryDate = document.getElementById('voucherExpiry').value;
-      const status = document.getElementById('voucherStatus').value;
+      const statusRadio = document.querySelector('input[name="voucherStatusRadio"]:checked');
+      const status = statusRadio ? statusRadio.value : document.getElementById('voucherStatus').value;
 
       let vouchers = DataManager.getVouchers();
 
@@ -1237,6 +1242,9 @@ function initVouchers() {
     document.getElementById('voucherLimit').value = v.usageLimit;
     document.getElementById('voucherExpiry').value = v.expiryDate;
     document.getElementById('voucherStatus').value = v.status;
+    // Sync radio button
+    const statusRadio = document.querySelector(`input[name="voucherStatusRadio"][value="${v.status}"]`);
+    if (statusRadio) statusRadio.checked = true;
 
     document.getElementById('voucherModalTitle').textContent = 'Sửa mã giảm giá';
     openModal('voucherModal');
@@ -1262,6 +1270,13 @@ function initVouchers() {
       showToast('Đã xóa mã giảm giá!', 'danger');
     });
   };
+
+  // Sync radio buttons with hidden select
+  document.querySelectorAll('input[name="voucherStatusRadio"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      document.getElementById('voucherStatus').value = e.target.value;
+    });
+  });
 
   renderTable();
 }
