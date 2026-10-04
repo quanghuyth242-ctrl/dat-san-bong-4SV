@@ -1,74 +1,16 @@
 import './style.css'
 import { getUser } from './session.js'
 import { toast, syncAuthNav } from './auth-nav.js'
+import { FIELD_TYPES, loadVenues } from './venues.js'
+import { expand, venueHaystack } from './vn-text.js'
+import { mountAssistant, takeStashedIntent } from './ai-assistant.js'
 
-// 4SV.vn chỉ phục vụ sân bóng đá: mọi sân đều thuộc 1 trong 3 kích thước sân chuẩn.
-export const FIELD_TYPES = ['Sân 5', 'Sân 7', 'Sân 11']
-
-const FIELD_IMAGES = [
-  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&q=75',
-  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&q=75',
-  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&q=75',
-  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&q=75',
-  'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75',
-  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=400&q=75',
-]
-
-const DEFAULT_VENUES = [
-  { id: 1, name: 'Sân Bóng Thành Công', type: 'Sân 5', addr: '18 Thành Công, Ba Đình, Hà Nội', price: '300k', per: '/tiếng', courts: 3, hours: { open: 6, close: 22 }, lat: 21.0465, lng: 105.8069, img: FIELD_IMAGES[0], icon: '⚽' },
-  { id: 2, name: 'Sân Cỏ Nhân Tạo Cầu Giấy', type: 'Sân 7', addr: '68 Cầu Giấy, Cầu Giấy, Hà Nội', price: '450k', per: '/tiếng', courts: 2, hours: { open: 6, close: 23 }, lat: 21.0409, lng: 105.7822, img: FIELD_IMAGES[1], icon: '⚽' },
-  { id: 3, name: 'Sân Bóng Mỹ Đình', type: 'Sân 7', addr: 'Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: '500k', per: '/tiếng', courts: 4, hours: { open: 5, close: 22 }, lat: 21.0285, lng: 105.78, img: FIELD_IMAGES[2], icon: '⚽' },
-  { id: 4, name: 'Sân Bóng Thảo Điền', type: 'Sân 5', addr: '28 Thảo Điền, Thủ Đức, TP. Hồ Chí Minh', price: '350k', per: '/tiếng', courts: 3, hours: { open: 6, close: 23 }, lat: 10.7769, lng: 106.7009, img: FIELD_IMAGES[3], icon: '⚽' },
-  { id: 5, name: 'Sân Bóng Tây Hồ', type: 'Sân 11', addr: 'Ngõ 431 Âu Cơ, Tây Hồ, Hà Nội', price: '700k', per: '/tiếng', courts: 1, hours: { open: 7, close: 22 }, lat: 21.066, lng: 105.85, img: FIELD_IMAGES[4], icon: '⚽' },
-  { id: 6, name: 'Sân Bóng Hoàng Hoa Thám', type: 'Sân 5', addr: '290 Hoàng Hoa Thám, Ba Đình, Hà Nội', price: '280k', per: '/tiếng', courts: 2, hours: { open: 6, close: 22 }, lat: 21.033, lng: 105.839, img: FIELD_IMAGES[5], icon: '⚽' },
-  { id: 7, name: 'Sân Bóng Đầm Hồng', type: 'Sân 7', addr: 'KĐT Đầm Hồng, Thanh Xuân, Hà Nội', price: '400k', per: '/tiếng', courts: 5, hours: { open: 6, close: 21 }, lat: 20.988, lng: 105.813, img: FIELD_IMAGES[6], icon: '⚽' },
-  { id: 8, name: 'Sân Bóng Cầu Giang', type: 'Sân 7', addr: '12 Cầu Giang, Hải Châu, Đà Nẵng', price: '320k', per: '/tiếng', courts: 2, hours: { open: 6, close: 22 }, lat: 16.0621, lng: 108.2043, img: FIELD_IMAGES[7], icon: '⚽' },
-]
-
-// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
-
-function formatPriceShort(price) {
-  if (price >= 1000000) return (price / 1000000).toFixed(price % 1000000 === 0 ? 0 : 1) + 'tr'
-  return Math.round(price / 1000) + 'k'
-}
-
-function loadVenuesFromAdmin() {
-  try {
-    const stored = localStorage.getItem('admin_fields')
-    if (!stored) return null
-    const fields = JSON.parse(stored)
-    if (!Array.isArray(fields) || fields.length === 0) return null
-
-    // Chỉ lấy sân đang hoạt động
-    const activeFields = fields.filter(f => f.status === 'active')
-    if (activeFields.length === 0) return null
-
-    return activeFields.map((f, idx) => ({
-      id: f.id || idx + 1,
-      name: f.name,
-      type: FIELD_TYPES.includes(f.type) ? f.type : FIELD_TYPES[0],
-      addr: f.address,
-      price: formatPriceShort(f.price),
-      per: '/tiếng',
-      courts: 1,
-      hours: { open: 6, close: 22 },
-      lat: 21.0285,
-      lng: 105.8542,
-      img: FIELD_IMAGES[idx % FIELD_IMAGES.length],
-      icon: '⚽',
-    }))
-  } catch (e) {
-    console.warn('Lỗi đọc dữ liệu admin:', e)
-    return null
-  }
-}
-
-// Ưu tiên dữ liệu từ admin, nếu không có thì dùng mặc định
-const VENUES = loadVenuesFromAdmin() || DEFAULT_VENUES
+export { FIELD_TYPES }
 
 const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Khánh Hòa','Nghệ An','Thanh Hóa','Huế','Quảng Ninh','Bà Rịa - Vũng Tàu','Lâm Đồng','Kiên Giang','Bắc Ninh','Hải Dương','Hưng Yên','Nam Định','Thái Nguyên','Quảng Nam','Bình Định','Gia Lai','Đắk Lắk','Long An','Tiền Giang','Vĩnh Long','An Giang','Bình Thuận','Ninh Thuận','Phú Yên','Quảng Ngãi','Bình Phước','Tây Ninh']
+
+// Ưu tiên dữ liệu từ admin, nếu không có thì dùng mặc định
+const VENUES = loadVenues()
 
 const SPORT_LABELS = {
   'bong-da': 'Bóng đá',
@@ -85,54 +27,10 @@ const SPORT_COUNTS = [
 
 const BOOKING_KEY = '4sv_bookings'
 
+/** Các thời lượng form đặt sân cho phép. */
+const DURATIONS = [1, 1.5, 2, 3]
+
 // ================================ CHUẨN HOÁ TIẾNG VIỆT ================================
-
-/** Bỏ dấu + lowercase. "Hồ Chí Minh" -> "ho chi minh", "Đà Nẵng" -> "da nang". */
-function deaccent(str) {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-}
-
-/** Chuẩn hoá để so khớp: bỏ dấu, hạ chữ thường, gộp khoảng trắng, bỏ dấu phẩy/chấm. */
-function norm(str) {
-  return deaccent(String(str || ''))
-    .toLowerCase()
-    .replace(/[,;.]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-// Cách viết tắt thường gặp -> dạng đầy đủ. Áp dụng cho cả dữ liệu lẫn từ khoá người dùng.
-// Lưu ý: norm() đã đổi dấu chấm thành khoảng trắng, nên "TP.HCM" tới đây là "tp hcm".
-const ABBREVIATIONS = [
-  [/\btp\s*ho\s*chi\s*minh\b|\btp\s*hcm\b|\btphcm\b|\bho\s*chi\s*minh\b/g, 'tp ho chi minh'],
-  [/\btp\s*ha\s*noi\b|\btp\s*hn\b|\bthanh\s*pho\b|\bha\s*noi\b/g, 'ha noi'],
-  [/\bq\.?\s*(\d{1,2})\b/g, 'quan $1'],
-  [/\bquan\s*(\d{1,2})\b/g, 'quan $1'],
-  [/\bp\.?\s*(\d{1,2})\b/g, 'phuong $1'],
-  [/\bphuong\s*(\d{1,2})\b/g, 'phuong $1'],
-  [/\bkdt\b|\bkhu\s*do\s*thi\b/g, 'khu do thi'],
-  [/\btt\b|\btp\s*tay\s*son\b/g, 'tay son'],
-  [/\bq\.?\s*go\b/g, 'go vap'],
-  [/\btd\b|\btp\s*thu\s*duc\b/g, 'thu duc'],
-  [/\bq\.?\s*bn\b/g, 'binh duong'],
-  [/\bq\.?\s*dn\b/g, 'dong nai'],
-]
-
-/** Mở rộng viết tắt để "q.10" và "quận 10" không khác nhau. */
-function expand(str) {
-  let out = norm(str)
-  for (const [re, to] of ABBREVIATIONS) out = out.replace(re, to)
-  return out
-}
-
-function haystack(v) {
-  const t = v.type || ''
-  return expand(`${v.name} ${v.addr} ${v.sport || ''} ${t} san ${t.replace('Sân ', '')}`)
-}
 
 // ================================ LỌC ================================
 
@@ -433,7 +331,10 @@ function handleSearch(e) {
 
 const bookState = { venue: null, duration: 1 }
 
-function openBook(venue) {
+/**
+ * Mở form đặt sân. `preset` cho phép trợ lý đặt sân điền sẵn ngày/giờ/thời lượng.
+ */
+function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
 
@@ -533,7 +434,28 @@ function openBook(venue) {
     submitBooking(venue)
   })
 
+  // Thời lượng phải set trước khi gọi updateTotal() vì hàm này dựng lại danh sách khung giờ.
+  if (preset.duration && DURATIONS.includes(Number(preset.duration))) {
+    document.getElementById('bkDuration').value = String(preset.duration)
+  }
+  if (preset.date && preset.date >= todayStr()) {
+    dateInput.value = preset.date
+  }
+
   updateTotal()
+
+  // Chọn khung giờ gần yêu cầu nhất
+  if (preset.hour != null) {
+    const sel = document.getElementById('bkTime')
+    const options = [...sel.options]
+      .map((o) => parseFloat(o.value))
+      .filter((n) => Number.isFinite(n))
+    if (options.length) {
+      const best = options.reduce((a, b) => (Math.abs(b - preset.hour) < Math.abs(a - preset.hour) ? b : a))
+      sel.value = String(best)
+    }
+  }
+
   openModal('bookModal')
 }
 
@@ -653,6 +575,7 @@ function locateMe() {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const me = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+      lastCoords = me
       const sorted = VENUES.slice()
         .map((v) => ({ v, d: haversine(me, v) }))
         .sort((a, b) => a.d - b.d)
@@ -710,6 +633,75 @@ window.subscribe = (e) => {
   return false
 }
 
+// ================================ TRỢ LÝ ĐẶT SÂN ================================
+
+/** Vị trí người dùng đã cho phép, dùng cho câu "sân gần tôi nhất". */
+let lastCoords = null
+
+/** Khung giờ đặt sân chỉ nhận giờ tròn, nên làm tròn lên khi kiểm tra lịch trống. */
+function hasFreeSlot(venue, date, hour, duration = 1) {
+  const h = Math.ceil(hour)
+  if (!date || !Number.isFinite(h)) return true
+  if (isPastSlot(date, h)) return false
+  if (h < venue.hours.open || h + duration > venue.hours.close) return false
+  return !isSlotTaken(venue.id, date, h, duration)
+}
+
+/** Đổ intent của trợ lý thành giá trị cho bộ lọc trên trang. */
+function applyIntentToFilters(intent) {
+  const loc = document.getElementById('qLocation')
+  const type = document.getElementById('qType')
+  const date = document.getElementById('qDate')
+  if (loc) loc.value = intent.loc || ''
+  if (type) type.value = intent.fieldType || ''
+  if (date) {
+    if (!intent.date) date.value = ''
+    else if (intent.hour == null) date.value = intent.date
+    else {
+      const hh = String(Math.floor(intent.hour)).padStart(2, '0')
+      const mm = String(Math.round((intent.hour % 1) * 60)).padStart(2, '0')
+      date.value = `${intent.date}T${hh}:${mm}`
+    }
+  }
+}
+
+function assistantHandlers() {
+  return {
+    venues: VENUES,
+    hasSlot: hasFreeSlot,
+    getCoords: () => lastCoords,
+    getBookings: loadBookings,
+    getUser,
+    requestLocation: (done) => {
+      if (!navigator.geolocation) return
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          lastCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+          done()
+        },
+        () => done(),
+        { timeout: 8000, maximumAge: 60000 },
+      )
+    },
+    onSearch: (intent) => {
+      applyIntentToFilters(intent)
+      applyFilters({ scroll: false, silent: true })
+    },
+    onBook: (venue, intent) => {
+      openBook(venue, { date: intent.date, hour: intent.hour, duration: intent.duration })
+    },
+  }
+}
+
+/** Yêu cầu do trợ lý ở trang khác chuyển sang: điền bộ lọc rồi chạy tìm kiếm. */
+function applyStashedIntent() {
+  const intent = takeStashedIntent()
+  if (!intent) return
+  applyIntentToFilters(intent)
+  applyFilters({ scroll: true })
+  toast('Đã điền yêu cầu của bạn vào ô tìm kiếm')
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const y = document.getElementById('year')
   if (y) y.textContent = String(new Date().getFullYear())
@@ -718,6 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderProvinces('bong-da')
   applyFilters({ silent: true })
   syncAuthNav({ accountUrl: 'src/tai-khoan.html' })
+  mountAssistant(assistantHandlers())
+  applyStashedIntent()
 
   // Ô tìm kiếm: lọc ngay khi gõ để không phải bấm nút
   const locInput = document.getElementById('qLocation')

@@ -1,5 +1,7 @@
 import { getUser, getRemembered, setUser, clearUser } from './session.js'
 import { toast, syncAuthNav, escapeHtml } from './auth-nav.js'
+import { FIELD_IMAGES, loadVenues } from './venues.js'
+import { mountAssistant, stashIntentForHome } from './ai-assistant.js'
 
 const USERS_KEY = '4sv_auth_users'
 const BOOKING_KEY = '4sv_bookings'
@@ -16,12 +18,6 @@ const BOOKING_STATUS = {
 }
 
 /** Danh sách sân để lấy ảnh/địa chỉ hiển thị cho đơn đã đặt. */
-const FIELD_IMAGES = [
-  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&q=75',
-  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&q=75',
-]
 
 const $ = (sel) => document.querySelector(sel)
 
@@ -366,6 +362,15 @@ function init() {
     e.preventDefault()
     clearUser()
     window.location.replace(LOGIN_URL)
+  })
+
+  // Trợ lý đặt sân: hiểu yêu cầu ngay tại đây rồi chuyển sang trang chủ để đặt.
+  mountAssistant({
+    venues: loadVenues(),
+    getBookings: () => readJson(BOOKING_KEY, []),
+    getUser,
+    onSearch: (intent) => stashIntentForHome(intent, { homeUrl: '../#tim-san' }),
+    onBook: (_venue, intent) => stashIntentForHome(intent, { homeUrl: '../#tim-san' }),
   })
 }
 
