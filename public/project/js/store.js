@@ -41,6 +41,9 @@
   }
 
   var MIGRATED_FLAG = NS + '_store_v1'
+  // Màu thương hiệu mặc định của trang chủ, admin đổi ở trang Giao diện.
+  var PRIMARY_FLAG = NS + '_primary_green_v1'
+  var LEGACY_PRIMARY = ['#2563eb', '#1d4ed8']
   var PREFIX = { field: 'SAN', user: 'ND', booking: 'DD', review: 'DG', voucher: 'MAG' }
   var PAD = { field: 3, user: 3, booking: 3, review: 3, voucher: 3 }
 
@@ -564,6 +567,27 @@
     cache = {}
   }
 
+  /**
+   * Ô chọn màu của trang Giao diện trước đây mở sẵn ở xanh dương #2563eb (màu
+   * của trang admin), bấm "Lưu" là màu thương hiệu ghi lại và trang chủ đổi
+   * theo. Đó không phải màu chủ sân chọn nên ghi về xanh lá của trang chủ, chạy
+   * một lần rồi thôi để sau này họ tự chọn màu tuỳ ý.
+   */
+  function resetLegacyPrimary() {
+    try {
+      if (global.localStorage.getItem(PRIMARY_FLAG)) return
+      var current = readJSON(KEYS.settings, null)
+      var color = current ? String(current.primaryColor || '').toLowerCase() : ''
+      if (LEGACY_PRIMARY.indexOf(color) !== -1) {
+        current.primaryColor = DEFAULT_SETTINGS.primaryColor
+        writeJSON(KEYS.settings, normSettings(current))
+      }
+      global.localStorage.setItem(PRIMARY_FLAG, String(Date.now()))
+    } catch (e) {
+      /* bỏ qua */
+    }
+  }
+
   /** Hợp nhất danh sách người dùng của admin và của trang đăng nhập theo email/số. */
   function migrateUsers(current, legacyList) {
     var merged = (Array.isArray(current) ? current : []).slice()
@@ -971,5 +995,6 @@
   }
 
   migrate()
+  resetLegacyPrimary()
   global.SV = SV
 })(window)
