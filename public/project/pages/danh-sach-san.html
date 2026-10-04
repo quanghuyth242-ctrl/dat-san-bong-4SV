@@ -33,8 +33,13 @@
 
         <div class="nav-actions" style="display: flex; gap: 8px; align-items: center;">
           <a href="../../index.html" class="btn-header primary"><i class="fa-solid fa-magnifying-glass"></i> Tìm sân</a>
-          <a href="../../src/auth.html" class="btn-header secondary"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
-          <a href="dashboard.html" class="btn-header secondary"><i class="fa-solid fa-shield-halved"></i> Quản trị Admin</a>
+          <a href="../../src/auth.html" class="btn-header secondary" data-auth="login"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
+          <!-- Đã đăng nhập thì thay nút trên bằng tên + nút đăng xuất -->
+          <span class="nav-user-inline" data-auth="user" hidden>
+            <span class="nav-user-dot"></span>
+            <span id="listUserName">Tài khoản</span>
+            <button type="button" class="btn-header secondary" id="listUserLogout">Đăng xuất</button>
+          </span>
         </div>
       </div>
     </header>
@@ -159,6 +164,8 @@
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
+
+    <script src="../js/store.js"></script>
 
     <script src="../js/san-bong.js"></script>
   </body>

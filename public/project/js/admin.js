@@ -1,70 +1,3 @@
-const DEFAULT_FIELDS = [
-  { id: 'SAN001', name: 'Sân Thống Nhất 1', address: '138 Đào Duy Từ, Q.10, TP.HCM', type: 'Sân 5', price: 300000, status: 'active' },
-  { id: 'SAN002', name: 'Sân Thống Nhất 2', address: '138 Đào Duy Từ, Q.10, TP.HCM', type: 'Sân 7', price: 500000, status: 'active' },
-  { id: 'SAN003', name: 'Sân Phú Thọ A', address: '1 Lữ Gia, Q.11, TP.HCM', type: 'Sân 5', price: 280000, status: 'active' },
-  { id: 'SAN004', name: 'Sân Phú Thọ B', address: '1 Lữ Gia, Q.11, TP.HCM', type: 'Sân 7', price: 480000, status: 'inactive' },
-  { id: 'SAN005', name: 'Sân Tao Đàn', address: 'Công viên Tao Đàn, Q.1, TP.HCM', type: 'Sân 11', price: 800000, status: 'active' },
-  { id: 'SAN006', name: 'Sân Kỳ Hòa', address: '2 Sư Vạn Hạnh, Q.10, TP.HCM', type: 'Sân 5', price: 320000, status: 'active' },
-  { id: 'SAN007', name: 'Sân Rạch Miễu', address: '15 Rạch Miễu, Phú Nhuận, TP.HCM', type: 'Sân 7', price: 450000, status: 'active' },
-  { id: 'SAN008', name: 'Sân Hoa Lư', address: '2 Đinh Tiên Hoàng, Q.1, TP.HCM', type: 'Sân 11', price: 900000, status: 'inactive' },
-];
-
-const DEFAULT_USERS = [
-  { id: 'ND001', name: 'Nguyễn Văn An', email: 'nguyenvanan@gmail.com', phone: '0901234567', bookings: 5, status: 'active' },
-  { id: 'ND002', name: 'Trần Thị Bình', email: 'tranthibinh@gmail.com', phone: '0912345678', bookings: 3, status: 'active' },
-  { id: 'ND003', name: 'Lê Hoàng Cường', email: 'lehoangcuong@gmail.com', phone: '0923456789', bookings: 8, status: 'active' },
-  { id: 'ND004', name: 'Phạm Minh Đức', email: 'phamminhduc@gmail.com', phone: '0934567890', bookings: 2, status: 'locked' },
-  { id: 'ND005', name: 'Hoàng Thị Linh', email: 'hoangthilinh@gmail.com', phone: '0945678901', bookings: 6, status: 'active' },
-  { id: 'ND006', name: 'Võ Thanh Hải', email: 'vothanhhai@gmail.com', phone: '0956789012', bookings: 1, status: 'active' },
-  { id: 'ND007', name: 'Đặng Quốc Bảo', email: 'dangquocbao@gmail.com', phone: '0967890123', bookings: 4, status: 'active' },
-  { id: 'ND008', name: 'Bùi Thị Mai', email: 'buithimai@gmail.com', phone: '0978901234', bookings: 0, status: 'locked' },
-];
-
-const DEFAULT_BOOKINGS = [
-  { id: 'DD001', userId: 'ND001', userName: 'Nguyễn Văn An', fieldId: 'SAN001', fieldName: 'Sân Thống Nhất 1', date: '2026-09-25', startTime: '17:00', endTime: '18:30', total: 450000, status: 'confirmed' },
-  { id: 'DD002', userId: 'ND002', userName: 'Trần Thị Bình', fieldId: 'SAN003', fieldName: 'Sân Phú Thọ A', date: '2026-09-25', startTime: '18:00', endTime: '19:30', total: 420000, status: 'completed' },
-  { id: 'DD003', userId: 'ND003', userName: 'Lê Hoàng Cường', fieldId: 'SAN005', fieldName: 'Sân Tao Đàn', date: '2026-09-26', startTime: '06:00', endTime: '08:00', total: 1600000, status: 'pending' },
-  { id: 'DD004', userId: 'ND001', userName: 'Nguyễn Văn An', fieldId: 'SAN002', fieldName: 'Sân Thống Nhất 2', date: '2026-09-26', startTime: '19:00', endTime: '20:30', total: 750000, status: 'pending' },
-  { id: 'DD005', userId: 'ND005', userName: 'Hoàng Thị Linh', fieldId: 'SAN006', fieldName: 'Sân Kỳ Hòa', date: '2026-09-26', startTime: '17:30', endTime: '19:00', total: 480000, status: 'pending' },
-  { id: 'DD006', userId: 'ND007', userName: 'Đặng Quốc Bảo', fieldId: 'SAN007', fieldName: 'Sân Rạch Miễu', date: '2026-09-27', startTime: '18:00', endTime: '19:30', total: 675000, status: 'confirmed' },
-  { id: 'DD007', userId: 'ND003', userName: 'Lê Hoàng Cường', fieldId: 'SAN001', fieldName: 'Sân Thống Nhất 1', date: '2026-09-24', startTime: '07:00', endTime: '08:30', total: 450000, status: 'completed' },
-  { id: 'DD008', userId: 'ND006', userName: 'Võ Thanh Hải', fieldId: 'SAN002', fieldName: 'Sân Thống Nhất 2', date: '2026-09-23', startTime: '19:00', endTime: '20:30', total: 750000, status: 'cancelled' },
-  { id: 'DD009', userId: 'ND005', userName: 'Hoàng Thị Linh', fieldId: 'SAN003', fieldName: 'Sân Phú Thọ A', date: '2026-09-27', startTime: '16:00', endTime: '17:30', total: 420000, status: 'pending' },
-  { id: 'DD010', userId: 'ND002', userName: 'Trần Thị Bình', fieldId: 'SAN005', fieldName: 'Sân Tao Đàn', date: '2026-09-28', startTime: '08:00', endTime: '10:00', total: 1600000, status: 'confirmed' },
-];
-
-const DEFAULT_SETTINGS = {
-  siteName: 'QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ',
-  primaryColor: '#2563eb',
-  darkMode: false,
-  logo: '',
-  adminUsername: 'admin',
-  adminPassword: ''
-};
-
-const DEFAULT_REVIEWS = [
-  { id: 'DG001', userName: 'Nguyễn Văn An', userAvatar: 'https://i.pravatar.cc/80?img=12', fieldName: 'Sân Thống Nhất 1', rating: 5, comment: 'Sân cỏ đẹp, hệ thống đèn chiếu sáng rất tốt. Phục vụ chu đáo!', date: '2026-09-28', status: 'visible', reply: 'Cảm ơn bạn An đã ủng hộ sân!' },
-  { id: 'DG002', userName: 'Trần Thị Bình', userAvatar: 'https://i.pravatar.cc/80?img=5', fieldName: 'Sân Phú Thọ A', rating: 4, comment: 'Chất lượng mặt sân tạm ổn, tuy nhiên bãi xe hơi chật lúc cao điểm.', date: '2026-09-27', status: 'visible', reply: '' },
-  { id: 'DG003', userName: 'Lê Hoàng Cường', userAvatar: 'https://i.pravatar.cc/80?img=33', fieldName: 'Sân Tao Đàn', rating: 5, comment: 'Sân rộng thoáng, bóng nảy chuẩn, có sẵn nước uống miễn phí.', date: '2026-09-26', status: 'visible', reply: 'Cảm ơn bạn Cường, hẹn gặp lại bạn lần sau!' },
-  { id: 'DG004', userName: 'Phạm Minh Đức', userAvatar: 'https://i.pravatar.cc/80?img=60', fieldName: 'Sân Thống Nhất 2', rating: 2, comment: 'Thái độ nhân viên bảo vệ không thân thiện.', date: '2026-09-25', status: 'hidden', reply: 'BQL đã làm việc lại với bảo vệ. Chân thành xin lỗi bạn.' },
-  { id: 'DG005', userName: 'Hoàng Thị Linh', userAvatar: 'https://i.pravatar.cc/80?img=47', fieldName: 'Sân Kỳ Hòa', rating: 5, comment: 'Đặt sân qua 4SV nhanh chóng tiện lợi. 10/10 điểm!', date: '2026-09-25', status: 'visible', reply: '' }
-];
-
-const DEFAULT_VOUCHERS = [
-  { id: 'MAG001', code: 'WELCOME4SV', discountType: 'percent', discountValue: 20, minOrder: 200000, maxDiscount: 100000, usageLimit: 100, usedCount: 38, expiryDate: '2026-12-31', status: 'active' },
-  { id: 'MAG002', code: 'GIAM50K', discountType: 'fixed', discountValue: 50000, minOrder: 300000, maxDiscount: 50000, usageLimit: 50, usedCount: 50, expiryDate: '2026-10-15', status: 'expired' },
-  { id: 'MAG003', code: 'CUOITUAN', discountType: 'percent', discountValue: 15, minOrder: 400000, maxDiscount: 150000, usageLimit: 200, usedCount: 82, expiryDate: '2026-11-30', status: 'active' },
-  { id: 'MAG004', code: 'SAN5DEM', discountType: 'fixed', discountValue: 30000, minOrder: 250000, maxDiscount: 30000, usageLimit: 30, usedCount: 12, expiryDate: '2026-10-31', status: 'active' }
-];
-
-/**
- * Đơn đặt từ trang chủ và trang danh sách sân lưu ở key chung '4sv_bookings'
- * với cấu trúc khác hẳn đơn mẫu của admin (số giờ thay vì chuỗi 'HH:MM',
- * customer.name thay vì userName...). Hàm này chuyển về đúng schema admin
- * để bảng và modal chi tiết hiển thị được.
- */
-const PUBLIC_BOOKING_KEY = '4sv_bookings';
-
 /**
  * Băm mật khẩu SHA-256 để lưu vào localStorage.
  * Lưu ý: đây chỉ là rào cản ở phía trình duyệt,
@@ -78,119 +11,34 @@ async function hashPassword(password) {
     .join('');
 }
 
-function hourToHHMM(h) {
-  const hh = Math.floor(Number(h));
-  const mm = Math.round((Number(h) - hh) * 60);
-  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-}
-
-function normalizePublicBooking(b) {
-  return {
-    id: b.id,
-    userName: b.customer?.name || 'Khách vô danh',
-    fieldId: String(b.courtId ?? ''),
-    fieldName: b.courtName || 'Sân không xác định',
-    date: b.date,
-    startTime: hourToHHMM(b.startHour),
-    endTime: hourToHHMM(b.endHour),
-    total: b.total,
-    status: b.status || 'pending',
-    _source: 'public',
-  };
-}
-
+/**
+ * Mọi dữ liệu của trang quản trị nằm trong store dùng chung (public/project/js/store.js)
+ * để trang chủ, trang danh sách sân và trang đăng nhập thấy cùng một dữ liệu:
+ * sửa sân ở đây thì trang chủ hiện ngay, đăng ký ở trang chủ thì xuất hiện ở đây,
+ * đổi trạng thái đơn ở đây thì trang chủ cũng đổi theo.
+ */
 const DataManager = {
-  _getKey(key) {
-    return 'admin_' + key;
-  },
+  getFields() { return SV.fields(); },
+  saveFields(data) { SV.saveFields(data); },
 
-  /** Đọc đơn từ mốc cộng với các đơn đặt thật do khách gửi từ trang chủ. */
-  _loadPublicBookings() {
-    try {
-      const raw = localStorage.getItem(PUBLIC_BOOKING_KEY);
-      if (!raw) return [];
-      const list = JSON.parse(raw);
-      if (!Array.isArray(list)) return [];
-      return list.map(normalizePublicBooking);
-    } catch (e) {
-      console.warn('Lỗi đọc đơn đặt từ trang chủ:', e);
-      return [];
-    }
-  },
+  getUsers() { return SV.users(); },
+  saveUsers(data) { SV.saveUsers(data); },
 
-  /** Ghi trạng thái xuống cả hai nguồn để trang chủ và admin không lệch nhau. */
-  _savePublicStatus(id, status) {
-    try {
-      const raw = localStorage.getItem(PUBLIC_BOOKING_KEY);
-      if (!raw) return;
-      const list = JSON.parse(raw);
-      if (!Array.isArray(list)) return;
-      const idx = list.findIndex((b) => b.id === id);
-      if (idx === -1) return;
-      list[idx].status = status;
-      localStorage.setItem(PUBLIC_BOOKING_KEY, JSON.stringify(list));
-    } catch (e) {
-      console.warn('Lỗi cập nhật trạng thái đơn đặt:', e);
-    }
-  },
+  getBookings() { return SV.bookings(); },
+  saveBookings(data) { SV.saveBookings(data); },
 
-  load(key, defaultData) {
-    try {
-      const stored = localStorage.getItem(this._getKey(key));
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn('Lỗi đọc dữ liệu:', e);
-    }
-    this.save(key, defaultData);
-    return JSON.parse(JSON.stringify(defaultData));
-  },
+  getSettings() { return SV.settings(); },
+  saveSettings(data) { SV.saveSettings(data); },
 
-  save(key, data) {
-    try {
-      localStorage.setItem(this._getKey(key), JSON.stringify(data));
-    } catch (e) {
-      console.warn('Lỗi lưu dữ liệu:', e);
-    }
-  },
+  getReviews() { return SV.reviews(); },
+  saveReviews(data) { SV.saveReviews(data); },
 
-  getFields() { return this.load('fields', DEFAULT_FIELDS); },
-  saveFields(data) { this.save('fields', data); },
-
-  getUsers() { return this.load('users', DEFAULT_USERS); },
-  saveUsers(data) { this.save('users', data); },
-
-  getBookings() {
-    const seeded = this.load('bookings', DEFAULT_BOOKINGS);
-    const publicOnes = this._loadPublicBookings();
-    // Đơn đặt thật được ưu tiên: nếu admin đã đổi trạng thái một đơn công khai
-    // thì bản ghi trong mốc cũng phải theo, tránh hiện đơn trùng ở hai nơi.
-    const overridden = new Set(seeded.filter((b) => b._source === 'public').map((b) => b.id));
-    return [...publicOnes.filter((b) => !overridden.has(b.id)), ...seeded];
-  },
-
-  saveBookings(data) {
-    const seeded = data.filter((b) => b._source !== 'public');
-    this.save('bookings', seeded);
-    data.filter((b) => b._source === 'public').forEach((b) => this._savePublicStatus(b.id, b.status));
-  },
-
-  getSettings() { return this.load('settings', DEFAULT_SETTINGS); },
-  saveSettings(data) { this.save('settings', data); },
-
-  getReviews() { return this.load('reviews', DEFAULT_REVIEWS); },
-  saveReviews(data) { this.save('reviews', data); },
-
-  getVouchers() { return this.load('vouchers', DEFAULT_VOUCHERS); },
-  saveVouchers(data) { this.save('vouchers', data); },
+  getVouchers() { return SV.vouchers(); },
+  saveVouchers(data) { SV.saveVouchers(data); },
 
   getNextId(prefix, items) {
-    let maxNum = 0;
-    items.forEach(item => {
-      const num = parseInt(item.id.replace(prefix, ''), 10);
-      if (num > maxNum) maxNum = num;
-    });
-    return prefix + String(maxNum + 1).padStart(3, '0');
-  }
+    return SV.nextId(prefix, items);
+  },
 };
 
 function showToast(message, type = 'success') {
@@ -403,24 +251,36 @@ function initDashboard() {
 let fieldsData = [];
 
 function initFields() {
+  bindFieldListeners();
+  refreshFields();
+}
+
+/** Vẽ lại danh sách sân từ dữ liệu mới nhất, giữ nguyên từ khoá đang tìm. */
+function refreshFields() {
   fieldsData = DataManager.getFields();
-  renderFields(fieldsData);
-  document.getElementById('searchField')?.addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase();
-    const filtered = fieldsData.filter(f =>
-      f.id.toLowerCase().includes(keyword) ||
-      f.name.toLowerCase().includes(keyword) ||
-      f.address.toLowerCase().includes(keyword) ||
-      f.type.toLowerCase().includes(keyword)
-    );
-    renderFields(filtered);
-  });
+  const keyword = (document.getElementById('searchField')?.value || '').toLowerCase();
+  const filtered = keyword
+    ? fieldsData.filter(f =>
+        f.id.toLowerCase().includes(keyword) ||
+        f.name.toLowerCase().includes(keyword) ||
+        f.address.toLowerCase().includes(keyword) ||
+        f.type.toLowerCase().includes(keyword)
+      )
+    : fieldsData;
+  renderFields(filtered);
+}
+
+function bindFieldListeners() {
+  document.getElementById('searchField')?.addEventListener('input', refreshFields);
   document.getElementById('btnAddField')?.addEventListener('click', () => {
     document.getElementById('fieldModalTitle').textContent = 'Thêm sân bóng';
     document.getElementById('fieldForm').reset();
     document.getElementById('fieldId').value = '';
     document.getElementById('fieldCode').value = DataManager.getNextId('SAN', fieldsData);
     document.getElementById('fieldCode').readOnly = true;
+    document.getElementById('fieldCourts').value = 1;
+    document.getElementById('fieldOpen').value = 6;
+    document.getElementById('fieldClose').value = 22;
     openModal('fieldModal');
   });
   document.getElementById('fieldForm')?.addEventListener('submit', (e) => {
@@ -434,7 +294,7 @@ function renderFields(data) {
   if (!tbody) return;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">⚽</div><div class="empty-text">Không tìm thấy sân bóng nào</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">⚽</div><div class="empty-text">Không tìm thấy sân bóng nào</div></div></td></tr>`;
     return;
   }
 
@@ -445,6 +305,7 @@ function renderFields(data) {
       <td>${f.address}</td>
       <td>${f.type}</td>
       <td>${formatCurrency(f.price)}</td>
+      <td>${f.lat != null && f.lng != null ? `<span title="Có toạ độ">📍 ${f.lat}, ${f.lng}</span>` : '<span title="Chưa có toạ độ">Chưa có</span>'}</td>
       <td>${getStatusBadge(f.status, 'field')}</td>
       <td>
         <div class="action-btns">
@@ -469,19 +330,41 @@ function editField(id) {
   document.getElementById('fieldType').value = field.type;
   document.getElementById('fieldPrice').value = field.price;
   document.getElementById('fieldStatus').value = field.status;
+  document.getElementById('fieldCourts').value = field.courts || 1;
+  document.getElementById('fieldOpen').value = field.hours?.open ?? 6;
+  document.getElementById('fieldClose').value = field.hours?.close ?? 22;
+  document.getElementById('fieldLat').value = field.lat ?? '';
+  document.getElementById('fieldLng').value = field.lng ?? '';
+  document.getElementById('fieldImg').value = field.img || '';
+  document.getElementById('fieldDesc').value = field.desc || '';
 
   openModal('fieldModal');
 }
 
 function saveField() {
   const id = document.getElementById('fieldId').value;
+  const openHour = parseFloat(document.getElementById('fieldOpen').value);
+  const closeHour = parseFloat(document.getElementById('fieldClose').value);
+  // Giữ nguyên các trường không nằm trong form (ví dụ ảnh mặc định đã gán) để
+  // sửa một chữ không làm mất dữ liệu cũ.
+  const current = id ? fieldsData.find(f => f.id === id) : {};
+  const img = document.getElementById('fieldImg').value.trim();
   const fieldData = {
     id: document.getElementById('fieldCode').value,
     name: document.getElementById('fieldName').value.trim(),
     address: document.getElementById('fieldAddress').value.trim(),
     type: document.getElementById('fieldType').value,
     price: parseInt(document.getElementById('fieldPrice').value, 10),
-    status: document.getElementById('fieldStatus').value
+    status: document.getElementById('fieldStatus').value,
+    courts: parseInt(document.getElementById('fieldCourts').value, 10) || 1,
+    hours: {
+      open: Number.isFinite(openHour) ? openHour : 6,
+      close: Number.isFinite(closeHour) && closeHour > openHour ? closeHour : openHour + 1,
+    },
+    lat: document.getElementById('fieldLat').value.trim(),
+    lng: document.getElementById('fieldLng').value.trim(),
+    img: img || current.img || '',
+    desc: document.getElementById('fieldDesc').value.trim(),
   };
 
   if (!fieldData.name || !fieldData.address || !fieldData.price) {
@@ -520,13 +403,18 @@ function deleteField(id) {
 let bookingsData = [];
 
 function initBookings() {
-  bookingsData = DataManager.getBookings();
-  renderBookings(bookingsData);
+  bindBookingListeners();
+  filterBookings();
+}
+
+function bindBookingListeners() {
   document.getElementById('searchBooking')?.addEventListener('input', filterBookings);
   document.getElementById('filterBookingStatus')?.addEventListener('change', filterBookings);
 }
 
+/** Vẽ lại danh sách từ dữ liệu mới nhất, giữ nguyên bộ lọc đang dùng. */
 function filterBookings() {
+  bookingsData = DataManager.getBookings();
   const keyword = (document.getElementById('searchBooking')?.value || '').toLowerCase();
   const statusFilter = document.getElementById('filterBookingStatus')?.value || '';
 
@@ -596,7 +484,14 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${
+        b.discount > 0
+          ? `<div class="detail-row"><div class="detail-label">Tạm tính:</div><div class="detail-value">${formatCurrency(b.subtotal || b.total + b.discount)}</div></div>
+             <div class="detail-row"><div class="detail-label">Mã giảm giá:</div><div class="detail-value">${b.voucherCode} (-${formatCurrency(b.discount)})</div></div>`
+          : ''
+      }
       <div class="detail-row"><div class="detail-label">Tổng tiền:</div><div class="detail-value"><strong>${formatCurrency(b.total)}</strong></div></div>
+      <div class="detail-row"><div class="detail-label">Liên hệ:</div><div class="detail-value">${b.customer?.phone || '—'}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái:</div><div class="detail-value">${getStatusBadge(b.status, 'booking')}</div></div>
     `;
   }
@@ -624,8 +519,14 @@ function updateBookingStatus(id, newStatus, message, toastType = 'success') {
   const idx = bookingsData.findIndex(b => b.id === id);
   if (idx === -1) return;
 
-  bookingsData[idx].status = newStatus;
-  DataManager.saveBookings(bookingsData);
+  // Ghi qua store để trang chủ và trang danh sách sân thấy trạng thái mới ngay,
+  // và khung giờ bị hủy thì mở lại cho người khác đặt.
+  const result = SV.setBookingStatus(id, newStatus);
+  if (!result.ok) {
+    showToast(result.error || 'Không đổi được trạng thái đơn', 'danger');
+    return;
+  }
+  bookingsData[idx].status = result.booking.status;
   filterBookings();
   showToast(message, toastType);
 }
@@ -635,16 +536,24 @@ let usersData = [];
 function initUsers() {
   usersData = DataManager.getUsers();
   renderUsers(usersData);
-  document.getElementById('searchUser')?.addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase();
-    const filtered = usersData.filter(u =>
-      u.id.toLowerCase().includes(keyword) ||
-      u.name.toLowerCase().includes(keyword) ||
-      u.email.toLowerCase().includes(keyword) ||
-      u.phone.includes(keyword)
-    );
-    renderUsers(filtered);
-  });
+  document.getElementById('searchUser')?.addEventListener('input', filterUsers);
+}
+
+/** Vẽ lại từ dữ liệu mới nhất, giữ nguyên từ khoá đang tìm. */
+function filterUsers() {
+  usersData = DataManager.getUsers();
+  const keyword = (document.getElementById('searchUser')?.value || '').toLowerCase();
+  if (!keyword) {
+    renderUsers(usersData);
+    return;
+  }
+  const filtered = usersData.filter(u =>
+    u.id.toLowerCase().includes(keyword) ||
+    u.name.toLowerCase().includes(keyword) ||
+    u.email.toLowerCase().includes(keyword) ||
+    u.phone.includes(keyword)
+  );
+  renderUsers(filtered);
 }
 
 function renderUsers(data) {
@@ -667,7 +576,7 @@ function renderUsers(data) {
         <td>${u.name}</td>
         <td>${u.email}</td>
         <td>${u.phone}</td>
-        <td>${u.bookings}</td>
+        <td>${u.bookings || 0}</td>
         <td>${getStatusBadge(u.status, 'user')}</td>
         <td>
           <div class="action-btns">
@@ -691,7 +600,7 @@ function viewUser(id) {
       <div class="detail-row"><div class="detail-label">Họ tên:</div><div class="detail-value">${u.name}</div></div>
       <div class="detail-row"><div class="detail-label">Email:</div><div class="detail-value">${u.email}</div></div>
       <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${u.phone}</div></div>
-      <div class="detail-row"><div class="detail-label">Số đơn đã đặt:</div><div class="detail-value">${u.bookings}</div></div>
+      <div class="detail-row"><div class="detail-label">Số đơn đã đặt:</div><div class="detail-value">${u.bookings || 0}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái:</div><div class="detail-value">${getStatusBadge(u.status, 'user')}</div></div>
     `;
   }
@@ -707,8 +616,13 @@ function toggleUserStatus(id) {
   const action = newStatus === 'locked' ? 'Khóa' : 'Mở khóa';
 
   showConfirm(`${action} người dùng`, `Bạn có chắc muốn ${action.toLowerCase()} "${user.name}"?`, () => {
-    usersData[idx].status = newStatus;
-    DataManager.saveUsers(usersData);
+    // Ghi qua store để trang đăng nhập chặn/mở tài khoản ngay ở lần đăng nhập kế tiếp.
+    const result = SV.setUserStatus(user.id, newStatus);
+    if (!result.ok) {
+      showToast(result.error || 'Không đổi được trạng thái', 'danger');
+      return;
+    }
+    usersData[idx].status = result.user.status;
     renderUsers(usersData);
     showToast(`Đã ${action.toLowerCase()} người dùng "${user.name}"!`, newStatus === 'locked' ? 'warning' : 'success');
   });
@@ -931,109 +845,30 @@ function processActivateField(id) {
 // QUẢN LÝ ĐÁNH GIÁ & BÌNH LUẬN
 // ==========================================
 function initReviews() {
-  const tableBody = document.getElementById('reviewsTableBody');
-  const searchInput = document.getElementById('reviewSearchInput');
-  const ratingFilter = document.getElementById('reviewRatingFilter');
-  const statusFilter = document.getElementById('reviewStatusFilter');
+  bindReviewListeners();
+  renderTable();
+}
+
+function bindReviewListeners() {
+  document.getElementById('reviewSearchInput')?.addEventListener('input', renderTable);
+  document.getElementById('reviewRatingFilter')?.addEventListener('change', renderTable);
+  document.getElementById('reviewStatusFilter')?.addEventListener('change', renderTable);
+
   const replyForm = document.getElementById('replyForm');
-
-  function renderStats(reviews) {
-    const total = reviews.length;
-    const avg = total > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : '0.0';
-    const pending = reviews.filter(r => !r.reply || !r.reply.trim()).length;
-    const hidden = reviews.filter(r => r.status === 'hidden').length;
-
-    const elTotal = document.getElementById('statTotalReviews');
-    const elAvg = document.getElementById('statAvgRating');
-    const elPending = document.getElementById('statPendingReply');
-    const elHidden = document.getElementById('statHiddenReviews');
-
-    if (elTotal) elTotal.textContent = total;
-    if (elAvg) elAvg.textContent = `${avg}★`;
-    if (elPending) elPending.textContent = pending;
-    if (elHidden) elHidden.textContent = hidden;
-  }
-
-  function renderTable() {
-    if (!tableBody) return;
-    const reviews = DataManager.getReviews();
-    renderStats(reviews);
-
-    const q = searchInput?.value.trim().toLowerCase() || '';
-    const rVal = ratingFilter?.value || '';
-    const sVal = statusFilter?.value || '';
-
-    const filtered = reviews.filter(r => {
-      const matchSearch = r.userName.toLowerCase().includes(q) || r.comment.toLowerCase().includes(q) || r.fieldName.toLowerCase().includes(q);
-      let matchRating = true;
-      if (rVal === '5') matchRating = r.rating === 5;
-      else if (rVal === '4') matchRating = r.rating === 4;
-      else if (rVal === '3') matchRating = r.rating === 3;
-      else if (rVal === 'low') matchRating = r.rating <= 2;
-
-      let matchStatus = true;
-      if (sVal) matchStatus = r.status === sVal;
-
-      return matchSearch && matchRating && matchStatus;
-    });
-
-    if (filtered.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy bình luận nào.</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = filtered.map(r => {
-      const stars = '⭐'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-      const replyBadge = r.reply ? `<span class="badge badge-info" style="font-weight: normal; font-style: italic;">"${r.reply}"</span>` : `<span style="color: var(--gray-400); font-size: 13px;">Chưa phản hồi</span>`;
-      const toggleActionText = r.status === 'visible' ? 'Ẩn' : 'Hiện';
-      const toggleActionClass = r.status === 'visible' ? 'btn-outline' : 'btn-success';
-
-      return `
-        <tr>
-          <td><strong>${r.id}</strong></td>
-          <td>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <img src="${r.userAvatar || 'https://i.pravatar.cc/80'}" alt="${r.userName}" style="width: 28px; height: 28px; border-radius: 50%;">
-              <span>${r.userName}</span>
-            </div>
-          </td>
-          <td>${r.fieldName}</td>
-          <td><span style="color: #f59e0b; font-weight: 600;">${stars}</span></td>
-          <td style="max-width: 280px; word-wrap: break-word;">${r.comment}</td>
-          <td>${r.date}</td>
-          <td>${getStatusBadge(r.status, 'review')}</td>
-          <td style="max-width: 220px;">${replyBadge}</td>
-          <td>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn btn-primary btn-sm" onclick="openReplyModal('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Phản hồi</button>
-              <button class="btn ${toggleActionClass} btn-sm" onclick="toggleReviewStatus('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleActionText}</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  if (searchInput) searchInput.addEventListener('input', renderTable);
-  if (ratingFilter) ratingFilter.addEventListener('change', renderTable);
-  if (statusFilter) statusFilter.addEventListener('change', renderTable);
-
   if (replyForm) {
     replyForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const id = document.getElementById('replyReviewId').value;
       const replyText = document.getElementById('replyContentInput').value.trim();
 
-      const reviews = DataManager.getReviews();
-      const idx = reviews.findIndex(r => r.id === id);
-      if (idx !== -1) {
-        reviews[idx].reply = replyText;
-        DataManager.saveReviews(reviews);
-        closeModal('replyModal');
-        renderTable();
-        showToast('Đã gửi phản hồi bình luận!');
+      const result = SV.updateReview(id, { reply: replyText, replyAt: new Date().toISOString().slice(0, 10) });
+      if (!result.ok) {
+        showToast(result.error || 'Không lưu được phản hồi', 'danger');
+        return;
       }
+      closeModal('replyModal');
+      renderTable();
+      showToast('Đã gửi phản hồi bình luận!');
     });
   }
 
@@ -1052,108 +887,200 @@ function initReviews() {
   };
 
   window.toggleReviewStatus = function(id) {
-    const reviews = DataManager.getReviews();
-    const idx = reviews.findIndex(r => r.id === id);
-    if (idx !== -1) {
-      reviews[idx].status = reviews[idx].status === 'visible' ? 'hidden' : 'visible';
-      DataManager.saveReviews(reviews);
-      renderTable();
-      showToast(reviews[idx].status === 'visible' ? 'Đã hiển thị bình luận!' : 'Đã ẩn bình luận!');
+    // Ghi qua store để trang chủ ẩn/hiện đánh giá ngay ở lần hiển thị kế tiếp.
+    const review = DataManager.getReviews().find(r => r.id === id);
+    if (!review) return;
+    const next = review.status === 'visible' ? 'hidden' : 'visible';
+    const result = SV.updateReview(id, { status: next });
+    if (!result.ok) {
+      showToast(result.error || 'Không đổi được trạng thái', 'danger');
+      return;
     }
+    renderTable();
+    showToast(next === 'visible' ? 'Đã hiển thị bình luận!' : 'Đã ẩn bình luận!');
   };
 
   window.deleteReview = function(id) {
     showConfirm('Xóa bình luận', 'Bạn có chắc chắn muốn xóa bình luận này không?', () => {
-      let reviews = DataManager.getReviews();
-      reviews = reviews.filter(r => r.id !== id);
+      const reviews = DataManager.getReviews().filter(r => r.id !== id);
       DataManager.saveReviews(reviews);
       renderTable();
       showToast('Đã xóa bình luận!', 'danger');
     });
   };
+}
 
-  renderTable();
+/** Vẽ lại bảng đánh giá từ dữ liệu mới nhất, giữ nguyên bộ lọc đang dùng. */
+function renderTable() {
+  const tableBody = document.getElementById('reviewsTableBody');
+  if (!tableBody) return;
+  const searchInput = document.getElementById('reviewSearchInput');
+  const ratingFilter = document.getElementById('reviewRatingFilter');
+  const statusFilter = document.getElementById('reviewStatusFilter');
+
+  const reviews = DataManager.getReviews();
+  renderStats(reviews);
+
+  const q = searchInput?.value.trim().toLowerCase() || '';
+  const rVal = ratingFilter?.value || '';
+  const sVal = statusFilter?.value || '';
+
+  const filtered = reviews.filter(r => {
+    const matchSearch = r.userName.toLowerCase().includes(q) || r.comment.toLowerCase().includes(q) || r.fieldName.toLowerCase().includes(q);
+    let matchRating = true;
+    if (rVal === '5') matchRating = r.rating === 5;
+    else if (rVal === '4') matchRating = r.rating === 4;
+    else if (rVal === '3') matchRating = r.rating === 3;
+    else if (rVal === 'low') matchRating = r.rating <= 2;
+
+    let matchStatus = true;
+    if (sVal) matchStatus = r.status === sVal;
+
+    return matchSearch && matchRating && matchStatus;
+  });
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy bình luận nào.</td></tr>`;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map(r => {
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    const replyBadge = r.reply ? `<span class="badge badge-info" style="font-weight: normal; font-style: italic;">"${r.reply}"</span>` : `<span style="color: var(--gray-400); font-size: 13px;">Chưa phản hồi</span>`;
+    const toggleActionText = r.status === 'visible' ? 'Ẩn' : 'Hiện';
+    const toggleActionClass = r.status === 'visible' ? 'btn-outline' : 'btn-success';
+
+    return `
+      <tr>
+        <td><strong>${r.id}</strong></td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <img src="${r.userAvatar || 'https://i.pravatar.cc/80'}" alt="${r.userName}" style="width: 28px; height: 28px; border-radius: 50%;">
+            <span>${r.userName}</span>
+          </div>
+        </td>
+        <td>${r.fieldName}</td>
+        <td><span style="color: #f59e0b; font-weight: 600;">${stars}</span></td>
+        <td style="max-width: 280px; word-wrap: break-word;">${r.comment}</td>
+        <td>${r.date}</td>
+        <td>${getStatusBadge(r.status, 'review')}</td>
+        <td style="max-width: 220px;">${replyBadge}</td>
+        <td>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-primary btn-sm" onclick="openReplyModal('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Phản hồi</button>
+            <button class="btn ${toggleActionClass} btn-sm" onclick="toggleReviewStatus('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleActionText}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteReview('${r.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/** Thống kê đánh giá: dùng chung hàm vẽ bảng để hai chỗ không lệch nhau. */
+function renderStats(reviews) {
+  const total = reviews.length;
+  const avg = total > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : '0.0';
+  const pending = reviews.filter(r => !r.reply || !r.reply.trim()).length;
+  const hidden = reviews.filter(r => r.status === 'hidden').length;
+
+  const elTotal = document.getElementById('statTotalReviews');
+  const elAvg = document.getElementById('statAvgRating');
+  const elPending = document.getElementById('statPendingReply');
+  const elHidden = document.getElementById('statHiddenReviews');
+
+  if (elTotal) elTotal.textContent = total;
+  if (elAvg) elAvg.textContent = `${avg}★`;
+  if (elPending) elPending.textContent = pending;
+  if (elHidden) elHidden.textContent = hidden;
 }
 
 // ==========================================
 // QUẢN LÝ MÃ GIẢM GIÁ (VOUCHERS)
 // ==========================================
 function initVouchers() {
+  bindVoucherListeners();
+  renderVoucherTable();
+}
+
+function renderVoucherTable() {
   const tableBody = document.getElementById('vouchersTableBody');
+  if (!tableBody) return;
+  const searchInput = document.getElementById('voucherSearchInput');
+  const statusFilter = document.getElementById('voucherStatusFilter');
+
+  renderVoucherStats(DataManager.getVouchers());
+
+  const q = searchInput?.value.trim().toLowerCase() || '';
+  const sVal = statusFilter?.value || '';
+
+  const filtered = DataManager.getVouchers().filter(v => {
+    const matchSearch = v.code.toLowerCase().includes(q);
+    const matchStatus = sVal ? v.status === sVal : true;
+    return matchSearch && matchStatus;
+  });
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy mã giảm giá nào.</td></tr>`;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map(v => {
+    const typeText = v.discountType === 'percent' ? 'Phần trăm (%)' : 'Cố định (VNĐ)';
+    const valueText = v.discountType === 'percent' ? `${v.discountValue}%` : formatCurrency(v.discountValue);
+    const minOrderText = v.minOrder > 0 ? formatCurrency(v.minOrder) : 'Không có';
+    const maxDiscountText = v.maxDiscount > 0 ? formatCurrency(v.maxDiscount) : 'Không giới hạn';
+    const usageText = `${v.usedCount || 0} / ${v.usageLimit}`;
+    const toggleText = v.status === 'active' ? 'Tắt' : 'Bật';
+    const toggleClass = v.status === 'active' ? 'btn-outline' : 'btn-success';
+
+    return `
+      <tr>
+        <td><strong style="color: var(--primary); font-size: 15px; letter-spacing: 0.5px; background: var(--gray-100); padding: 2px 8px; border-radius: 4px;">${v.code}</strong></td>
+        <td>${typeText}</td>
+        <td><strong style="color: var(--success);">${valueText}</strong></td>
+        <td>${minOrderText}</td>
+        <td>${maxDiscountText}</td>
+        <td>${usageText}</td>
+        <td>${v.expiryDate}</td>
+        <td>${getStatusBadge(v.status, 'voucher')}</td>
+        <td>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-primary btn-sm" onclick="editVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Sửa</button>
+            <button class="btn ${toggleClass} btn-sm" onclick="toggleVoucherStatus('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleText}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderVoucherStats(vouchers) {
+  const total = vouchers.length;
+  const active = vouchers.filter(v => v.status === 'active').length;
+  const totalUsed = vouchers.reduce((sum, v) => sum + (v.usedCount || 0), 0);
+  const expired = vouchers.filter(v => v.status === 'expired').length;
+
+  const elTotal = document.getElementById('statTotalVouchers');
+  const elActive = document.getElementById('statActiveVouchers');
+  const elUsed = document.getElementById('statUsedVouchers');
+  const elExpired = document.getElementById('statExpiredVouchers');
+
+  if (elTotal) elTotal.textContent = total;
+  if (elActive) elActive.textContent = active;
+  if (elUsed) elUsed.textContent = totalUsed;
+  if (elExpired) elExpired.textContent = expired;
+}
+
+function bindVoucherListeners() {
   const searchInput = document.getElementById('voucherSearchInput');
   const statusFilter = document.getElementById('voucherStatusFilter');
   const btnOpenAdd = document.getElementById('btnOpenAddVoucher');
   const voucherForm = document.getElementById('voucherForm');
 
-  function renderStats(vouchers) {
-    const total = vouchers.length;
-    const active = vouchers.filter(v => v.status === 'active').length;
-    const totalUsed = vouchers.reduce((sum, v) => sum + (v.usedCount || 0), 0);
-    const expired = vouchers.filter(v => v.status === 'expired').length;
-
-    const elTotal = document.getElementById('statTotalVouchers');
-    const elActive = document.getElementById('statActiveVouchers');
-    const elUsed = document.getElementById('statUsedVouchers');
-    const elExpired = document.getElementById('statExpiredVouchers');
-
-    if (elTotal) elTotal.textContent = total;
-    if (elActive) elActive.textContent = active;
-    if (elUsed) elUsed.textContent = totalUsed;
-    if (elExpired) elExpired.textContent = expired;
-  }
-
-  function renderTable() {
-    if (!tableBody) return;
-    const vouchers = DataManager.getVouchers();
-    renderStats(vouchers);
-
-    const q = searchInput?.value.trim().toLowerCase() || '';
-    const sVal = statusFilter?.value || '';
-
-    const filtered = vouchers.filter(v => {
-      const matchSearch = v.code.toLowerCase().includes(q);
-      const matchStatus = sVal ? v.status === sVal : true;
-      return matchSearch && matchStatus;
-    });
-
-    if (filtered.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--gray-500); padding: 24px;">Không tìm thấy mã giảm giá nào.</td></tr>`;
-      return;
-    }
-
-    tableBody.innerHTML = filtered.map(v => {
-      const typeText = v.discountType === 'percent' ? 'Phần trăm (%)' : 'Cố định (VNĐ)';
-      const valueText = v.discountType === 'percent' ? `${v.discountValue}%` : formatCurrency(v.discountValue);
-      const minOrderText = v.minOrder > 0 ? formatCurrency(v.minOrder) : 'Không có';
-      const maxDiscountText = v.maxDiscount > 0 ? formatCurrency(v.maxDiscount) : 'Không giới hạn';
-      const usageText = `${v.usedCount || 0} / ${v.usageLimit}`;
-      const toggleText = v.status === 'active' ? 'Tắt' : 'Bật';
-      const toggleClass = v.status === 'active' ? 'btn-outline' : 'btn-success';
-
-      return `
-        <tr>
-          <td><strong style="color: var(--primary); font-size: 15px; letter-spacing: 0.5px; background: var(--gray-100); padding: 2px 8px; border-radius: 4px;">${v.code}</strong></td>
-          <td>${typeText}</td>
-          <td><strong style="color: var(--success);">${valueText}</strong></td>
-          <td>${minOrderText}</td>
-          <td>${maxDiscountText}</td>
-          <td>${usageText}</td>
-          <td>${v.expiryDate}</td>
-          <td>${getStatusBadge(v.status, 'voucher')}</td>
-          <td>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn btn-primary btn-sm" onclick="editVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Sửa</button>
-              <button class="btn ${toggleClass} btn-sm" onclick="toggleVoucherStatus('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">${toggleText}</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteVoucher('${v.id}')" style="padding: 4px 10px; font-size: 12px; height: auto;">Xóa</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  if (searchInput) searchInput.addEventListener('input', renderTable);
-  if (statusFilter) statusFilter.addEventListener('change', renderTable);
+  if (searchInput) searchInput.addEventListener('input', renderVoucherTable);
+  if (statusFilter) statusFilter.addEventListener('change', renderVoucherTable);
 
   if (btnOpenAdd) {
     btnOpenAdd.addEventListener('click', () => {
@@ -1219,7 +1146,7 @@ function initVouchers() {
 
       DataManager.saveVouchers(vouchers);
       closeModal('voucherModal');
-      renderTable();
+      renderVoucherTable();
     });
   }
 
@@ -1248,7 +1175,7 @@ function initVouchers() {
     if (idx !== -1) {
       vouchers[idx].status = vouchers[idx].status === 'active' ? 'disabled' : 'active';
       DataManager.saveVouchers(vouchers);
-      renderTable();
+      renderVoucherTable();
       showToast(vouchers[idx].status === 'active' ? 'Đã bật mã giảm giá!' : 'Đã tắt mã giảm giá!');
     }
   };
@@ -1258,12 +1185,10 @@ function initVouchers() {
       let vouchers = DataManager.getVouchers();
       vouchers = vouchers.filter(v => v.id !== id);
       DataManager.saveVouchers(vouchers);
-      renderTable();
+      renderVoucherTable();
       showToast('Đã xóa mã giảm giá!', 'danger');
     });
   };
-
-  renderTable();
 }
 
 function checkAdminAuth(onSuccess) {
@@ -1424,5 +1349,29 @@ document.addEventListener('DOMContentLoaded', () => {
         initProcessing();
         break;
     }
+
+    applySettings();
+
+    // Trang khác (trang chủ, trang đăng nhập, tab admin khác) sửa dữ liệu thì
+    // trang này vẽ lại để bảng và thống kê không bị cũ.
+    const REFRESH = {
+      dashboard: initDashboard,
+      fields: refreshFields,
+      bookings: filterBookings,
+      users: filterUsers,
+      reviews: renderTable,
+      vouchers: renderVoucherTable,
+      processing: initProcessing,
+    };
+    SV.on((key) => {
+      if (key === 'settings' || key === '*') {
+        applySettings();
+      }
+      if (key === 'users' || key === '*') usersData = DataManager.getUsers();
+      if (key === 'bookings' || key === '*') bookingsData = DataManager.getBookings();
+      if (key === 'fields' || key === '*') fieldsData = DataManager.getFields();
+      if (key === 'settings') return;
+      REFRESH[page]?.();
+    });
   });
 });

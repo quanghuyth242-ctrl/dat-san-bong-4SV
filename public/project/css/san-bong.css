@@ -1152,3 +1152,38 @@ select {
     min-width: 0;
   }
 }
+.btn-header.secondary {
+  background: #fff;
+  color: var(--green-dark);
+  border: 1px solid var(--border, #e2e8f0);
+  cursor: pointer;
+}
+
+.btn-header.secondary:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Ô tài khoản: thay nút "Đăng nhập" sau khi đăng nhập */
+.nav-user-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--grey, #334155);
+  padding-left: 4px;
+}
+
+.nav-user-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .18);
+}
+
+.nav-user-inline .btn-header {
+  padding: 8px 14px;
+  font-size: 13px;
+}

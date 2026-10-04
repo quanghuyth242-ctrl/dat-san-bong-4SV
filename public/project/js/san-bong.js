@@ -1,161 +1,37 @@
-// ============================= DỮ LIỆU SÂN BÓNG MẶC ĐỊNH =============================
-const DEFAULT_SAN_DATA = [
-  {
-    id: 'san-1',
-    name: 'Sân Bóng Galaxy Turf',
-    address: '296 Lý Thường Kiệt, P.14, Q.10, TP.HCM',
-    type: '7',
-    price: 800000,
-    status: 'trong',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân cỏ nhân tạo chất lượng cao, hệ thống đèn chiếu sáng hiện đại, có phòng thay đồ và khu vực nghỉ ngơi. Vị trí trung tâm thuận tiện di chuyển.',
-    img: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-2',
-    name: 'Sân Bóng An Phú',
-    address: '32 Lê Đức Thọ, P.6, Q.Gò Vấp, TP.HCM',
-    type: '5',
-    price: 500000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 5 người mặt cỏ đẹp, không gian thoáng mát, có khu vực giải khát và WiFi miễn phí. Phù hợp cho đội bóng phong trào.',
-    img: 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-3',
-    name: 'Sân Bóng Minh Khai',
-    address: '85 Trần Hưng Đạo, P.Phạm Đình Hổ, Q.Hai Bà Trưng, Hà Nội',
-    type: '5',
-    price: 450000,
-    status: 'da-dat',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân 5 người trong khu đô thị trung tâm, cỏ nhập khẩu an toàn, đèn LED tiết kiệm điện. Có chỗ gửi xe máy miễn phí.',
-    img: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-4',
-    name: 'Sân Bóng TP. Thủ Đức',
-    address: '12 Võ Văn Ngân, P.Bình Thọ, TP.Thủ Đức, TP.HCM',
-    type: '7',
-    price: 700000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 7 người rộng rãi, hệ thống thoát nước tốt sau mưa. Có căng tin phục vụ đồ uống và đồ ăn nhanh.',
-    img: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-5',
-    name: 'Sân Bóng Hòa Lạc 11',
-    address: 'Khu CNC Hòa Lạc, H.Thạch Thất, Hà Nội',
-    type: '11',
-    price: 1500000,
-    status: 'bao-tri',
-    hours: { open: 7, close: 21 },
-    desc: 'Sân 11 người tiêu chuẩn thi đấu, cỏ tự nhiên kết hợp nhân tạo. Có khán đài và phòng VIP cho đội bóng chuyên nghiệp.',
-    img: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-6',
-    name: 'Sân Bóng Eco Dream',
-    address: '140 Cộng Hòa, P.13, Q.Tân Bình, TP.HCM',
-    type: '7',
-    price: 900000,
-    status: 'trong',
-    hours: { open: 6, close: 24 },
-    desc: 'Sân 7 người cao cấp, mái che mưa, đèn Proview sáng rõ. Trang bị hệ thống camera quay lại trận đấu theo yêu cầu.',
-    img: 'https://images.unsplash.com/photo-1522770179533-24471fcdba45?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-7',
-    name: 'Sân Bóng Phú Nhuận Star',
-    address: '99 Trường Sa, P.13, Q.Phú Nhuận, TP.HCM',
-    type: '5',
-    price: 600000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 5 người được trang bị lưới chắn bóng cao, cỏ êm giảm chấn thương. Khu vực chờ mát mẻ.',
-    img: 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-8',
-    name: 'Sân Bóng Biên Hòa FC',
-    address: '45 Đồng Khởi, P.Tam Hiệp, TP.Biên Hòa, Đồng Nai',
-    type: '11',
-    price: 1800000,
-    status: 'da-dat',
-    hours: { open: 7, close: 22 },
-    desc: 'Sân 11 người quy mô lớn, phục vụ giải đấu khu vực. Có phòng y tế, bãi đỗ xe ô tô và khu thể thao phụ trợ.',
-    img: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-9',
-    name: 'Sân Bóng Bình Dương Arena',
-    address: '7 Nguyễn Đình Chiểu, P.Phú Cường, TP.Thủ Dầu Một, Bình Dương',
-    type: '5',
-    price: 350000,
-    status: 'trong',
-    hours: { open: 5, close: 22 },
-    desc: 'Sân 5 người giá rẻ, phù hợp học sinh sinh viên. Giờ sáng có chương trình ưu đãi giảm 20%.',
-    img: 'https://images.unsplash.com/photo-1552318965-6e6be7484ada?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-10',
-    name: 'Sân Bóng Đà Nẵng Sport',
-    address: '88 Nguyễn Hữu Thọ, P.Hòa Cường Bắc, Q.Hải Châu, Đà Nẵng',
-    type: '7',
-    price: 850000,
-    status: 'trong',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân 7 người ngay ven sông Hàn, khung cảnh thoáng đãng. Có dịch vụ cho thuê giày đá bóng và dụng cụ.',
-    img: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
-  },
-];
 
-// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
-const SAN_IMAGES = [
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
-];
-
-function parseTypeNumber(typeStr) {
-  // "Sân 5" -> "5", "Sân 7" -> "7", "Sân 11" -> "11"
-  const match = typeStr && typeStr.match(/\d+/);
-  return match ? match[0] : '5';
+// ============================= DỮ LIỆU SÂN TỪ STORE DÙNG CHUNG =============================
+/**
+ * Trang này không còn giữ danh sách sân riêng mà đọc chung với trang chủ và
+ * trang quản trị, nên sửa sân ở admin là thấy ngay ở đây. Toạ độ, số sân, giờ
+ * mở cửa và ảnh đều lấy đúng như admin đã nhập thay vì tự đoán giá trị.
+ */
+function buildSanData() {
+  return SV.fields().map((f) => ({
+    id: f.id,
+    name: f.name,
+    address: f.address,
+    type: SV.pitchNumber(f.type),
+    price: f.price,
+    status: f.status === 'active' ? 'trong' : 'bao-tri',
+    courts: f.courts,
+    hours: { open: f.hours.open, close: f.hours.close },
+    lat: f.lat,
+    lng: f.lng,
+    desc: f.desc || `${f.name} - ${f.type} tại ${f.address}.`,
+    img: f.img,
+  }));
 }
 
-function loadSanDataFromAdmin() {
-  try {
-    const stored = localStorage.getItem('admin_fields');
-    if (!stored) return null;
-    const fields = JSON.parse(stored);
-    if (!Array.isArray(fields) || fields.length === 0) return null;
+/** Ảnh dự phòng khi admin nhập URL ảnh hỏng hoặc sân chưa có ảnh. */
+const DEFAULT_IMG =
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop';
 
-    return fields.map((f, idx) => ({
-      id: f.id || 'san-' + (idx + 1),
-      name: f.name,
-      address: f.address,
-      type: parseTypeNumber(f.type),
-      price: f.price,
-      status: f.status === 'active' ? 'trong' : 'bao-tri',
-      hours: { open: 6, close: 22 },
-      desc: `${f.name} - ${f.type} tại ${f.address}. Sân chất lượng cao, hệ thống đèn chiếu sáng hiện đại.`,
-      img: SAN_IMAGES[idx % SAN_IMAGES.length],
-    }));
-  } catch (e) {
-    console.warn('Lỗi đọc dữ liệu admin:', e);
-    return null;
-  }
+/** Thoát ký tự HTML: tên/địa chỉ sân do admin nhập có thể chứa markup. */
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
-// Ưu tiên dữ liệu từ admin (localStorage), nếu không có thì dùng dữ liệu mặc định
-const SAN_DATA = loadSanDataFromAdmin() || DEFAULT_SAN_DATA;
+let SAN_DATA = buildSanData();
 
 // ============================= TIỆN ÍCH =============================
 const $ = (s, el) => (el || document).querySelector(s);
@@ -183,34 +59,12 @@ function diffPriceRange(v) {
 }
 
 // ============================= STORE ĐƠN ĐẶT =============================
-const BOOKING_KEY = '4sv_bookings';
-
+/**
+ * Đơn đặt nằm trong store dùng chung nên đơn tạo ở trang chủ cũng hiện và bị
+ * chặn trùng ở đây, và admin đổi trạng thái thì các trang khác cập nhật theo.
+ */
 function loadBookings() {
-  try {
-    const raw = localStorage.getItem(BOOKING_KEY);
-    if (!raw) return [];
-    const list = JSON.parse(raw);
-    return Array.isArray(list) ? list : [];
-  } catch (e) {
-    console.warn('Lỗi đọc đơn đặt:', e);
-    return [];
-  }
-}
-
-function saveBookings(list) {
-  try {
-    localStorage.setItem(BOOKING_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn('Lỗi lưu đơn đặt:', e);
-  }
-}
-
-function addBooking(booking) {
-  const list = loadBookings();
-  booking.id = 'BD' + Date.now();
-  list.push(booking);
-  saveBookings(list);
-  return booking;
+  return SV.bookings();
 }
 
 /**
@@ -218,14 +72,7 @@ function addBooking(booking) {
  * duration có thể 1.5 nên giữ dạng số thập phân, ví dụ 17.5 = 17:30.
  */
 function isSlotTaken(courtId, date, startHour, duration) {
-  const endHour = startHour + duration;
-  return loadBookings().some(
-    (b) =>
-      b.courtId === courtId &&
-      b.date === date &&
-      startHour < b.endHour &&
-      endHour > b.startHour
-  );
+  return SV.isSlotTaken(courtId, date, startHour, startHour + duration);
 }
 
 function isCourtFullyBooked(courtId, date) {
@@ -312,9 +159,9 @@ function renderGrid() {
   grid.innerHTML = list
     .map(
       (c) => `
-      <article class="san-card" data-id="${c.id}">
+      <article class="san-card" data-id="${esc(c.id)}">
         <div class="san-card-img">
-          <img src="${c.img}" alt="${c.name}" loading="lazy"/>
+          <img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'"/>
           <span class="san-badge badge-status ${c.status}">
             <i class="fa-solid ${c.status === 'trong' ? 'fa-circle-check' : c.status === 'da-dat' ? 'fa-circle-xmark' : 'fa-triangle-exclamation'}"></i>
             ${STATUS_LABEL[c.status]}
@@ -322,10 +169,11 @@ function renderGrid() {
           <span class="san-badge badge-type type"><i class="fa-solid fa-futbol"></i> ${TYPE_LABEL[c.type]}</span>
         </div>
         <div class="san-card-body">
-          <h3 class="san-name">${c.name}</h3>
-          <p class="san-address"><i class="fa-solid fa-location-dot"></i>${c.address}</p>
+          <h3 class="san-name">${esc(c.name)}</h3>
+          <p class="san-address"><i class="fa-solid fa-location-dot"></i>${esc(c.address)}</p>
           <div class="san-meta">
             <span class="meta-item"><i class="fa-regular fa-clock"></i> ${timeLabel(c.hours.open)} – ${timeLabel(c.hours.close)}</span>
+            ${c.courts > 1 ? `<span class="meta-item"><i class="fa-solid fa-layer-group"></i> ${c.courts} sân</span>` : ''}
           </div>
           <div class="san-price">
             <b>${formatPrice(c.price)}</b>
@@ -392,15 +240,19 @@ function openDetail(court) {
   const body = $('#detailBody');
   body.innerHTML = `
     <div class="detail-hero">
-      <img src="${court.img}" alt="${court.name}"/>
+      <img src="${esc(court.img)}" alt="${esc(court.name)}" onerror="this.src='${DEFAULT_IMG}'"/>
       <div class="overlay">
-        <h2>${court.name}</h2>
+        <h2>${esc(court.name)}</h2>
       </div>
     </div>
     <div class="detail-rows">
       <div class="detail-item">
         <i class="fa-solid fa-location-dot"></i>
-        <div><div class="lbl">Địa chỉ</div><div class="val">${court.address}</div></div>
+        <div><div class="lbl">Địa chỉ</div><div class="val">${esc(court.address)}</div></div>
+      </div>
+      <div class="detail-item">
+        <i class="fa-solid fa-layer-group"></i>
+        <div><div class="lbl">Số sân</div><div class="val">${court.courts} sân</div></div>
       </div>
       <div class="detail-item">
         <i class="fa-solid fa-futbol"></i>
@@ -421,7 +273,7 @@ function openDetail(court) {
     </div>
     <div class="detail-section">
       <h4><i class="fa-solid fa-align-left"></i> Mô tả sân</h4>
-      <p class="detail-desc">${court.desc}</p>
+      <p class="detail-desc">${esc(court.desc)}</p>
     </div>
     <button type="button" class="btn-book detail-book" data-open-book="${court.id}" ${court.status !== 'trong' ? 'disabled' : ''}>
       ${court.status === 'trong' ? '<i class="fa-solid fa-calendar-check"></i> Đặt sân ngay' : 'Sân hiện ' + (court.status === 'da-dat' ? 'đã được đặt' : 'đang bảo trì')}
@@ -501,19 +353,39 @@ function openBook(court) {
 }
 
 function todayStr() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  return SV.todayStr();
 }
 
 function updateTotal() {
   const court = state.activeCourt;
   if (!court) return;
   const duration = parseFloat($('#durationSelect').value) || 1;
-  const total = court.price * duration;
-  $('#totalAmount').textContent = formatPrice(total);
+  const subtotal = Math.round(court.price * duration);
   state.booking.duration = duration;
+  state.booking.subtotal = subtotal;
+
+  // Ô mã chỉ tồn tại khi form đặt sân đang mở.
+  const voucherInput = $('#voucherInput');
+  if (!voucherInput) {
+    $('#totalAmount').textContent = formatPrice(subtotal);
+    state.booking.voucherCode = '';
+    state.booking.discount = 0;
+    return;
+  }
+
+  const code = voucherInput.value.trim().toUpperCase();
+  const voucher = code ? SV.previewVoucher(code, subtotal) : null;
+  const usable = !!(voucher && voucher.ok);
+  state.booking.voucherCode = usable ? code : '';
+  state.booking.discount = usable ? voucher.discount : 0;
+
+  // Báo lỗi ngay khi gõ, không bắt phải bấm mới thấy.
+  $('#f-voucher').classList.toggle('invalid', !!code && !usable);
+  const total = subtotal - state.booking.discount;
+  $('#totalAmount').textContent =
+    state.booking.discount > 0
+      ? `${formatPrice(total)} <small>(-${formatPrice(state.booking.discount)})</small>`
+      : formatPrice(total);
 }
 
 function validateBooking() {
@@ -575,7 +447,7 @@ function showSuccess() {
   const duration = state.booking.duration;
   const time = `${timeLabel(startHour)} – ${timeLabel(startHour + duration)}`;
 
-  const booking = addBooking({
+  const result = SV.createBooking({
     courtId: court.id,
     courtName: court.name,
     date,
@@ -583,6 +455,7 @@ function showSuccess() {
     endHour: startHour + duration,
     duration,
     total: court.price * duration,
+    voucherCode: state.booking.voucherCode || '',
     customer: {
       name: $('#nameInput').value.trim(),
       phone: $('#phoneInput').value.trim(),
@@ -590,6 +463,19 @@ function showSuccess() {
     },
     status: 'pending',
   });
+  const booking = result.ok ? result.booking : null;
+
+  if (!booking) {
+    $('#bookBody').innerHTML = `
+      <div class="success-wrap">
+        <div class="success-icon" style="background:#fee2e2;color:#dc2626"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>Đặt sân không thành công</h3>
+        <p>${result.error || 'Vui lòng thử lại.'}</p>
+        <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-rotate-left"></i> Chọn giờ khác</button>
+      </div>`;
+    $('#bookAgainBtn').addEventListener('click', () => openBook(court));
+    return;
+  }
 
   $('#bookBody').innerHTML = `
     <div class="success-wrap">
@@ -601,7 +487,13 @@ function showSuccess() {
         <div><span>Ngày</span><b>${date}</b></div>
         <div><span>Giờ</span><b>${time}</b></div>
         <div><span>Thời lượng</span><b>${duration} giờ</b></div>
-        <div><span>Tổng tiền</span><b>${formatPrice(court.price * duration)}</b></div>
+        ${
+          booking.discount > 0
+            ? `<div><span>Tạm tính</span><b style="text-decoration:line-through">${formatPrice(booking.subtotal)}</b></div>
+               <div><span>Giảm giá (${booking.voucherCode})</span><b style="color:#16a34a">-${formatPrice(booking.discount)}</b></div>
+               <div><span>Tổng tiền</span><b>${formatPrice(booking.total)}</b></div>`
+            : `<div><span>Tổng tiền</span><b>${formatPrice(booking.total)}</b></div>`
+        }
       </div>
       <div class="success-summary">
         <div><span>Họ tên</span><b>${$('#nameInput').value.trim()}</b></div>
@@ -659,6 +551,11 @@ function renderBookForm(court) {
           <input type="email" id="emailInput" placeholder="VD: an@email.com" autocomplete="email" required />
           <span class="error-msg">Email không hợp lệ.</span>
         </div>
+        <div class="form-field full" id="f-voucher">
+          <label><i class="fa-solid fa-ticket"></i> Mã giảm giá (nếu có)</label>
+          <input type="text" id="voucherInput" placeholder="VD: WELCOME4SV" autocomplete="off" />
+          <span class="error-msg">Mã giảm giá không dùng được với đơn này.</span>
+        </div>
         <div class="total-box">
           <div class="t-lbl"><i class="fa-solid fa-calculator"></i> Tổng tiền</div>
           <div class="t-amount" id="totalAmount">0đ</div>
@@ -680,6 +577,7 @@ function renderBookForm(court) {
     updateTotal();
     refreshTimeOptions();
   });
+  $('#voucherInput').addEventListener('input', updateTotal);
 
   // Gỡ trạng thái lỗi ngay khi user sửa, không bắt submit lại mới hết đỏ
   $('#bookForm').querySelectorAll('input, select').forEach((el) => {
@@ -790,7 +688,58 @@ function init() {
     $('#toast').classList.remove('show')
   );
 
+  // Admin sửa sân / đổi trạng thái đơn ở tab khác thì trang này cập nhật theo.
+  SV.on((key) => {
+    if (key !== 'fields' && key !== 'bookings' && key !== '*') return;
+    SAN_DATA = buildSanData();
+    renderGrid();
+    if (state.activeCourt) {
+      // Sân đang mở có thể đã bị admin khoá, đóng lại để khỏi đặt nhầm.
+      const still = SAN_DATA.find((c) => c.id === state.activeCourt.id);
+      if (!still || still.status !== 'trong') {
+        closeModal($('#bookModal'));
+        closeModal($('#detailModal'));
+        state.activeCourt = null;
+      } else {
+        // Giá / giờ mở cửa có thể vừa đổi: lấy bản mới và vẽ lại khung giờ
+        // vì số khung trống đã thay đổi theo đơn vừa được đặt hoặc huỷ.
+        state.activeCourt = still;
+        if ($('#bookModal')?.classList.contains('open')) refreshTimeOptions();
+      }
+    }
+  });
+
   renderGrid();
+  initAuthNav();
+}
+
+/** Đã đăng nhập thì nút "Đăng nhập" đổi thành tên + nút đăng xuất. */
+function initAuthNav() {
+  const nameEl = document.getElementById('listUserName');
+  const outBtn = document.getElementById('listUserLogout');
+  if (!nameEl || !outBtn) return;
+
+  function render() {
+    const user = SV.currentUser();
+    document.querySelectorAll('[data-auth="login"]').forEach((el) => {
+      el.hidden = !!user;
+    });
+    document.querySelectorAll('[data-auth="user"]').forEach((el) => {
+      el.hidden = !user;
+    });
+    if (user) nameEl.textContent = user.name || user.email || 'Tài khoản';
+  }
+
+  outBtn.addEventListener('click', () => {
+    SV.signOut();
+    render();
+  });
+
+  SV.on((key) => {
+    if (key === 'auth' || key === 'users' || key === '*') render();
+  });
+
+  render();
 }
 
 document.addEventListener('DOMContentLoaded', init);

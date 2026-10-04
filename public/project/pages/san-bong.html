@@ -76,6 +76,7 @@
                     <th>Địa chỉ</th>
                     <th>Loại sân</th>
                     <th>Giá thuê</th>
+                    <th>Trên bản đồ</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
                   </tr>
@@ -128,6 +129,39 @@
               <input type="number" id="fieldPrice" required min="0" placeholder="VD: 300000">
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fieldCourts">Số sân trong khu</label>
+              <input type="number" id="fieldCourts" min="1" value="1">
+            </div>
+            <div class="form-group">
+              <label for="fieldOpen">Giờ mở cửa</label>
+              <input type="number" id="fieldOpen" min="0" max="24" step="0.5" value="6">
+            </div>
+            <div class="form-group">
+              <label for="fieldClose">Giờ đóng cửa</label>
+              <input type="number" id="fieldClose" min="0" max="24" step="0.5" value="22">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldLat">Toạ độ (vào bản đồ ở trang chủ)</label>
+            <div class="form-row">
+              <div class="form-group" style="margin:0">
+                <input type="number" id="fieldLat" step="any" placeholder="Vĩ độ (21.0285)">
+              </div>
+              <div class="form-group" style="margin:0">
+                <input type="number" id="fieldLng" step="any" placeholder="Kinh độ (105.8542)">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldImg">Ảnh sân (URL)</label>
+            <input type="url" id="fieldImg" placeholder="Để trống để dùng ảnh mặc định">
+          </div>
+          <div class="form-group">
+            <label for="fieldDesc">Mô tả</label>
+            <textarea id="fieldDesc" rows="2" placeholder="Mô tả ngắn về sân"></textarea>
+          </div>
           <div class="form-group">
             <label for="fieldStatus">Trạng thái</label>
             <select id="fieldStatus">
@@ -143,6 +177,8 @@
       </form>
     </div>
   </div>
+
+  <script src="../js/store.js"></script>
 
   <script src="../js/admin.js"></script>
 </body>

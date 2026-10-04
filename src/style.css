@@ -1,10 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lexend:wght@600;700;800&display=swap");
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --green-primary: #16a34a;
-  --green-dark: #15803d;
-  --green-light: #dcfce7;
-  --green-accent: #4ade80;
+  /* Màu thương hiệu do admin đặt trong trang giao diện ghi đè qua JS. Các biến
+     xanh bên dưới dẫn xuất từ nó nên đổi màu ở admin là đổi cả trang chủ. */
+  --4sv-primary: #16a34a;
+  --green-primary: var(--4sv-primary);
+  --green-dark: color-mix(in srgb, var(--4sv-primary) 82%, #000);
+  --green-light: color-mix(in srgb, var(--4sv-primary) 14%, #fff);
+  --green-accent: color-mix(in srgb, var(--4sv-primary) 62%, #fff);
   --grey-50: #f9fafb;
   --grey-100: #f3f4f6;
   --grey-200: #e5e7eb;
@@ -21,6 +24,10 @@
   --shadow-lg: 0 10px 40px rgba(0,0,0,.14);
   --radius-lg: 20px;
 }
+html.dark { --grey-50: #111827; --grey-100: #1f2937; --grey-200: #374151; --grey-900: #f9fafb; color-scheme: dark; }
+html.dark body, html.dark .site-footer, html.dark .section-pad:nth-child(even) { background: #0b1220; color: #e5e7eb; }
+html.dark .review-card, html.dark .modal-body, html.dark .nav-menu { background: #111827; border-color: #1f2937; }
+html.dark .review-text, html.dark .court-meta, html.dark .modal-head h3 { color: #cbd5e1; }
 html { scroll-behavior: smooth; }
 body { font-family: "Be Vietnam Pro", sans-serif; color: var(--grey-800); background: #fff; line-height: 1.6; }
 a { text-decoration: none; color: inherit; }
@@ -33,8 +40,9 @@ button, input, select { font-family: inherit; }
 /* HEADER */
 .site-header { background: #fff; border-bottom: 1px solid var(--grey-100); position: sticky; top: 0; z-index: 100; }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
-.nav-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.55rem; color: var(--grey-900); letter-spacing: -.02em; flex-shrink: 0; }
+.nav-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.55rem; color: var(--grey-900); letter-spacing: -.02em; flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; }
 .nav-brand span { color: var(--green-primary); }
+.nav-brand-logo { height: 32px; width: auto; max-width: 160px; object-fit: contain; }
 .nav-toggle { display: none; width: 38px; height: 38px; border: 1px solid var(--grey-200); background: #fff; border-radius: 8px; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; color: var(--grey-700); }
 .nav-menu { display: flex; align-items: center; gap: 18px; flex: 1; justify-content: space-between; margin-left: 24px; }
 .nav-links { display: flex; align-items: center; gap: 2px; }
@@ -47,6 +55,8 @@ button, input, select { font-family: inherit; }
 .dropdown.open .dropdown-menu { display: block; }
 .dropdown-item { display: block; padding: 8px 12px; border-radius: 8px; font-size: .86rem; color: var(--grey-700); }
 .dropdown-item:hover { background: var(--green-light); color: var(--green-dark); }
+.dropdown-item.active { background: var(--green-light); color: var(--green-dark); font-weight: 700; }
+.footer-links a.active { color: var(--green-primary); font-weight: 700; }
 .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .nav-register { font-weight: 700 !important; color: var(--green-primary) !important; }
 .btn-cta { background: var(--green-primary); color: #fff !important; border-radius: 10px; padding: 8px 16px; font-weight: 700; font-size: .84rem; display: inline-flex; align-items: center; gap: 6px; border: none; }
@@ -54,6 +64,27 @@ button, input, select { font-family: inherit; }
 /* Nút "Đặt sân" dùng lại .btn-cta nên tự đồng bộ màu/bo/kích thước với nút "Chủ Sân" */
 .nav-links .nav-book { margin: 0 6px; white-space: nowrap; }
 @media (max-width: 768px) { .nav-links .nav-book { margin: 4px 0; justify-content: center; } }
+
+/* Ô TÀI KHOẢN: hiện thay cho nút Đăng nhập/Đăng ký khi đã đăng nhập */
+.nav-user { position: relative; }
+.nav-user-btn { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px; border: 1px solid var(--grey-200); background: #fff; border-radius: 999px; cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--grey-800); }
+.nav-user-btn:hover { border-color: var(--green-primary); }
+.nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--green-light); flex-shrink: 0; }
+.nav-user-name { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-user-caret { font-size: .6rem; color: var(--grey-400); transition: .18s; }
+.nav-user-btn[aria-expanded="true"] .nav-user-caret { transform: rotate(180deg); }
+.nav-user-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 230px; background: #fff; border: 1px solid var(--grey-100); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; z-index: 60; }
+.nav-user-head { padding: 8px 10px 10px; border-bottom: 1px solid var(--grey-100); margin-bottom: 4px; }
+.nav-user-head strong { display: block; font-size: .9rem; color: var(--grey-900); }
+.nav-user-head span { display: block; font-size: .76rem; color: var(--grey-400); word-break: break-all; }
+.nav-user-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border: none; background: none; border-radius: 8px; font-size: .86rem; color: var(--grey-700); cursor: pointer; text-align: left; }
+.nav-user-item:hover { background: var(--green-light); color: var(--green-dark); }
+.nav-user-out { color: #dc2626; }
+.nav-user-out:hover { background: #fee2e2; color: #b91c1c; }
+html.dark .nav-user-btn, html.dark .nav-user-menu { background: #111827; border-color: #1f2937; color: #e5e7eb; }
+html.dark .nav-user-head { border-color: #1f2937; }
+html.dark .nav-user-head strong { color: #f9fafb; }
+@media (max-width: 768px) { .nav-user-btn { width: 100%; justify-content: flex-start; } .nav-user-menu { position: static; box-shadow: none; border: 1px solid var(--grey-100); margin: 4px 0 6px; } }
 
 /* HERO */
 .hero { position: relative; overflow: hidden; min-height: 520px; display: flex; align-items: center; padding: 54px 0 90px; background: #0f2a18; }
@@ -174,6 +205,13 @@ button, input, select { font-family: inherit; }
 .map-grid { display: grid; grid-template-columns: 1.7fr .9fr; gap: 16px; }
 .map-embed { position: relative; height: 380px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--grey-200); box-shadow: var(--shadow-sm); background: var(--grey-50); }
 .map-embed iframe { width: 100%; height: 100%; border: 0; }
+#mapCanvas { width: 100%; height: 100%; }
+.map-pin { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--green-primary); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.28); }
+.map-pin i { transform: rotate(45deg); color: #fff; font-size: .72rem; }
+.map-pin.is-me { background: #ef4444; }
+.map-popup { font-family: var(--font-body, inherit); font-size: .8rem; line-height: 1.4; }
+.map-popup strong { display: block; color: var(--grey-900); margin-bottom: 2px; }
+.map-popup span { color: var(--grey-500); }
 .btn-locate { position: absolute; top: 12px; right: 12px; z-index: 2; background: #fff; border: none; border-radius: 10px; padding: 9px 14px; box-shadow: 0 2px 12px rgba(0,0,0,.14); font-size: .78rem; font-weight: 700; color: var(--green-primary); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .map-cta { background: var(--grey-50); border: 1px solid var(--grey-100); border-radius: var(--radius-lg); padding: 22px; }
 .map-cta h4 { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--grey-900); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
@@ -191,6 +229,8 @@ button, input, select { font-family: inherit; }
 .sport-tab { border: 1px solid var(--grey-200); background: #fff; color: var(--grey-700); padding: 7px 14px; border-radius: 999px; font-size: .8rem; font-weight: 600; cursor: pointer; transition: .15s; }
 .sport-tab.active, .sport-tab:hover { background: var(--green-primary); color: #fff; border-color: var(--green-primary); }
 .province-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.province-empty { grid-column: 1 / -1; text-align: center; color: var(--grey-400); font-size: .86rem; padding: 18px 0; }
+.province-empty a { color: var(--green-primary); font-weight: 700; }
 .province-card { background: #fff; border: 1px solid var(--grey-100); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: .15s; }
 .province-card:hover { border-color: var(--green-light); box-shadow: var(--shadow-sm); }
 .province-name { font-weight: 600; font-size: .82rem; color: var(--grey-800); }
@@ -212,6 +252,11 @@ button, input, select { font-family: inherit; }
 .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
 .review-card { background: #fff; border: 1px solid var(--grey-100); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm); }
 .review-stars { color: #f59e0b; font-size: .78rem; margin-bottom: 12px; display: flex; gap: 2px; }
+.review-stars .is-off { color: var(--grey-200); }
+.review-head { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.review-head .review-stars { margin-bottom: 0; }
+.review-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--grey-100); }
+.review-foot { display: flex; justify-content: space-between; gap: 10px; font-size: .74rem; color: var(--grey-400); border-top: 1px solid var(--grey-100); padding-top: 12px; }
 .review-text { font-size: .86rem; color: var(--grey-700); line-height: 1.7; margin-bottom: 16px; font-style: italic; }
 .reviewer { display: flex; gap: 12px; align-items: center; }
 .reviewer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
@@ -221,6 +266,7 @@ button, input, select { font-family: inherit; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr .7fr .7fr 1fr; gap: 28px; }
 .footer-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; margin-bottom: 10px; }
 .footer-brand span { color: var(--green-accent); }
+.footer-brand [data-site-name] { color: inherit; }
 .footer-desc { color: rgba(255,255,255,.45); font-size: .82rem; line-height: 1.7; margin-bottom: 16px; }
 .footer-heading { font-weight: 700; font-size: .88rem; margin-bottom: 14px; color: #fff; }
 .footer-links { display: flex; flex-direction: column; gap: 8px; }
