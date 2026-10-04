@@ -42,8 +42,10 @@
 
   var MIGRATED_FLAG = NS + '_store_v1'
   // Màu thương hiệu mặc định của trang chủ, admin đổi ở trang Giao diện.
-  var PRIMARY_FLAG = NS + '_primary_green_v1'
+  var BRANDING_FLAG = NS + '_branding_v2'
   var LEGACY_PRIMARY = ['#2563eb', '#1d4ed8']
+  // Tên website mặc định của bản admin cũ, giờ ghi đè logo/footer ở trang chủ.
+  var LEGACY_SITE_NAME = ['QUẢN LÝ ĐẶT SÂN', 'QUẢN LÝ ĐẶT SÂN BÓNG', 'QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ']
   var PREFIX = { field: 'SAN', user: 'ND', booking: 'DD', review: 'DG', voucher: 'MAG' }
   var PAD = { field: 3, user: 3, booking: 3, review: 3, voucher: 3 }
 
@@ -324,7 +326,7 @@
   function normSettings(raw) {
     raw = raw || {}
     return {
-      siteName: String(raw.siteName || '4SV.vn - Đặt sân bóng'),
+      siteName: String(raw.siteName || '4SV.vn'),
       primaryColor: String(raw.primaryColor || '#16a34a'),
       darkMode: Boolean(raw.darkMode),
       logo: String(raw.logo || ''),
@@ -409,7 +411,7 @@
   ]
 
   var DEFAULT_SETTINGS = {
-    siteName: '4SV.vn - Đặt sân bóng',
+    siteName: '4SV.vn',
     primaryColor: '#16a34a',
     darkMode: false,
     logo: '',
@@ -568,21 +570,26 @@
   }
 
   /**
-   * Ô chọn màu của trang Giao diện trước đây mở sẵn ở xanh dương #2563eb (màu
-   * của trang admin), bấm "Lưu" là màu thương hiệu ghi lại và trang chủ đổi
-   * theo. Đó không phải màu chủ sân chọn nên ghi về xanh lá của trang chủ, chạy
-   * một lần rồi thôi để sau này họ tự chọn màu tuỳ ý.
+   * Bản admin cũ để sẵn tên website "QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ" và ô chọn màu
+   * ở xanh dương #2563eb (màu của trang admin). Bấm "Lưu" một lần là trang
+   * chủ in ra tên đó và đổi hết màu nhấn sang xanh dương - đều không phải ý
+   * chủ sân nên ghi về mặc định của trang chủ. Chạy một lần rồi thôi để sau này
+   * họ tự đặt tên, chọn màu tuỳ ý.
    */
-  function resetLegacyPrimary() {
+  function resetLegacyBranding() {
     try {
-      if (global.localStorage.getItem(PRIMARY_FLAG)) return
+      if (global.localStorage.getItem(BRANDING_FLAG)) return
+
       var current = readJSON(KEYS.settings, null)
-      var color = current ? String(current.primaryColor || '').toLowerCase() : ''
-      if (LEGACY_PRIMARY.indexOf(color) !== -1) {
-        current.primaryColor = DEFAULT_SETTINGS.primaryColor
-        writeJSON(KEYS.settings, normSettings(current))
-      }
-      global.localStorage.setItem(PRIMARY_FLAG, String(Date.now()))
+      var next = current || Object.assign({}, DEFAULT_SETTINGS)
+      var color = String(next.primaryColor || '').toLowerCase()
+      var name = String(next.siteName || '').toUpperCase().replace(/\s+/g, ' ').trim()
+
+      if (LEGACY_PRIMARY.indexOf(color) !== -1) next.primaryColor = DEFAULT_SETTINGS.primaryColor
+      if (LEGACY_SITE_NAME.indexOf(name) !== -1) next.siteName = DEFAULT_SETTINGS.siteName
+      if (next !== current) writeJSON(KEYS.settings, normSettings(next))
+
+      global.localStorage.setItem(BRANDING_FLAG, String(Date.now()))
     } catch (e) {
       /* bỏ qua */
     }
@@ -995,6 +1002,6 @@
   }
 
   migrate()
-  resetLegacyPrimary()
+  resetLegacyBranding()
   global.SV = SV
 })(window)
