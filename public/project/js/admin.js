@@ -1073,6 +1073,13 @@ function renderVoucherStats(vouchers) {
   if (elExpired) elExpired.textContent = expired;
 }
 
+/** Đặt trạng thái voucher từ cả radio (giao diện) lẫn select ẩn (nơi đọc khi lưu). */
+function setVoucherStatus(status) {
+  document.getElementById('voucherStatus').value = status;
+  const radio = document.querySelector(`input[name="voucherStatusRadio"][value="${status}"]`);
+  if (radio) radio.checked = true;
+}
+
 function bindVoucherListeners() {
   const searchInput = document.getElementById('voucherSearchInput');
   const statusFilter = document.getElementById('voucherStatusFilter');
@@ -1087,9 +1094,16 @@ function bindVoucherListeners() {
       document.getElementById('voucherForm').reset();
       document.getElementById('voucherEditId').value = '';
       document.getElementById('voucherModalTitle').textContent = 'Thêm mã giảm giá mới';
+      // select trạng thái đã bị ẩn sau khi đổi sang radio, nên reset thủ công
+      setVoucherStatus('active');
       openModal('voucherModal');
     });
   }
+
+  // Radio là giao diện, select ẩn là nơi lưu giá trị - hai cái phải luôn khớp.
+  document.querySelectorAll('input[name="voucherStatusRadio"]').forEach((radio) => {
+    radio.addEventListener('change', () => setVoucherStatus(radio.value));
+  });
 
   if (voucherForm) {
     voucherForm.addEventListener('submit', (e) => {
@@ -1102,7 +1116,8 @@ function bindVoucherListeners() {
       const maxDiscount = Number(document.getElementById('voucherMaxDiscount').value || 0);
       const usageLimit = Number(document.getElementById('voucherLimit').value);
       const expiryDate = document.getElementById('voucherExpiry').value;
-      const status = document.getElementById('voucherStatus').value;
+      const statusRadio = document.querySelector('input[name="voucherStatusRadio"]:checked');
+      const status = statusRadio ? statusRadio.value : document.getElementById('voucherStatus').value;
 
       let vouchers = DataManager.getVouchers();
 
@@ -1163,7 +1178,7 @@ function bindVoucherListeners() {
     document.getElementById('voucherMaxDiscount').value = v.maxDiscount || '';
     document.getElementById('voucherLimit').value = v.usageLimit;
     document.getElementById('voucherExpiry').value = v.expiryDate;
-    document.getElementById('voucherStatus').value = v.status;
+    setVoucherStatus(v.status);
 
     document.getElementById('voucherModalTitle').textContent = 'Sửa mã giảm giá';
     openModal('voucherModal');

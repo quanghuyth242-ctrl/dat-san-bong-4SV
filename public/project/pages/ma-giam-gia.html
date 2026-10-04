@@ -164,62 +164,142 @@
 
   <!-- Modal Thêm / Sửa Voucher -->
   <div class="modal-overlay" id="voucherModal">
-    <div class="modal-container" style="max-width: 540px;">
-      <div class="modal-header">
-        <h3 class="modal-title" id="voucherModalTitle">Thêm mã giảm giá mới</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <form id="voucherForm">
-        <input type="hidden" id="voucherEditId">
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Mã khuyến mãi (Code) <span style="color: red;">*</span></label>
-            <input type="text" id="voucherCode" class="form-control" placeholder="Ví dụ: SUMMER2026" style="text-transform: uppercase;" required>
+    <div class="voucher-modal">
+      <!-- Header -->
+      <div class="voucher-modal__header">
+        <div class="voucher-modal__header-left">
+          <div class="voucher-modal__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+              <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
+            </svg>
           </div>
-          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">Loại giảm giá</label>
-              <select id="voucherType" class="form-control">
-                <option value="percent">Phần trăm (%)</option>
-                <option value="fixed">Số tiền cố định (VNĐ)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Giá trị giảm <span style="color: red;">*</span></label>
-              <input type="number" id="voucherValue" class="form-control" placeholder="Nhập 20 hoặc 50000" min="1" required>
-            </div>
-          </div>
-          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">Đơn tối thiểu (VNĐ)</label>
-              <input type="number" id="voucherMinOrder" class="form-control" placeholder="0" min="0">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Giảm tối đa (VNĐ)</label>
-              <input type="number" id="voucherMaxDiscount" class="form-control" placeholder="0 (Không giới hạn)" min="0">
-            </div>
-          </div>
-          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">Số lượt sử dụng tối đa</label>
-              <input type="number" id="voucherLimit" class="form-control" placeholder="100" min="1" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Ngày hết hạn <span style="color: red;">*</span></label>
-              <input type="date" id="voucherExpiry" class="form-control" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Trạng thái</label>
-            <select id="voucherStatus" class="form-control">
-              <option value="active">Hoạt động</option>
-              <option value="disabled">Tạm tắt</option>
-            </select>
+          <div>
+            <h3 class="voucher-modal__title" id="voucherModalTitle">Thêm mã giảm giá mới</h3>
+            <p class="voucher-modal__subtitle">Tạo mã khuyến mãi cho khách hàng</p>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline modal-close">Hủy</button>
-          <button type="submit" class="btn btn-primary">Lưu mã giảm giá</button>
+        <button class="voucher-modal__close modal-close" aria-label="Đóng">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="voucherForm">
+        <input type="hidden" id="voucherEditId">
+        <div class="voucher-modal__body">
+
+          <!-- Section: Mã Code -->
+          <div class="voucher-section">
+            <div class="voucher-section__label">
+              <span class="voucher-section__icon">🏷️</span>
+              Mã khuyến mãi
+            </div>
+            <div class="voucher-section__content">
+              <div class="form-group">
+                <label class="form-label">Code <span class="required-mark">*</span></label>
+                <input type="text" id="voucherCode" class="form-control voucher-code-input" placeholder="VD: SUMMER2026" required>
+                <span class="form-hint">Mã sẽ được tự động viết hoa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Giá trị giảm giá -->
+          <div class="voucher-section">
+            <div class="voucher-section__label">
+              <span class="voucher-section__icon">💰</span>
+              Giá trị giảm giá
+            </div>
+            <div class="voucher-section__content">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Loại giảm giá</label>
+                  <select id="voucherType" class="form-control">
+                    <option value="percent">Phần trăm (%)</option>
+                    <option value="fixed">Số tiền cố định (VNĐ)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Giá trị <span class="required-mark">*</span></label>
+                  <input type="number" id="voucherValue" class="form-control" placeholder="VD: 20 hoặc 50000" min="1" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Đơn tối thiểu</label>
+                  <div class="input-with-suffix">
+                    <input type="number" id="voucherMinOrder" class="form-control" placeholder="0" min="0">
+                    <span class="input-suffix">VNĐ</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Giảm tối đa</label>
+                  <div class="input-with-suffix">
+                    <input type="number" id="voucherMaxDiscount" class="form-control" placeholder="Không giới hạn" min="0">
+                    <span class="input-suffix">VNĐ</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Giới hạn & Thời hạn -->
+          <div class="voucher-section">
+            <div class="voucher-section__label">
+              <span class="voucher-section__icon">📅</span>
+              Giới hạn & Thời hạn
+            </div>
+            <div class="voucher-section__content">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Lượt sử dụng tối đa</label>
+                  <input type="number" id="voucherLimit" class="form-control" placeholder="100" min="1" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ngày hết hạn <span class="required-mark">*</span></label>
+                  <input type="date" id="voucherExpiry" class="form-control" required>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Trạng thái</label>
+                <div class="voucher-status-toggle">
+                  <label class="status-option">
+                    <input type="radio" name="voucherStatusRadio" value="active" checked>
+                    <span class="status-option__card status-option__card--active">
+                      <span class="status-option__dot"></span>
+                      <span>Hoạt động</span>
+                    </span>
+                  </label>
+                  <label class="status-option">
+                    <input type="radio" name="voucherStatusRadio" value="disabled">
+                    <span class="status-option__card status-option__card--disabled">
+                      <span class="status-option__dot"></span>
+                      <span>Tạm tắt</span>
+                    </span>
+                  </label>
+                </div>
+                <!-- Hidden select for backward compatibility -->
+                <select id="voucherStatus" class="form-control" style="display: none;">
+                  <option value="active">Hoạt động</option>
+                  <option value="disabled">Tạm tắt</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="voucher-modal__footer">
+          <button type="button" class="btn btn-outline modal-close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            Hủy bỏ
+          </button>
+          <button type="submit" class="btn btn-primary voucher-save-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+            Lưu mã giảm giá
+          </button>
         </div>
       </form>
     </div>
