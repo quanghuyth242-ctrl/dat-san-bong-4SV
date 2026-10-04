@@ -1,18 +1,8 @@
 import './style.css'
 
-const DEFAULT_VENUES = [
-  { id: 1, name: 'Sân Bóng Đá Thành Công', sport: 'Bóng đá', addr: '18 Thành Công, Ba Đình, Hà Nội', price: '300k', per: '/tiếng', courts: 3, hours: { open: 6, close: 22 }, lat: 21.0465, lng: 105.8069, img: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75', icon: '⚽' },
-  { id: 2, name: 'Tennis Club Cầu Giấy', sport: 'Tennis', addr: '68 Cầu Giấy, Hà Nội', price: '250k', per: '/tiếng', courts: 4, hours: { open: 6, close: 23 }, lat: 21.0409, lng: 105.7822, img: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400&q=75', icon: '🎾' },
-  { id: 3, name: 'Nhà Thi Đấu Cầu Lông Mỹ Đình', sport: 'Cầu lông', addr: 'Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: '120k', per: '/tiếng', courts: 6, hours: { open: 5, close: 22 }, lat: 21.0285, lng: 105.78, img: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=75', icon: '🏸' },
-  { id: 4, name: 'Pickleball Arena Q.1', sport: 'Pickleball', addr: '28 Thảo Điền, Thủ Đức, TP.HCM', price: '180k', per: '/tiếng', courts: 2, hours: { open: 6, close: 23 }, lat: 10.7769, lng: 106.7009, img: 'https://images.unsplash.com/photo-1593085512500-5d55148d6f0d?w=400&q=75', icon: '🏓' },
-  { id: 5, name: 'Sân Bóng Rổ Tây Hồ', sport: 'Bóng rổ', addr: 'Ngõ 431 Âu Cơ, Tây Hồ, Hà Nội', price: '200k', per: '/tiếng', courts: 2, hours: { open: 7, close: 22 }, lat: 21.066, lng: 105.85, img: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=75', icon: '🏀' },
-  { id: 6, name: 'Sân Bóng Chuyền Hoàng Hoa Thám', sport: 'Bóng chuyền', addr: '290 Hoàng Hoa Thám, Ba Đình, Hà Nội', price: '150k', per: '/tiếng', courts: 2, hours: { open: 6, close: 22 }, lat: 21.033, lng: 105.839, img: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&q=75', icon: '🏐' },
-  { id: 7, name: 'Bóng Đá Mini Đầm Hồng', sport: 'Bóng đá', addr: 'KĐT Đầm Hồng, Thanh Xuân, Hà Nội', price: '400k', per: '/tiếng', courts: 5, hours: { open: 6, close: 21 }, lat: 20.988, lng: 105.813, img: 'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75', icon: '⚽' },
-  { id: 8, name: 'Ace Pickleball Club', sport: 'Pickleball', addr: 'Pullman Hanoi, Cát Linh, Đống Đa, Hà Nội', price: '220k', per: '/tiếng', courts: 2, hours: { open: 7, close: 23 }, lat: 21.046, lng: 105.838, img: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&q=75', icon: '🏓' },
-]
+// 4SV.vn chỉ phục vụ sân bóng đá: mọi sân đều thuộc 1 trong 3 kích thước sân chuẩn.
+export const FIELD_TYPES = ['Sân 5', 'Sân 7', 'Sân 11']
 
-// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
-// Ảnh mặc định cho sân bóng đá theo loại sân
 const FIELD_IMAGES = [
   'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
   'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
@@ -23,6 +13,19 @@ const FIELD_IMAGES = [
   'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75',
   'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=400&q=75',
 ]
+
+const DEFAULT_VENUES = [
+  { id: 1, name: 'Sân Bóng Thành Công', type: 'Sân 5', addr: '18 Thành Công, Ba Đình, Hà Nội', price: '300k', per: '/tiếng', courts: 3, hours: { open: 6, close: 22 }, lat: 21.0465, lng: 105.8069, img: FIELD_IMAGES[0], icon: '⚽' },
+  { id: 2, name: 'Sân Cỏ Nhân Tạo Cầu Giấy', type: 'Sân 7', addr: '68 Cầu Giấy, Cầu Giấy, Hà Nội', price: '450k', per: '/tiếng', courts: 2, hours: { open: 6, close: 23 }, lat: 21.0409, lng: 105.7822, img: FIELD_IMAGES[1], icon: '⚽' },
+  { id: 3, name: 'Sân Bóng Mỹ Đình', type: 'Sân 7', addr: 'Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: '500k', per: '/tiếng', courts: 4, hours: { open: 5, close: 22 }, lat: 21.0285, lng: 105.78, img: FIELD_IMAGES[2], icon: '⚽' },
+  { id: 4, name: 'Sân Bóng Thảo Điền', type: 'Sân 5', addr: '28 Thảo Điền, Thủ Đức, TP. Hồ Chí Minh', price: '350k', per: '/tiếng', courts: 3, hours: { open: 6, close: 23 }, lat: 10.7769, lng: 106.7009, img: FIELD_IMAGES[3], icon: '⚽' },
+  { id: 5, name: 'Sân Bóng Tây Hồ', type: 'Sân 11', addr: 'Ngõ 431 Âu Cơ, Tây Hồ, Hà Nội', price: '700k', per: '/tiếng', courts: 1, hours: { open: 7, close: 22 }, lat: 21.066, lng: 105.85, img: FIELD_IMAGES[4], icon: '⚽' },
+  { id: 6, name: 'Sân Bóng Hoàng Hoa Thám', type: 'Sân 5', addr: '290 Hoàng Hoa Thám, Ba Đình, Hà Nội', price: '280k', per: '/tiếng', courts: 2, hours: { open: 6, close: 22 }, lat: 21.033, lng: 105.839, img: FIELD_IMAGES[5], icon: '⚽' },
+  { id: 7, name: 'Sân Bóng Đầm Hồng', type: 'Sân 7', addr: 'KĐT Đầm Hồng, Thanh Xuân, Hà Nội', price: '400k', per: '/tiếng', courts: 5, hours: { open: 6, close: 21 }, lat: 20.988, lng: 105.813, img: FIELD_IMAGES[6], icon: '⚽' },
+  { id: 8, name: 'Sân Bóng Cầu Giang', type: 'Sân 7', addr: '12 Cầu Giang, Hải Châu, Đà Nẵng', price: '320k', per: '/tiếng', courts: 2, hours: { open: 6, close: 22 }, lat: 16.0621, lng: 108.2043, img: FIELD_IMAGES[7], icon: '⚽' },
+]
+
+// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
 
 function formatPriceShort(price) {
   if (price >= 1000000) return (price / 1000000).toFixed(price % 1000000 === 0 ? 0 : 1) + 'tr'
@@ -43,14 +46,16 @@ function loadVenuesFromAdmin() {
     return activeFields.map((f, idx) => ({
       id: f.id || idx + 1,
       name: f.name,
-      sport: 'Bóng đá',
+      type: FIELD_TYPES.includes(f.type) ? f.type : FIELD_TYPES[0],
       addr: f.address,
       price: formatPriceShort(f.price),
       per: '/tiếng',
       courts: 1,
+      hours: { open: 6, close: 22 },
+      lat: 21.0285,
+      lng: 105.8542,
       img: FIELD_IMAGES[idx % FIELD_IMAGES.length],
       icon: '⚽',
-      type: f.type || 'Sân 5'
     }))
   } catch (e) {
     console.warn('Lỗi đọc dữ liệu admin:', e)
@@ -65,26 +70,15 @@ const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng'
 
 const SPORT_LABELS = {
   'bong-da': 'Bóng đá',
-  tennis: 'Tennis',
-  'cau-long': 'Cầu lông',
-  pickleball: 'Pickleball',
-  'bong-ro': 'Bóng rổ',
-  'bong-chuyen': 'Bóng chuyền',
-  'bong-ban': 'Bóng bàn',
 }
 
 // Số liệu nền tảng: tổng sân = tổng các loại sân, tổng cơ sở dùng chung cho badge + hero-stats
 const TOTAL_COURTS = 858
 const TOTAL_VENUES = 629
 const SPORT_COUNTS = [
-  { sport: 'Bóng đá', count: 186 },
-  { sport: 'Tennis', count: 92 },
-  { sport: 'Cầu lông', count: 124 },
-  { sport: 'Pickleball', count: 68 },
-  { sport: 'Bóng rổ', count: 41 },
-  { sport: 'Bóng chuyền', count: 37 },
-  { sport: 'Bóng bàn', count: 24 },
-  { sport: '', count: TOTAL_COURTS - 186 - 92 - 124 - 68 - 41 - 37 - 24 },
+  { sport: 'Bóng đá 5', count: 186 },
+  { sport: 'Bóng đá 7', count: 124 },
+  { sport: 'Bóng đá 11', count: 68 },
 ]
 
 const BOOKING_KEY = '4sv_bookings'
@@ -133,9 +127,9 @@ function expand(str) {
   return out
 }
 
-/** Chuỗi để tìm kiếm của một sân: tên + địa chỉ + môn, đã chuẩn hoá. */
 function haystack(v) {
-  return expand(`${v.name} ${v.addr} ${v.sport}`)
+  const t = v.type || ''
+  return expand(`${v.name} ${v.addr} ${v.sport || ''} ${t} san ${t.replace('Sân ', '')}`)
 }
 
 // ================================ LỌC ================================
@@ -174,12 +168,11 @@ function isPastSlot(date, hour) {
 }
 
 function matches(v, filters) {
-  const { loc, sport, when } = filters
+  const { loc, fieldType, when } = filters
 
-  if (sport && v.sport !== sport) return false
+  if (fieldType && (v.type || '') !== fieldType) return false
   if (loc) {
     const hay = haystack(v)
-    // Mọi từ trong từ khoá đều phải xuất hiện -> "bóng đá hà nội" hoạt động
     if (!loc.split(' ').every((t) => hay.includes(t))) return false
   }
   if (when && !isOpenAt(v, when)) return false
@@ -190,18 +183,18 @@ function matches(v, filters) {
 function readFilters() {
   return {
     loc: expand(document.getElementById('qLocation')?.value || ''),
-    sport: document.getElementById('qSport')?.value || '',
+    fieldType: document.getElementById('qType')?.value || '',
     when: parseWhen(document.getElementById('qDate')?.value || ''),
   }
 }
 
 function hasAnyFilter(f) {
-  return Boolean(f.loc || f.sport || f.when)
+  return Boolean(f.loc || f.fieldType || f.when)
 }
 
 function describeFilters(f) {
   const bits = []
-  if (f.sport) bits.push(f.sport)
+  if (f.fieldType) bits.push(f.fieldType)
   if (f.loc) bits.push(`tại "${f.loc}"`)
   if (f.when?.hasTime) bits.push(`${f.when.date} lúc ${timeLabel(f.when.hour)}`)
   else if (f.when) bits.push(`ngày ${f.when.date}`)
@@ -296,7 +289,7 @@ function renderVenues(list, filters) {
     <div class="court-card">
       <div class="court-img-wrap">
         <img src="${v.img}" alt="${v.name}" loading="lazy">
-        <span class="court-badge">${v.icon} ${v.sport}</span>
+        <span class="court-badge">${v.icon || '⚽'} ${v.type || 'Sân bóng'}</span>
       </div>
       <div class="court-body">
         <div class="court-name">${v.name}</div>
@@ -405,15 +398,21 @@ function applyFilters({ scroll = false, silent = false } = {}) {
 /** Giữ select qSport và dropdown "Loại sân" luôn khớp với bộ lọc đang chạy. */
 function syncFilterUI(filters) {
   const sport = filters?.sport ?? document.getElementById('qSport')?.value ?? ''
+  const fieldType = filters?.fieldType ?? document.getElementById('qType')?.value ?? ''
 
   document.querySelectorAll('#ddType .dropdown-item').forEach((item) => {
-    item.classList.toggle('active', (item.getAttribute('data-sport') || '') === sport)
+    const key = item.getAttribute('data-field-type') || ''
+    item.classList.toggle('active', key === fieldType)
+  })
+
+  document.querySelectorAll('#qType option').forEach((opt) => {
+    opt.selected = (opt.value || '') === fieldType
   })
 }
 
 function clearFilters() {
   document.getElementById('qLocation').value = ''
-  document.getElementById('qSport').value = ''
+  document.getElementById('qType').value = ''
   document.getElementById('qDate').value = ''
   applyFilters({ silent: true })
   toast('Đã xoá bộ lọc')
@@ -439,7 +438,7 @@ function openBook(venue) {
         <img src="${venue.img}" alt="${venue.name}" />
         <div>
           <div class="bk-name">${venue.name}</div>
-          <div class="bk-sub">${venue.icon} ${venue.sport} · ${venue.price}${venue.per} · ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</div>
+          <div class="bk-sub">${venue.icon || '⚽'} ${venue.type || 'Sân bóng'} · ${venue.price}${venue.per} · ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</div>
         </div>
       </div>
       <form id="bookForm" novalidate>
@@ -576,7 +575,8 @@ function submitBooking(venue) {
     id: 'BD' + Date.now(),
     // Ổn định theo chuỗi để khớp với san-bong.js ('san-N') và đọc được ở admin
     courtId: 'san-' + venue.id,
-    courtName: venue.name,
+      courtName: venue.name,
+      type: venue.type || 'Sân 5',
     date,
     startHour,
     endHour: startHour + duration,
@@ -602,7 +602,8 @@ function submitBooking(venue) {
       <h3>Đặt sân thành công!</h3>
       <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
       <dl class="bk-summary">
-        <div><dt>Sân</dt><dd>${venue.name}</dd></div>
+        <div><dt>Sân</dt>      <dd>${venue.name}</dd></div>
+  <div><dt>Loại sân</dt><dd>${venue.type || 'Sân 5'}</dd></div>
         <div><dt>Ngày</dt><dd>${date}</dd></div>
         <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
         <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
@@ -655,10 +656,10 @@ function locateMe() {
         <img class="nearby-thumb" src="${v.img}" alt="">
         <div>
           <div class="nearby-name">${v.name}</div>
-          <div class="nearby-addr">${v.addr}</div>
-        </div>
-        <span class="nearby-price">${d.toFixed(1)} km</span>
-      </li>`
+        <div class="nearby-addr">${v.addr}</div>
+      </div>
+      <span class="nearby-price">${v.type || ''}</span>
+    </li>`
           )
           .join('')
       }
@@ -680,7 +681,7 @@ function applyStats() {
     const key = el.getAttribute('data-stat')
     if (key === 'venues') el.textContent = String(TOTAL_VENUES)
     if (key === 'courts') el.textContent = String(TOTAL_COURTS)
-    if (key === 'sports') el.textContent = String(SPORT_COUNTS.length)
+    if (key === 'sports') el.textContent = '1' // Chỉ phục vụ sân bóng đá
   })
 }
 
@@ -711,7 +712,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // select Loại sân lọc ngay, để đồng bộ với dropdown trên navbar
   const sportSelect = document.getElementById('qSport')
-  sportSelect?.addEventListener('change', () => applyFilters({ scroll: true }))
+  const typeSelect = document.getElementById('qType')
+  typeSelect?.addEventListener('change', () => applyFilters({ scroll: true }))
 
   const dateInput = document.getElementById('qDate')
   dateInput?.addEventListener('change', () => applyFilters({ scroll: true }))
@@ -731,7 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#ddType .dropdown-item').forEach((item) => {
     item.addEventListener('click', (e) => {
       e.preventDefault()
-      sportSelect.value = item.getAttribute('data-sport') || ''
+      const v = item.getAttribute('data-field-type') || ''
+      if (typeSelect) typeSelect.value = v
       applyFilters({ scroll: true })
     })
   })
