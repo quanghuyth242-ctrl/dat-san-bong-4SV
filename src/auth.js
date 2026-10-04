@@ -1,3 +1,5 @@
+import { getUser, getRemembered, setUser } from './session.js'
+
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
@@ -6,8 +8,6 @@ const RESEND_SECONDS = 60
 const REDIRECT_MS = 3000
 const KEYS = {
   users: '4sv_auth_users',
-  remember: '4sv_auth_remember',
-  session: '4sv_auth_session',
 }
 const DEMO_USER = {
   name: 'Nguyễn Minh Tuấn',
@@ -104,6 +104,7 @@ const resendBtn = $('[data-otp-resend]')
 let mode = 'login'
 let otpContext = 'register'
 let otpTarget = ''
+let otpNewUser = null
 let resendTimer = null
 let redirectTimer = null
 
@@ -298,6 +299,8 @@ function submitOtp() {
   resendBtn.textContent = 'Gửi lại mã'
 
   if (otpContext === 'register') {
+    if (otpNewUser) setUser(otpNewUser, true)
+    otpNewUser = null
     showSuccess(
       'Tạo tài khoản thành công!',
       `Voucher giảm 20% đã gửi tới ${otpTarget}. Chào mừng bạn đến với 4SV.vn.`,
@@ -481,12 +484,7 @@ function initForms() {
       return
     }
     const remember = $('#loginRemember').checked
-    store.set(remember ? KEYS.remember : KEYS.session, {
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      at: Date.now(),
-    })
+    setUser(user, remember)
     showSuccess(
       `Xin chào, ${user.name}!`,
       'Bạn đã đăng nhập thành công. Chúc bạn có những trận đấu thật chất!',
@@ -504,15 +502,17 @@ function initForms() {
       return
     }
     await fakeRequest(forms.register)
-    users.push({
+    const newUser = {
       name: $('#regName').value.trim(),
       email,
       phone: digits($('#regPhone').value),
       password: $('#regPassword').value,
       role: $('input[name="role"]:checked').value,
       createdAt: new Date().toISOString(),
-    })
+    }
+    users.push(newUser)
     store.set(KEYS.users, users)
+    otpNewUser = newUser
     showOtp('register', email)
   })
 
@@ -562,7 +562,12 @@ function init() {
 
   if (!getUsers().length) store.set(KEYS.users, [{ ...DEMO_USER }])
 
-  const remembered = store.get(KEYS.remember, null)
+  if (getUser()) {
+    window.location.replace('/')
+    return
+  }
+
+  const remembered = getRemembered()
   if (remembered) {
     $('#loginRemember').checked = true
     $('#loginIdentity').value = remembered.email || ''

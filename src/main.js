@@ -1,4 +1,6 @@
 import './style.css'
+import { getUser } from './session.js'
+import { toast, syncAuthNav } from './auth-nav.js'
 
 // 4SV.vn chỉ phục vụ sân bóng đá: mọi sân đều thuộc 1 trong 3 kích thước sân chuẩn.
 export const FIELD_TYPES = ['Sân 5', 'Sân 7', 'Sân 11']
@@ -214,6 +216,16 @@ function loadBookings() {
   }
 }
 
+function saveBookings(list) {
+  try {
+    localStorage.setItem(BOOKING_KEY, JSON.stringify(list))
+    return true
+  } catch {
+    toast('Không lưu được dữ liệu, trình duyệt có thể đang chặn lưu trữ.', 'error')
+    return false
+  }
+}
+
 /** Chuẩn hoá mã sân về 'san-N' để đơn cũ (dùng số) và đơn mới cùng nhận diện. */
 function courtKey(id) {
   const raw = String(id)
@@ -225,7 +237,12 @@ function isSlotTaken(venueId, date, startHour, duration) {
   const endHour = startHour + duration
   const key = courtKey(venueId)
   return loadBookings().some(
-    (b) => courtKey(b.courtId) === key && b.date === date && startHour < b.endHour && endHour > b.startHour
+    (b) =>
+      b.status !== 'cancelled' &&
+      courtKey(b.courtId) === key &&
+      b.date === date &&
+      startHour < b.endHour &&
+      endHour > b.startHour
   )
 }
 
@@ -242,17 +259,6 @@ function buildTimeOptions(venue, date, duration) {
 
 // ================================ RENDER ================================
 
-function toast(msg, type = 'success') {
-  const t = document.createElement('div')
-  t.className = 'toast-4sv' + (type === 'error' ? ' toast-error' : '')
-  t.textContent = msg
-  document.body.appendChild(t)
-  requestAnimationFrame(() => t.classList.add('show'))
-  setTimeout(() => {
-    t.classList.remove('show')
-    setTimeout(() => t.remove(), 250)
-  }, type === 'error' ? 4000 : 2500)
-}
 
 function renderVenues(list, filters) {
   const grid = document.getElementById('featuredGrid')
@@ -486,6 +492,15 @@ function openBook(venue) {
   dateInput.min = todayStr()
   dateInput.value = todayStr()
 
+  // Đã đăng nhập thì điền sẵn họ tên / SĐT trong tài khoản
+  const user = getUser()
+  if (user) {
+    const nameInput = document.getElementById('bkName')
+    const phoneInput = document.getElementById('bkPhone')
+    if (nameInput && !nameInput.value) nameInput.value = user.name
+    if (phoneInput && !phoneInput.value && user.phone) phoneInput.value = user.phone
+  }
+
   const refresh = () => {
     const date = dateInput.value
     const sel = document.getElementById('bkTime')
@@ -568,9 +583,10 @@ function submitBooking(venue) {
     return
   }
 
-  const perHour = parseInt(String(venue.price).replace(/\D/g, ''), 10) || 0
+const perHour = parseInt(String(venue.price).replace(/\D/g, ''), 10) || 0
   const total = perHour * 1000 * duration
   const list = loadBookings()
+  const account = getUser()
   const booking = {
     id: 'BD' + Date.now(),
     // Ổn định theo chuỗi để khớp với san-bong.js ('san-N') và đọc được ở admin
@@ -582,15 +598,14 @@ function submitBooking(venue) {
     endHour: startHour + duration,
     duration,
     total,
-    customer: { name, phone, email: '' },
+    customer: { name, phone, email: account?.email || '' },
+    userEmail: account?.email || '',
     status: 'pending',
+    createdAt: new Date().toISOString(),
   }
 
   list.push(booking)
-  try {
-    localStorage.setItem(BOOKING_KEY, JSON.stringify(list))
-  } catch {
-    toast('Không lưu được đơn đặt, trình duyệt có thể đang chặn lưu trữ. Vui lòng thử lại.', 'error')
+  if (!saveBookings(list)) {
     list.pop()
     return
   }
@@ -702,6 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyStats()
   renderProvinces('bong-da')
   applyFilters({ silent: true })
+  syncAuthNav({ accountUrl: 'src/tai-khoan.html' })
 
   // Ô tìm kiếm: lọc ngay khi gõ để không phải bấm nút
   const locInput = document.getElementById('qLocation')
@@ -770,8 +786,8 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
-  // dropdown
-  const dropdowns = document.querySelectorAll('.dropdown')
+  // dropdown (menu tài khoản tự xử lý trong auth-nav.js)
+  const dropdowns = document.querySelectorAll('.dropdown:not(.nav-user)')
   dropdowns.forEach((dd) => {
     const toggle = dd.querySelector('.dropdown-toggle')
     if (!toggle) return
@@ -806,5 +822,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeAllDd() {
     dropdowns.forEach((dd) => dd.classList.remove('open'))
+    document.querySelectorAll('.nav-user.open').forEach((dd) => dd.classList.remove('open'))
   }
 })
