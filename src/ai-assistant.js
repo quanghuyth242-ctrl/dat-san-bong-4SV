@@ -9,7 +9,7 @@
 
 import { escapeHtml } from './auth-nav.js'
 import { priceValue } from './venues.js'
-import { norm, expand, venueHaystack } from './vn-text.js'
+import { norm, expand, venueHaystack, deaccent } from './vn-text.js'
 
 const STASH_KEY = '4sv_ai_intent'
 
@@ -52,16 +52,6 @@ const NUM_WORDS = { 'mot': 1, 'hai': 2, 'ba': 3, 'bon': 4, 'nam': 5, 'sau': 6, '
 
 /** Khung giờ mà form đặt sân đang cho phép chọn. */
 const DURATIONS = [1, 1.5, 2, 3]
-
-/** Từ khoá dừng: cắt bỏ khỏi phần địa điểm lấy từ câu. */
-const STOP_WORDS = new Set([
-  'dat', 'san', 'cho', 'tim', 'dung', 'muon', 'can', 'co', 'khong', 'nhan', 'o', 'tai', 'gan', 'quanh',
-  'thuoc', 'khu', 'vuc', 'trong', 'ngoai', 'thu', 'nam', 'nguoi', 'vao', 'ra', 'choi', 'da', 'duoc',
-  'hom', 'nay', 'ngay', 'mai', 'kia', 'toi', 'sang', 'trua', 'chieu', 'dem', 'trong', 'tuan',
-  'tieng', 'gio', 'phut', 'gio', 're', 'nhat', 'gan', 'nhat', 'gia', 're', 'nhat', 'open', 'ca',
-  'cuoi', 'tuan', 'nay', 'tu', 'den', 'trong', 'ngoai', 'thanh', 'phan', 'boi', 'mo',
-  'gi', 'luc', 'nhat', 'rat', 'nhe', 'a', 'anh', 'chi', 'em', 'toi', 'ban',
-])
 
 // ================================ TIỆN ÍCH NGÀY GIỜ ================================
 
@@ -119,12 +109,14 @@ function buildPlaceIndex(venues) {
       for (const chunk of String(part).split(',')) {
         const words = expand(chunk)
           .replace(generic, ' ')
+          .replace(GENERIC_PLACE_PHRASE_RE, ' ')
           .replace(/\b(so|ngo|duong|pho|hem|ki)\s*(\d+[a-z]?)\b/g, ' $2 ')
           .split(' ')
           .filter(Boolean)
           .filter((w) => w.length > 1 && !/^\d+$/.test(w))
-        // Bỏ số nhà/đường ở đầu chunk để tên hiển thị gọn ("68 Cầu Giấy" -> "Cầu Giấy")
-        const display = chunk.trim().replace(/^\s*(?:so|ngo|duong|pho|hem|ki|kdt)\s*\d+[a-z]?\s*/i, '').replace(/^\s*\d+[a-z]?\s*/i, '').trim()
+        // Tên hiển thị: bỏ số nhà ở đầu chunk và tiền tố "sân bóng", "sân cỏ nhân tạo"
+        let display = chunk.trim().replace(/^\s*(?:so|ngo|duong|pho|hem|ki|kdt)\s*\d+[a-z]?\s*/i, '').replace(/^\s*\d+[a-z]?\s*/i, '').trim()
+        display = stripVenuePrefix(display)
         // Giữ cụm 2-3 từ liền nhau: "cau giay", "nam tu liem"
         for (let i = 0; i < words.length; i++) {
           for (const span of [3, 2]) {
@@ -144,6 +136,39 @@ function buildPlaceIndex(venues) {
 /** Từ báo hiệu địa điểm đứng trước tên khu vực ("ở Cầu Giấy", "khu Đà Nẵng"). */
 const PLACE_CUES = 'o|tai|khu vuc|khu|gan|quanh|thuoc|ben|canh|gap'
 
+/** Từ chung về địa danh, không dùng để lọc sân. */
+const GENERIC_PLACE_WORDS = new Set([
+  'quan', 'huyen', 'phuong', 'xa', 'khu', 'vuc', 'khu_vuc',
+  'ngo', 'duong', 'hem', 'street', 'so', 'khu_pho',
+])
+
+/** Cụm chung ("khu đô thị", "đô thị") cũng cần bỏ, kể cả khi expand() đã mở rộng viết tắt. */
+const GENERIC_PLACE_PHRASE_RE = /\b(?:khu\s+(?:do\s+thi|vuc|pho)|do\s+thi)\b/g
+
+/** Từ báo hiệu đoạn thời gian ở cuối câu, dùng để cắt phần địa điểm. */
+const TIME_CUT_RE = /^(?:toi|sang|trua|chieu|dem|hom|ngay|cuoi|lien|nay)$/
+
+/** Từ chung trong câu địa điểm, không dùng để lọc sân. */
+const NOISE_PLACE_WORDS = new Set([
+  'san', 'nha', 'gan', 'cua', 'tim', 'choi', 'dat', 'trong', 'ngoai', 'thuoc', 'ven', 'ben',
+  // đại từ và dạng so sánh: "gần em nhất" là tìm sân gần nhất, không phải tên khu vực
+  'em', 'toi', 'minh', 'ban', 'nhat',
+])
+
+/** Bỏ tiền tố "sân bóng / sân cỏ nhân tạo" trong tên sân để tên địa điểm gọn. */
+const VENUE_PREFIX_RE = /^(?:san\s+(?:bong|co(?:\s+nhan\s+tao)?|football)|co(?:\s+nhan\s+tao)?|bong|football|nam\s+tao)\s+/i
+
+/** deaccent() giữ nguyên độ dài nên cắt theo độ dài khớp được với bản có dấu. */
+function stripVenuePrefix(str) {
+  let out = String(str).trim()
+  for (;;) {
+    const probe = deaccent(out)
+    const m = VENUE_PREFIX_RE.exec(probe)
+    if (!m) return out
+    out = out.slice(m[0].length).trim()
+  }
+}
+
 /**
  * Trả về { text: tên địa điểm để hiển thị, words: các từ khoá để lọc sân }.
  * Chỉ nhận cụm >= 2 từ và phải nằm ngay sau từ báo hiệu hoặc ở cuối câu,
@@ -161,15 +186,39 @@ function findPlace(nText, placeIndex) {
   return null
 }
 
-/** Câu không có tên địa điểm quen thuộc thì thử cắt sau "ở / tại / gần / khu vực". */
-function findFreePlace(nText) {
-  const m = nText.match(new RegExp(`(?:^|\\s)(?:${PLACE_CUES})\\s+([^,.;?!]+)`))
-  if (!m) return ''
-  return m[1]
+/**
+ * Câu không có tên địa điểm quen thuộc thì cắt phần sau "ở / tại / gần / khu vực".
+ * `soft` là bản bỏ dấu hạ chữ của `raw` nhưng giữ nguyên độ dài, nên cắt theo offset
+ * của `soft` vẫn ra đúng chữ người dùng gõ (kể cả dấu tiếng Việt).
+ * Đuôi "tối nay / cuối tuần / thứ 7" bị cắt theo TIME_CUT_RE, không phải theo từng từ dừng,
+ * nhờ vậy "Hoàng Mai" và "Nam Từ Liêm" không bị mất chữ.
+ */
+function findFreePlace(soft, raw = soft) {
+  if (soft.length !== raw.length) return null
+  const m = soft.match(new RegExp(`(?:^|\\s)(?:${PLACE_CUES})\\s+([^?!]+)`))
+  if (!m) return null
+  const end = m.index + m[0].length
+  const start = end - m[1].length
+  // soft và raw cùng độ dài nên offset ký tự là chung: cắt ở soft, hiển thị ở raw.
+  const tail = m[1].replace(/\s+$/, '')
+  let cut = tail.length
+  const token = /\S+/g
+  let hit
+  while ((hit = token.exec(tail))) {
+    if (TIME_CUT_RE.test(hit[0])) {
+      cut = hit.index
+      break
+    }
+  }
+  const text = raw.slice(start, start + cut).trim()
+  if (!text) return null
+  const words = expand(text)
+    .replace(GENERIC_PLACE_PHRASE_RE, ' ')
     .split(' ')
-    .filter((w) => !STOP_WORDS.has(w))
-    .join(' ')
-    .trim()
+    .filter(Boolean)
+    .filter((w) => w.length > 1 && !/^\d/.test(w) && !GENERIC_PLACE_WORDS.has(w) && !NOISE_PLACE_WORDS.has(w))
+  // Chỉ toàn từ chung ("quận 10") thì không lọc sân, để bot liệt kê mọi sân trống.
+  return words.length ? { text, words } : null
 }
 
 // ================================ PARSER ================================
@@ -206,16 +255,19 @@ function parseTime(nText) {
   const part = Object.keys(PART_OF_DAY).find((k) => new RegExp(`\\b${k}\\b`).test(nText))
   const partInfo = part ? PART_OF_DAY[part] : null
 
-  // "17h30", "17:30", "17.30"
-  let m = nText.match(/\b(\d{1,2})\s*(?:h|gio)\s*(\d{2})\b/) || nText.match(/\b(\d{1,2})\s*[:.]\s*(\d{2})\b/)
-  if (m) {
-    return normalizeHour(Number(m[1]) + Number(m[2]) / 60, partInfo)
+  // "17h30", "17:30", "17.30" — bỏ qua khi phút >= 60 ("19 giờ 90 phút" là 19h, không phải 19h90)
+  for (const re of [/\b(\d{1,2})\s*(?:h|gio)\s*(\d{2})\b/, /\b(\d{1,2})\s*[:.]\s*(\d{2})\b/]) {
+    const m = nText.match(re)
+    if (!m) continue
+    const minutes = Number(m[2])
+    if (minutes >= 60) continue
+    return normalizeHour(Number(m[1]) + minutes / 60, partInfo)
   }
 
   // "17h", "17 giờ"
-  m = nText.match(/\b(\d{1,2})\s*(?:h|gio)\b/)
-  if (m) {
-    const hour = Number(m[1])
+  const mHour = nText.match(/\b(\d{1,2})\s*(?:h|gio)\b/)
+  if (mHour) {
+    const hour = Number(mHour[1])
     if (hour >= 0 && hour <= 23) return normalizeHour(hour, partInfo)
   }
 
@@ -322,12 +374,16 @@ export function parseIntent(text, { venues = [], today = todayStr() } = {}) {
   if (teamM) intent.people = Number(teamM[1])
 
   if (/\b(re|re nhat|gia re|thap nhat|it tien nhat)\b/.test(nText)) intent.sort = 'price'
-  if (/\b(gan nhat|gan toi|gan day|nearby|o gan)\b/.test(nText)) intent.sort = 'near'
+  if (/\b(gan nhat|gan toi|gan em|gan minh|gan ban|gan nha|gan day|gan nhat chung|nearby|o gan)\b/.test(nText)) intent.sort = 'near'
 
   const placeIndex = buildPlaceIndex(venues)
-  const found = findPlace(nText, placeIndex)
+  // Ưu tiên tên địa điểm có sẵn trong dữ liệu sân; không có thì dùng phần người dùng gõ tự do.
+  // `soft` bỏ dấu và đổi dấu câu thành khoảng trắng nhưng giữ nguyên độ dài,
+  // nên findFreePlace cắt được đúng chữ người gõ mà không đứt "q.10".
+  const soft = deaccent(raw).toLowerCase().replace(/[,;.]/g, ' ')
+  const found = findPlace(nText, placeIndex) || findFreePlace(soft, raw)
+  intent.loc = found ? found.text : ''
   intent.locWords = found ? found.words : null
-  intent.loc = found ? found.text : findFreePlace(nText)
 
   intent.understood = Boolean(intent.fieldType || intent.loc || intent.date || intent.sort !== 'default' || intent.hour !== null)
   return intent
@@ -345,9 +401,13 @@ function haversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+/**
+ * words = null nghĩa là chưa xác định (lọc theo chữ người dùng gõ),
+ * words = [] nghĩa là địa điểm chỉ gồm từ chung ("quận 10") nên không lọc.
+ */
 function placeMatches(venue, loc, words) {
   if (!loc) return true
-  const tokens = (words && words.length ? words : expand(loc).split(' ')).filter((t) => t.length > 1)
+  const tokens = (Array.isArray(words) ? words : expand(loc).split(' ')).filter((t) => t.length > 1)
   if (!tokens.length) return true
   const hay = venueHaystack(venue)
   return tokens.every((t) => hay.includes(t))
@@ -658,7 +718,8 @@ export function mountAssistant(handlers = {}) {
     const head = [
       `Mình tìm được <b>${results.length}</b> sân`,
       intent.fieldType ? `loại <b>${intent.fieldType}</b>` : '',
-      intent.loc ? `tại <b>${escapeHtml(intent.loc)}</b>` : '',
+      // Địa điểm gõ tự do thì nói "gần ...", địa điểm có trong dữ liệu thì nói "tại ..."
+      intent.loc ? `${Array.isArray(intent.locWords) ? 'gần' : 'tại'} <b>${escapeHtml(intent.loc)}</b>` : '',
       intent.date ? `ngày <b>${escapeHtml(formatDate(intent.date))}</b>` : '',
       intent.hour != null ? `lúc <b>${timeLabel(intent.hour)}</b>` : '',
     ]
