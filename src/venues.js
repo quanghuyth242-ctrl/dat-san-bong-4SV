@@ -3,6 +3,8 @@
  * Nguồn duy nhất: nếu admin đã đăng sân thì lấy từ localStorage, không thì dùng bộ mặc định.
  */
 
+import { readFields } from './storage.js'
+
 // 4SV.vn chỉ phục vụ sân bóng đá: mọi sân đều thuộc 1 trong 3 kích thước sân chuẩn.
 export const FIELD_TYPES = ['Sân 5', 'Sân 7', 'Sân 11']
 
@@ -36,10 +38,8 @@ export function formatPriceShort(price) {
 
 export function loadVenuesFromAdmin() {
   try {
-    const stored = localStorage.getItem('admin_fields')
-    if (!stored) return null
-    const fields = JSON.parse(stored)
-    if (!Array.isArray(fields) || fields.length === 0) return null
+    const fields = readFields()
+    if (fields.length === 0) return null
 
     // Chỉ lấy sân đang hoạt động
     const activeFields = fields.filter(f => f.status === 'active')
@@ -52,11 +52,15 @@ export function loadVenuesFromAdmin() {
       addr: f.address,
       price: formatPriceShort(f.price),
       per: '/tiếng',
-      courts: 1,
-      hours: { open: 6, close: 22 },
-      lat: 21.0285,
-      lng: 105.8542,
-      img: FIELD_IMAGES[idx % FIELD_IMAGES.length],
+      courts: Number(f.courts) > 0 ? Number(f.courts) : 1,
+      // Trang quản trị có sẵn giờ mở cửa/toạ độ; thiếu thì lấy mặc định Hà Nội.
+      hours: {
+        open: Number.isFinite(Number(f.hours?.open)) ? Number(f.hours.open) : 6,
+        close: Number.isFinite(Number(f.hours?.close)) ? Number(f.hours.close) : 22,
+      },
+      lat: Number.isFinite(Number(f.lat)) ? Number(f.lat) : 21.0285,
+      lng: Number.isFinite(Number(f.lng)) ? Number(f.lng) : 105.8542,
+      img: f.img || FIELD_IMAGES[idx % FIELD_IMAGES.length],
       icon: '⚽',
     }))
   } catch (e) {

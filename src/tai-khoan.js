@@ -2,9 +2,8 @@ import { getUser, getRemembered, setUser, clearUser } from './session.js'
 import { toast, syncAuthNav, escapeHtml } from './auth-nav.js'
 import { FIELD_IMAGES, loadVenues } from './venues.js'
 import { mountAssistant, stashIntentForHome } from './ai-assistant.js'
+import { BOOKING_KEY, readFields, readJson, readUsers, writeUsers } from './storage.js'
 
-const USERS_KEY = '4sv_auth_users'
-const BOOKING_KEY = '4sv_bookings'
 const ACCOUNT_URL = 'tai-khoan.html'
 const LOGIN_URL = 'auth.html#login'
 
@@ -20,15 +19,6 @@ const BOOKING_STATUS = {
 /** Danh sách sân để lấy ảnh/địa chỉ hiển thị cho đơn đã đặt. */
 
 const $ = (sel) => document.querySelector(sel)
-
-function readJson(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch {
-    return fallback
-  }
-}
 
 function writeJson(key, value) {
   try {
@@ -47,11 +37,17 @@ function courtKey(id) {
   return Number.isFinite(n) ? 'san-' + n : raw
 }
 
+/** Đơn do trang quản trị tạo dùng tên trường fieldId/fieldName, đơn của trang chủ dùng courtId/courtName. */
+function bookingCourtId(b) {
+  return b.fieldId || b.courtId
+}
+
 function venueName(b) {
   if (b.courtName) return b.courtName
+  if (b.fieldName) return b.fieldName
   try {
-    const fields = readJson('admin_fields', [])
-    const hit = fields.find((f) => courtKey(f.id) === courtKey(b.courtId))
+    const fields = readFields()
+    const hit = fields.find((f) => courtKey(f.id) === courtKey(bookingCourtId(b)))
     if (hit) return hit.name
   } catch {
     /* bỏ qua */
@@ -61,8 +57,8 @@ function venueName(b) {
 
 function venueAddr(b) {
   try {
-    const fields = readJson('admin_fields', [])
-    const hit = fields.find((f) => courtKey(f.id) === courtKey(b.courtId))
+    const fields = readFields()
+    const hit = fields.find((f) => courtKey(f.id) === courtKey(bookingCourtId(b)))
     return hit?.address || ''
   } catch {
     return ''
@@ -70,7 +66,7 @@ function venueAddr(b) {
 }
 
 function venueImg(b) {
-  const n = parseInt(String(b.courtId || '').replace(/^san-/, ''), 10)
+  const n = parseInt(String(bookingCourtId(b) || '').replace(/^san-/, ''), 10)
   return FIELD_IMAGES[(Number.isFinite(n) ? n - 1 : 0) % FIELD_IMAGES.length]
 }
 
@@ -96,8 +92,7 @@ function formatDate(value) {
 
 /** Hồ sơ đầy đủ trong danh sách tài khoản (có SĐT, ngày tạo). */
 function profileRecord(email) {
-  const users = readJson(USERS_KEY, [])
-  if (!Array.isArray(users)) return null
+  const users = readUsers()
   return (
     users.find(
       (u) => String(u.email || '').toLowerCase() === String(email || '').toLowerCase(),
@@ -111,7 +106,9 @@ function myBookings(user, record) {
   const phone = normalizePhone(user.phone || record?.phone)
   const list = readJson(BOOKING_KEY, [])
   if (!Array.isArray(list)) return []
+  const userId = String(record?.id || '').toLowerCase()
   return list.filter((b) => {
+    if (userId && String(b.userId || '').toLowerCase() === userId) return true
     const bEmail = String(b.customer?.email || b.userEmail || '').toLowerCase()
     if (email && bEmail) return bEmail === email
     if (phone) return normalizePhone(b.customer?.phone) === phone
@@ -271,16 +268,14 @@ function saveProfile(e) {
   )
   if (!nameOk || !phoneOk) return
 
-  const users = readJson(USERS_KEY, [])
-  if (Array.isArray(users)) {
-    const idx = users.findIndex(
-      (u) => String(u.email || '').toLowerCase() === state.user.email.toLowerCase(),
-    )
-    if (idx !== -1) {
-      users[idx].name = name
-      users[idx].phone = phone
-      if (!writeJson(USERS_KEY, users)) return
-    }
+  const users = readUsers()
+  const idx = users.findIndex(
+    (u) => String(u.email || '').toLowerCase() === state.user.email.toLowerCase(),
+  )
+  if (idx !== -1) {
+    users[idx].name = name
+    users[idx].phone = phone
+    if (!writeUsers(users)) return
   }
 
   setUser(

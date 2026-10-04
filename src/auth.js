@@ -1,4 +1,5 @@
 import { getUser, getRemembered, setUser } from './session.js'
+import { readUsers, writeUsers } from './storage.js'
 
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
@@ -6,40 +7,12 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 const OTP_DEMO = '123456'
 const RESEND_SECONDS = 60
 const REDIRECT_MS = 3000
-const KEYS = {
-  users: '4sv_auth_users',
-}
 const DEMO_USER = {
   name: 'Nguyễn Minh Tuấn',
   email: 'demo@4sv.vn',
   phone: '0912345678',
   password: '123456',
   role: 'player',
-}
-
-const store = {
-  get(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key)
-      return raw === null ? fallback : JSON.parse(raw)
-    } catch {
-      return fallback
-    }
-  },
-  set(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      /* storage bị chặn - bỏ qua */
-    }
-  },
-  del(key) {
-    try {
-      localStorage.removeItem(key)
-    } catch {
-      /* storage bị chặn - bỏ qua */
-    }
-  },
 }
 
 function toast(message) {
@@ -325,9 +298,13 @@ function showSuccess(title, desc, redirectTo) {
 }
 
 /* ---------- NGƯỜI DÙNG (demo localStorage) ---------- */
+/** Đọc cả khoá mới (4sv_users) và khoá cũ (4sv_auth_users) sau khi quản trị migrate. */
 function getUsers() {
-  const users = store.get(KEYS.users, [])
-  return Array.isArray(users) ? users : []
+  return readUsers()
+}
+
+function saveUsers(users) {
+  return writeUsers(users)
 }
 
 function findUser(identity) {
@@ -511,7 +488,7 @@ function initForms() {
       createdAt: new Date().toISOString(),
     }
     users.push(newUser)
-    store.set(KEYS.users, users)
+    saveUsers(users)
     otpNewUser = newUser
     showOtp('register', email)
   })
@@ -546,7 +523,7 @@ function initForms() {
     )
     if (user) {
       user.password = password
-      store.set(KEYS.users, users)
+      saveUsers(users)
     }
     forms.newpass.reset()
     $('#newPassword').dispatchEvent(new Event('input'))
@@ -560,7 +537,7 @@ function init() {
   const year = $('#year')
   if (year) year.textContent = String(new Date().getFullYear())
 
-  if (!getUsers().length) store.set(KEYS.users, [{ ...DEMO_USER }])
+  if (!getUsers().length) saveUsers([{ ...DEMO_USER }])
 
   if (getUser()) {
     window.location.replace('/')
