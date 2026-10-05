@@ -865,6 +865,10 @@
       if (booking.voucherCode) SV.redeemVoucher(booking.voucherCode)
       return { ok: true, booking: booking }
     },
+    createBooking: function (data) {
+      return SV.addBooking(data)
+    },
+    courtKey: courtKey,
     saveBookings: function (list) {
       return store('bookings', list)
     },

@@ -524,9 +524,21 @@ function handleSearch(e) {
 
 const bookState = { venue: null, duration: 1, refresh: null }
 
+function shakeField(fieldId) {
+  const el = document.getElementById(fieldId)
+  if (!el) return
+  el.classList.remove('shake')
+  void el.offsetWidth
+  el.classList.add('shake')
+}
+
 function openBook(venue) {
   bookState.venue = venue
   bookState.duration = 1
+
+  const user = window.SV?.currentUser ? window.SV.currentUser() : null
+  const defaultName = user ? (user.name || '') : ''
+  const defaultPhone = user ? (user.phone || '') : ''
 
   const body = document.getElementById('bookBody')
   if (body) {
@@ -541,13 +553,13 @@ function openBook(venue) {
       <form id="bookForm" novalidate>
         <div class="bk-grid">
           <div class="bk-field" id="f-date">
-            <label for="bkDate">Ngày</label>
-            <input type="date" id="bkDate" />
+            <label for="bkDate">Ngày <span style="color:#dc2626">*</span></label>
+            <input type="date" id="bkDate" required />
             <span class="bk-err">Vui lòng chọn ngày không ở quá khứ.</span>
           </div>
           <div class="bk-field" id="f-time">
-            <label for="bkTime">Khung giờ</label>
-            <select id="bkTime"></select>
+            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
+            <select id="bkTime" required></select>
             <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
           </div>
           <div class="bk-field" id="f-duration">
@@ -560,13 +572,13 @@ function openBook(venue) {
             </select>
           </div>
           <div class="bk-field" id="f-name">
-            <label for="bkName">Họ tên</label>
-            <input type="text" id="bkName" placeholder="VD: Nguyễn Văn A" autocomplete="name" />
+            <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
+            <input type="text" id="bkName" placeholder="VD: Nguyễn Văn A" autocomplete="name" value="${esc(defaultName)}" required />
             <span class="bk-err">Vui lòng nhập họ tên (tối thiểu 2 ký tự).</span>
           </div>
           <div class="bk-field" id="f-phone">
-            <label for="bkPhone">Số điện thoại</label>
-            <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" />
+            <label for="bkPhone">Số điện thoại <span style="color:#dc2626">*</span></label>
+            <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" value="${esc(defaultPhone)}" required />
             <span class="bk-err">Số điện thoại không hợp lệ (VD: 0912345678).</span>
           </div>
           <div class="bk-field" id="f-voucher">
@@ -579,7 +591,7 @@ function openBook(venue) {
             <div class="bk-total" id="bkTotal">0đ</div>
           </div>
         </div>
-        <button type="submit" class="btn-book btn-book-full"><i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân</button>
+        <button type="submit" class="btn-book btn-book-full" id="btnConfirmBook"><i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân</button>
       </form>
     `
   }
@@ -601,12 +613,10 @@ function openBook(venue) {
 
   const updateTotal = () => {
     bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
-    // venue.price là số đồng sau normalizeVenue() nên nhân thẳng, không parse lại
-    // từ chuỗi hiển thị ("1,2tr" trước đây bị đọc thành 12.000đ).
     const current = bookState.venue || venue
     const subtotal = Math.round(current.price * bookState.duration)
     const code = document.getElementById('bkVoucher').value.trim().toUpperCase()
-    const voucher = code ? SV.previewVoucher(code, subtotal) : null
+    const voucher = code && window.SV?.previewVoucher ? window.SV.previewVoucher(code, subtotal) : null
     const usable = !!(voucher && voucher.ok)
 
     document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
@@ -620,16 +630,20 @@ function openBook(venue) {
     refresh()
   }
 
-  // watchStore() gọi lại hàm này khi sân hoặc đơn ở tab khác thay đổi.
   bookState.refresh = updateTotal
 
   dateInput.addEventListener('change', refresh)
   document.getElementById('bkDuration').addEventListener('change', updateTotal)
   document.getElementById('bkVoucher').addEventListener('input', updateTotal)
-  document.getElementById('bookForm').querySelectorAll('input').forEach((el) => {
-    // Ô mã giảm giá tự báo lỗi theo kết quả tra store, không gỡ lỗi chung.
+  document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
     if (el.id === 'bkVoucher') return
-    const clearErr = () => el.closest('.bk-field')?.classList.remove('invalid')
+    const clearErr = () => {
+      const field = el.closest('.bk-field')
+      if (field) {
+        field.classList.remove('invalid')
+        field.classList.remove('shake')
+      }
+    }
     el.addEventListener('input', clearErr)
     el.addEventListener('change', clearErr)
   })
@@ -661,11 +675,16 @@ function closeModal(id) {
 function submitBooking(venue) {
   const set = (field, ok) => document.getElementById('f-' + field)?.classList.toggle('invalid', !ok)
 
-  const date = document.getElementById('bkDate').value
-  const startHour = parseFloat(document.getElementById('bkTime').value)
+  const dateInput = document.getElementById('bkDate')
+  const timeInput = document.getElementById('bkTime')
+  const nameInput = document.getElementById('bkName')
+  const phoneInput = document.getElementById('bkPhone')
+
+  const date = dateInput ? dateInput.value : ''
+  const startHour = parseFloat(timeInput ? timeInput.value : NaN)
   const duration = bookState.duration
-  const name = document.getElementById('bkName').value.trim()
-  const phone = document.getElementById('bkPhone').value.trim().replace(/[\s.-]/g, '')
+  const name = nameInput ? nameInput.value.trim() : ''
+  const phone = phoneInput ? phoneInput.value.trim().replace(/[\s.-]/g, '') : ''
 
   const dateOk = !!date && date >= todayStr()
   let timeOk = Number.isFinite(startHour) && dateOk
@@ -684,59 +703,110 @@ function submitBooking(venue) {
   set('name', nameOk)
   set('phone', phoneOk)
 
-  if (!dateOk || !timeOk || !nameOk || !phoneOk) {
-    document.getElementById('bookForm')?.querySelector('.bk-field.invalid')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  if (!nameOk) {
+    nameInput?.focus()
+    shakeField('f-name')
+    toast('Vui lòng nhập họ và tên của bạn (tối thiểu 2 ký tự)', 'error')
+    return
+  }
+  if (!phoneOk) {
+    phoneInput?.focus()
+    shakeField('f-phone')
+    toast('Vui lòng nhập số điện thoại hợp lệ (10 số, VD: 0912345678)', 'error')
+    return
+  }
+  if (!dateOk) {
+    dateInput?.focus()
+    shakeField('f-date')
+    toast('Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)', 'error')
+    return
+  }
+  if (!timeOk) {
+    timeInput?.focus()
+    shakeField('f-time')
+    toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
     return
   }
 
-  const result = SV.createBooking({
-    // courtKey() đưa cả 'san-1' (trang danh sách sân) và 'SAN003' (sân do admin
-    // tạo) về cùng một khuôn, để hai trang nhìn thấy lịch của nhau và admin
-    // khớp được fieldId.
-    courtId: courtKey(venue.id),
-    courtName: venue.name,
-    date,
-    startHour,
-    endHour: startHour + duration,
-    duration,
-    total: venue.price * duration,
-    voucherCode: (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase(),
-    customer: { name, phone, email: '' },
-    status: 'pending',
-  })
-
-  if (!result.ok) {
-    toast(result.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
-    return
+  const btn = document.getElementById('btnConfirmBook')
+  if (btn) {
+    btn.disabled = true
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...'
   }
 
-  const booking = result.booking
+  try {
+    const bookFn = window.SV?.createBooking || window.SV?.addBooking
+    if (!bookFn) {
+      toast('Hệ thống dữ liệu chưa sẵn sàng. Vui lòng tải lại trang.', 'error')
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+      }
+      return
+    }
 
-  const body = document.getElementById('bookBody')
-  body.innerHTML = `
-    <div class="bk-success">
-      <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
-      <h3>Đặt sân thành công!</h3>
-      <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
-      <dl class="bk-summary">
-        <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
-        <div><dt>Ngày</dt><dd>${date}</dd></div>
-        <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
-        <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
-        ${
-          booking.discount > 0
-            ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
-               <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
-               <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
-            : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
-        }
-        <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
-      </dl>
-      <button type="button" class="btn-book btn-book-full" id="bkDone">Đóng</button>
-    </div>
-  `
-  document.getElementById('bkDone').addEventListener('click', () => closeModal('bookModal'))
-  toast(`Đặt sân thành công · ${booking.id}`)
+    const currentUser = window.SV?.currentUser ? window.SV.currentUser() : null
+
+    const result = bookFn({
+      courtId: courtKey(venue.id),
+      courtName: venue.name,
+      date,
+      startHour,
+      endHour: startHour + duration,
+      duration,
+      total: venue.price * duration,
+      voucherCode: (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase(),
+      userId: currentUser?.id || '',
+      userName: name,
+      customer: { name, phone, email: currentUser?.email || '' },
+      status: 'pending',
+    })
+
+    if (!result || !result.ok) {
+      toast(result?.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+      }
+      return
+    }
+
+    const booking = result.booking
+    const body = document.getElementById('bookBody')
+    if (body) {
+      body.innerHTML = `
+        <div class="bk-success">
+          <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
+          <h3>Đặt sân thành công!</h3>
+          <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
+          <dl class="bk-summary">
+            <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
+            <div><dt>Ngày</dt><dd>${date}</dd></div>
+            <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
+            <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
+            ${
+              booking.discount > 0
+                ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
+                : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
+            }
+            <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
+          </dl>
+          <button type="button" class="btn-book btn-book-full" id="bkDone">Đóng</button>
+        </div>
+      `
+      document.getElementById('bkDone')?.addEventListener('click', () => closeModal('bookModal'))
+    }
+    toast(`Đặt sân thành công · ${booking.id}`)
+  } catch (err) {
+    console.error('Lỗi khi đặt sân:', err)
+    toast('Đã có lỗi xảy ra khi đặt sân: ' + (err.message || 'vui lòng thử lại'), 'error')
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+    }
+  }
 }
 
 // ================================ VỊ TRÍ ================================

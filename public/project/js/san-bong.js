@@ -390,18 +390,16 @@ function updateTotal() {
 
 function validateBooking() {
   const set = (field, ok) => {
-    $('#f-' + field).classList.toggle('invalid', !ok);
+    $('#f-' + field)?.classList.toggle('invalid', !ok);
   };
 
   const court = state.activeCourt;
   if (!court) return false;
 
   // Ngày
-  let ok = true;
   const dateVal = $('#dateInput').value;
   const dateOk = !!dateVal && dateVal >= todayStr();
   set('date', dateOk);
-  if (!dateOk) ok = false;
 
   // Giờ: phải còn trong giờ mở cửa, chưa qua và chưa bị đặt
   const timeVal = parseFloat($('#timeSelect').value);
@@ -417,27 +415,49 @@ function validateBooking() {
     }
   }
   set('time', timeOk);
-  if (!timeOk) ok = false;
 
   // Họ tên
   const nameVal = $('#nameInput').value.trim();
   const nameOk = nameVal.length >= 2;
   set('name', nameOk);
-  if (!nameOk) ok = false;
 
   // SĐT
   const phoneVal = $('#phoneInput').value.trim().replace(/[\s.-]/g, '');
   const phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phoneVal);
   set('phone', phoneOk);
-  if (!phoneOk) ok = false;
 
-  // Email
+  // Email (nếu nhập thì phải đúng cú pháp, hoặc để trống)
   const emailVal = $('#emailInput').value.trim();
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  const emailOk = !emailVal || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
   set('email', emailOk);
-  if (!emailOk) ok = false;
 
-  return ok;
+  if (!nameOk) {
+    $('#nameInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng nhập họ tên của bạn (tối thiểu 2 ký tự)');
+    return false;
+  }
+  if (!phoneOk) {
+    $('#phoneInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng nhập số điện thoại hợp lệ (10 số, VD: 0912345678)');
+    return false;
+  }
+  if (!dateOk) {
+    $('#dateInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)');
+    return false;
+  }
+  if (!timeOk) {
+    $('#timeSelect')?.focus();
+    showToast('Lỗi khung giờ', 'Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa');
+    return false;
+  }
+  if (!emailOk) {
+    $('#emailInput')?.focus();
+    showToast('Lỗi email', 'Địa chỉ email không đúng định dạng');
+    return false;
+  }
+
+  return true;
 }
 
 function showSuccess() {
@@ -447,7 +467,15 @@ function showSuccess() {
   const duration = state.booking.duration;
   const time = `${timeLabel(startHour)} – ${timeLabel(startHour + duration)}`;
 
-  const result = SV.createBooking({
+  const bookFn = window.SV?.createBooking || window.SV?.addBooking;
+  if (!bookFn) {
+    showToast('Lỗi hệ thống', 'Dữ liệu chưa sẵn sàng, vui lòng thử lại');
+    return;
+  }
+
+  const currentUser = window.SV?.currentUser ? window.SV.currentUser() : null;
+
+  const result = bookFn({
     courtId: court.id,
     courtName: court.name,
     date,
@@ -456,6 +484,8 @@ function showSuccess() {
     duration,
     total: court.price * duration,
     voucherCode: state.booking.voucherCode || '',
+    userId: currentUser?.id || '',
+    userName: $('#nameInput').value.trim(),
     customer: {
       name: $('#nameInput').value.trim(),
       phone: $('#phoneInput').value.trim(),
@@ -463,14 +493,14 @@ function showSuccess() {
     },
     status: 'pending',
   });
-  const booking = result.ok ? result.booking : null;
+  const booking = result && result.ok ? result.booking : null;
 
   if (!booking) {
     $('#bookBody').innerHTML = `
       <div class="success-wrap">
         <div class="success-icon" style="background:#fee2e2;color:#dc2626"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <h3>Đặt sân không thành công</h3>
-        <p>${result.error || 'Vui lòng thử lại.'}</p>
+        <p>${result?.error || 'Vui lòng thử lại.'}</p>
         <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-rotate-left"></i> Chọn giờ khác</button>
       </div>`;
     $('#bookAgainBtn').addEventListener('click', () => openBook(court));
