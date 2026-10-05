@@ -933,6 +933,15 @@ select {
 .total-box .t-amount {
   font-size: 22px;
   font-weight: 800;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.total-box .t-amount small {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .btn-book {

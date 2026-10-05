@@ -367,7 +367,7 @@ function updateTotal() {
   // Ô mã chỉ tồn tại khi form đặt sân đang mở.
   const voucherInput = $('#voucherInput');
   if (!voucherInput) {
-    $('#totalAmount').textContent = formatPrice(subtotal);
+    $('#totalAmount').innerHTML = formatPrice(subtotal);
     state.booking.voucherCode = '';
     state.booking.discount = 0;
     return;
@@ -382,7 +382,7 @@ function updateTotal() {
   // Báo lỗi ngay khi gõ, không bắt phải bấm mới thấy.
   $('#f-voucher').classList.toggle('invalid', !!code && !usable);
   const total = subtotal - state.booking.discount;
-  $('#totalAmount').textContent =
+  $('#totalAmount').innerHTML =
     state.booking.discount > 0
       ? `${formatPrice(total)} <small>(-${formatPrice(state.booking.discount)})</small>`
       : formatPrice(total);
