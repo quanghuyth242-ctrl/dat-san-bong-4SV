@@ -41,6 +41,68 @@ const DataManager = {
   },
 };
 
+// ==========================================
+// ANIMATION HELPERS
+// ==========================================
+function animateCounter(element, start, end, duration = 750, formatFn = null) {
+  if (!element) return;
+  const startNum = Number(start) || 0;
+  const endNum = Number(end) || 0;
+  if (isNaN(endNum)) {
+    element.textContent = end;
+    return;
+  }
+  const isFloat = String(end).includes('.');
+  const startTime = performance.now();
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const currentVal = startNum + (endNum - startNum) * easeProgress;
+
+    if (formatFn) {
+      element.textContent = formatFn(currentVal);
+    } else if (isFloat) {
+      element.textContent = currentVal.toFixed(1);
+    } else {
+      element.textContent = Math.round(currentVal);
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      if (formatFn) {
+        element.textContent = formatFn(endNum);
+      } else if (isFloat) {
+        element.textContent = endNum.toFixed(1);
+      } else {
+        element.textContent = endNum;
+      }
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+// Global button click ripple effect
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const circle = document.createElement('span');
+  const diameter = Math.max(rect.width, rect.height);
+  const radius = diameter / 2;
+  circle.style.width = circle.style.height = `${diameter}px`;
+  circle.style.left = `${e.clientX - rect.left - radius}px`;
+  circle.style.top = `${e.clientY - rect.top - radius}px`;
+  circle.className = 'btn-ripple';
+  const existingRipple = btn.querySelector('.btn-ripple');
+  if (existingRipple) existingRipple.remove();
+  btn.appendChild(circle);
+  setTimeout(() => circle.remove(), 600);
+});
+
 function showToast(message, type = 'success') {
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -57,14 +119,14 @@ function showToast(message, type = 'success') {
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.innerHTML = `<span>${icons[type] || '●'}</span><span>${message}</span>`;
+  toast.innerHTML = `<span style="font-weight: 700; font-size: 1.15em;">${icons[type] || '●'}</span><span>${message}</span>`;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    toast.style.transition = '0.3s ease';
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transform = 'translateX(100%) scale(0.9)';
+    toast.style.transition = 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+    setTimeout(() => toast.remove(), 350);
   }, 2500);
 }
 
@@ -84,13 +146,25 @@ function showConfirm(title, message, onConfirm) {
   `;
   document.body.appendChild(overlay);
 
-  overlay.querySelector('#confirmCancel').onclick = () => overlay.remove();
+  const closeConfirm = () => {
+    const dialog = overlay.querySelector('.confirm-dialog');
+    if (dialog) {
+      dialog.style.transform = 'scale(0.85) translateY(16px)';
+      dialog.style.opacity = '0';
+      dialog.style.transition = 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+    }
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.25s ease';
+    setTimeout(() => overlay.remove(), 250);
+  };
+
+  overlay.querySelector('#confirmCancel').onclick = closeConfirm;
   overlay.querySelector('#confirmOk').onclick = () => {
-    overlay.remove();
+    closeConfirm();
     onConfirm();
   };
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove();
+    if (e.target === overlay) closeConfirm();
   });
 }
 
@@ -227,10 +301,10 @@ function initDashboard() {
   const users = DataManager.getUsers();
 
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
-  document.getElementById('statFields').textContent = fields.length;
-  document.getElementById('statBookings').textContent = bookings.length;
-  document.getElementById('statUsers').textContent = users.length;
-  document.getElementById('statPending').textContent = pendingCount;
+  animateCounter(document.getElementById('statFields'), 0, fields.length, 750);
+  animateCounter(document.getElementById('statBookings'), 0, bookings.length, 750);
+  animateCounter(document.getElementById('statUsers'), 0, users.length, 750);
+  animateCounter(document.getElementById('statPending'), 0, pendingCount, 750);
   const tbody = document.getElementById('recentBookingsBody');
   if (tbody) {
     const recent = [...bookings].reverse().slice(0, 5);
@@ -712,7 +786,7 @@ function renderPendingBookings() {
   const bookings = DataManager.getBookings();
   const pending = bookings.filter(b => b.status === 'pending');
 
-  document.getElementById('pendingCount').textContent = pending.length;
+  animateCounter(document.getElementById('pendingCount'), 0, pending.length, 600);
 
   const tbody = document.getElementById('pendingBookingsBody');
   if (!tbody) return;
@@ -744,7 +818,7 @@ function renderLockedUsers() {
   const users = DataManager.getUsers();
   const locked = users.filter(u => u.status === 'locked');
 
-  document.getElementById('lockedCount').textContent = locked.length;
+  animateCounter(document.getElementById('lockedCount'), 0, locked.length, 600);
 
   const tbody = document.getElementById('lockedUsersBody');
   if (!tbody) return;
@@ -771,7 +845,7 @@ function renderInactiveFields() {
   const fields = DataManager.getFields();
   const inactive = fields.filter(f => f.status === 'inactive');
 
-  document.getElementById('inactiveFieldCount').textContent = inactive.length;
+  animateCounter(document.getElementById('inactiveFieldCount'), 0, inactive.length, 600);
 
   const tbody = document.getElementById('inactiveFieldsBody');
   if (!tbody) return;
@@ -960,7 +1034,7 @@ function renderTable() {
           </div>
         </td>
         <td>${r.fieldName}</td>
-        <td><span style="color: #f59e0b; font-weight: 600;">${stars}</span></td>
+        <td><span class="review-stars" style="color: #f59e0b; font-weight: 600;">${stars}</span></td>
         <td style="max-width: 280px; word-wrap: break-word;">${r.comment}</td>
         <td>${r.date}</td>
         <td>${getStatusBadge(r.status, 'review')}</td>
@@ -989,10 +1063,10 @@ function renderStats(reviews) {
   const elPending = document.getElementById('statPendingReply');
   const elHidden = document.getElementById('statHiddenReviews');
 
-  if (elTotal) elTotal.textContent = total;
-  if (elAvg) elAvg.textContent = `${avg}★`;
-  if (elPending) elPending.textContent = pending;
-  if (elHidden) elHidden.textContent = hidden;
+  if (elTotal) animateCounter(elTotal, 0, total, 750);
+  if (elAvg) animateCounter(elAvg, 0, parseFloat(avg), 750, val => `${val.toFixed(1)}★`);
+  if (elPending) animateCounter(elPending, 0, pending, 750);
+  if (elHidden) animateCounter(elHidden, 0, hidden, 750);
 }
 
 // ==========================================
@@ -1067,10 +1141,10 @@ function renderVoucherStats(vouchers) {
   const elUsed = document.getElementById('statUsedVouchers');
   const elExpired = document.getElementById('statExpiredVouchers');
 
-  if (elTotal) elTotal.textContent = total;
-  if (elActive) elActive.textContent = active;
-  if (elUsed) elUsed.textContent = totalUsed;
-  if (elExpired) elExpired.textContent = expired;
+  if (elTotal) animateCounter(elTotal, 0, total, 750);
+  if (elActive) animateCounter(elActive, 0, active, 750);
+  if (elUsed) animateCounter(elUsed, 0, totalUsed, 750);
+  if (elExpired) animateCounter(elExpired, 0, expired, 750);
 }
 
 /** Đặt trạng thái voucher từ cả radio (giao diện) lẫn select ẩn (nơi đọc khi lưu). */
