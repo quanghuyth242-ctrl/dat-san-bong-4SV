@@ -692,7 +692,7 @@ function initSettings() {
   const colorValueSpan = document.getElementById('colorValue');
   const darkModeToggle = document.getElementById('settingDarkMode');
   const logoInput = document.getElementById('settingLogo');
-  const logoPreview = document.getElementById('logoPreview');
+  const logoP = document.getElementById('logoP');
 
   const adminUsernameInput = document.getElementById('settingAdminUsername');
   const adminPasswordInput = document.getElementById('settingAdminPassword');
@@ -706,8 +706,8 @@ function initSettings() {
   if (adminUsernameInput) adminUsernameInput.value = settings.adminUsername || 'admin';
   if (adminPasswordInput) adminPasswordInput.value = '';
 
-  if (settings.logo && logoPreview) {
-    logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
+  if (settings.logo && logoP) {
+    logoP.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
   }
   primaryColorInput?.addEventListener('input', (e) => {
     if (colorValueSpan) colorValueSpan.textContent = e.target.value;
@@ -718,8 +718,8 @@ function initSettings() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (logoPreview) {
-        logoPreview.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
+      if (logoP) {
+        logoP.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
       }
     };
     reader.readAsDataURL(file);
@@ -748,7 +748,7 @@ async function saveSettings() {
     }
     settings.adminPassword = await hashPassword(newPassword);
   }
-  const logoImg = document.querySelector('#logoPreview img');
+  const logoImg = document.querySelector('#logoP img');
   if (logoImg) {
     settings.logo = logoImg.src;
   }
