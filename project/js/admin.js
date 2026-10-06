@@ -242,7 +242,7 @@ function formatCurrency(value) {
 function getStatusBadge(status, type) {
   const map = {
     field: {
-      active: { text: 'Đang hoạt động', cls: 'badge-success' },
+      active: { text: ' Hoạt động', cls: 'badge-success' },
       inactive: { text: 'Tạm ngưng', cls: 'badge-danger' }
     },
     booking: {
