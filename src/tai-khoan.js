@@ -314,7 +314,7 @@ function init() {
 
   const user = getUser()
   if (!user) {
-    window.location.replace(LOGIN_URL)
+    window.location.href = LOGIN_URL
     return
   }
 
@@ -350,13 +350,13 @@ function init() {
 
   $('#accLogout').addEventListener('click', () => {
     clearUser()
-    window.location.replace(LOGIN_URL)
+    window.location.href = LOGIN_URL
   })
 
   $('#accSwitch').addEventListener('click', (e) => {
     e.preventDefault()
     clearUser()
-    window.location.replace(LOGIN_URL)
+    window.location.href = LOGIN_URL
   })
 
   // Trợ lý đặt sân: hiểu yêu cầu ngay tại đây rồi chuyển sang trang chủ để đặt.
