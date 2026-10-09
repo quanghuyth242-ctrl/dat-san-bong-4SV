@@ -1,4 +1,5 @@
 import './style.css'
+import { mountAssistant, takeStashedIntent } from './ai-assistant.js'
 
 // Giờ mở/đóng dùng khi nguồn dữ liệu không có (sân cũ chỉ có id/name/type/price).
 const DEFAULT_OPEN = 6
@@ -293,6 +294,76 @@ function isSlotTaken(venueId, date, startHour, duration) {
   return SV.isSlotTaken(venueId, date, startHour, duration)
 }
 
+// ================================ TRỢ LÝ ĐẶT SÂN ================================
+
+// Vị trí người dùng đã lấy được (chỉ trong phiên này). Trợ lý dùng để xếp sân
+// theo khoảng cách khi người dùng nói "gần tôi".
+let lastCoords = null
+
+/** Khung giờ đặt sân dùng giờ tròn, nên làm tròn lên khi kiểm tra chỗ trống. */
+function hasFreeSlot(venue, date, hour, duration = 1) {
+  const h = Math.ceil(hour)
+  if (!date || !Number.isFinite(h)) return true
+  if (isPastSlot(date, h)) return false
+  if (h < venue.hours.open || h + duration > venue.hours.close) return false
+  return !isSlotTaken(venue.id, date, h, duration)
+}
+
+/** Đổ kết quả trợ lý hiểu được vào các ô lọc trên trang chủ. */
+function applyIntentToFilters(intent) {
+  const loc = document.getElementById('qLocation')
+  const type = document.getElementById('qType')
+  const date = document.getElementById('qDate')
+  if (loc) loc.value = intent.loc || ''
+  if (type) type.value = String(intent.fieldType || '').match(/\d+/)?.[0] || ''
+  if (date) {
+    if (!intent.date) date.value = ''
+    else if (intent.hour == null) date.value = intent.date
+    else {
+      const hh = String(Math.floor(intent.hour)).padStart(2, '0')
+      const mm = String(Math.round((intent.hour % 1) * 60)).padStart(2, '0')
+      date.value = `${intent.date}T${hh}:${mm}`
+    }
+  }
+}
+
+function assistantHandlers() {
+  return {
+    venues: VENUES,
+    hasSlot: hasFreeSlot,
+    getCoords: () => lastCoords,
+    getBookings: loadBookings,
+    getUser: () => (SV.currentUser ? SV.currentUser() : null),
+    requestLocation: (done) => {
+      if (!navigator.geolocation) return
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          lastCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+          done()
+        },
+        () => done(),
+        { timeout: 8000, maximumAge: 60000 },
+      )
+    },
+    onSearch: (intent) => {
+      applyIntentToFilters(intent)
+      applyFilters({ scroll: false, silent: true })
+    },
+    onBook: (venue, intent) => {
+      openBook(venue, { date: intent.date, hour: intent.hour, duration: intent.duration })
+    },
+  }
+}
+
+/** Yêu cầu do trợ lý ở trang khác chuyển sang: điền bộ lọc rồi chạy tìm kiếm. */
+function applyStashedIntent() {
+  const intent = takeStashedIntent()
+  if (!intent) return
+  applyIntentToFilters(intent)
+  applyFilters({ scroll: true })
+  toast('Đã điền yêu cầu của bạn vào ô tìm kiếm')
+}
+
 function buildTimeOptions(venue, date, duration) {
   const out = []
   for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
@@ -532,7 +603,11 @@ function shakeField(fieldId) {
   el.classList.add('shake')
 }
 
-function openBook(venue) {
+/**
+ * Mở form đặt sân. `preset` cho phép trợ lý điền sẵn ngày/giờ/thời lượng đã hiểu
+ * được từ câu người dùng.
+ */
+function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
 
@@ -653,7 +728,24 @@ function openBook(venue) {
     submitBooking(venue)
   })
 
+  // Trợ lý có thể điền sẵn thời lượng/ngày/giờ đã hiểu được.
+  if (preset.duration && [1, 1.5, 2, 3].includes(Number(preset.duration))) {
+    document.getElementById('bkDuration').value = String(preset.duration)
+  }
+  if (preset.date && preset.date >= todayStr()) {
+    dateInput.value = preset.date
+  }
+
   updateTotal()
+
+  if (preset.hour != null) {
+    const sel = document.getElementById('bkTime')
+    const hours = [...sel.options].map((o) => Number(o.value)).filter(Number.isFinite)
+    if (hours.length) {
+      sel.value = String(hours.reduce((a, b) => (Math.abs(b - preset.hour) < Math.abs(a - preset.hour) ? b : a)))
+    }
+  }
+
   openModal('bookModal')
 }
 
@@ -1196,6 +1288,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   watchStore()
   initAuthNav()
+
+  // Trợ lý đặt sân: hiểu yêu cầu tiếng Việt, lọc sân và mở form đặt sân.
+  mountAssistant(assistantHandlers())
+  applyStashedIntent()
 })
 
 // ================================ TÀI KHOẢN ĐANG ĐĂNG NHẬP ================================
