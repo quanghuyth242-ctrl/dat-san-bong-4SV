@@ -737,6 +737,144 @@
               </div>
             </div>
           </section>
+
+          <!-- PANEL: TÀI KHOẢN CỦA TÔI -->
+          <section
+            class="auth-panel auth-panel--account"
+            id="panelProfile"
+            role="tabpanel"
+            data-panel="profile"
+            hidden
+          >
+            <header class="acc-head">
+              <span class="acc-avatar-wrap">
+                <img class="acc-avatar" id="accAvatar" alt="" />
+                <span class="acc-avatar-ring" aria-hidden="true"></span>
+              </span>
+              <div class="acc-head-text">
+                <span class="acc-head-hi">Xin chào 👋</span>
+                <h2 class="auth-title" id="accTitle">Tài khoản</h2>
+                <p class="acc-mail">
+                  <i class="fa-regular fa-envelope"></i>
+                  <span id="accMail"></span>
+                </p>
+              </div>
+              <button type="button" class="acc-logout" id="accLogout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Đăng xuất</span>
+              </button>
+            </header>
+
+            <div class="acc-stats" id="accStats"></div>
+
+            <div class="acc-grid">
+              <section class="acc-section">
+                <div class="acc-section-head">
+                  <h3 class="acc-section-title">
+                    <i class="fa-solid fa-user-pen"></i> Thông tin cá nhân
+                  </h3>
+                  <span class="acc-section-hint">
+                    <i class="fa-solid fa-shield-halved"></i> Bảo mật SSL
+                  </span>
+                </div>
+                <form id="profileForm" class="acc-form" novalidate>
+                  <div class="acc-field" data-field="accName">
+                    <label class="acc-label" for="accName">
+                      Họ và tên <span class="req">*</span>
+                    </label>
+                    <div class="acc-input-wrap">
+                      <i class="fa-solid fa-user"></i>
+                      <input
+                        class="acc-input"
+                        type="text"
+                        id="accName"
+                        name="name"
+                        autocomplete="name"
+                        placeholder="Nguyễn Văn A"
+                      />
+                    </div>
+                    <p class="acc-error" data-error-for="accName" hidden></p>
+                  </div>
+                  <div class="acc-field" data-field="accPhone">
+                    <label class="acc-label" for="accPhone">
+                      Số điện thoại <span class="req">*</span>
+                    </label>
+                    <div class="acc-input-wrap">
+                      <i class="fa-solid fa-phone"></i>
+                      <input
+                        class="acc-input"
+                        type="tel"
+                        id="accPhone"
+                        name="phone"
+                        inputmode="tel"
+                        autocomplete="tel"
+                        placeholder="0912 345 678"
+                      />
+                    </div>
+                    <p class="acc-error" data-error-for="accPhone" hidden></p>
+                  </div>
+                  <div class="acc-field">
+                    <label class="acc-label" for="accEmail">Email</label>
+                    <div class="acc-input-wrap is-static">
+                      <i class="fa-regular fa-envelope"></i>
+                      <input
+                        class="acc-input"
+                        type="email"
+                        id="accEmail"
+                        readonly
+                        tabindex="-1"
+                      />
+                      <i class="fa-solid fa-lock acc-input-lock" title="Không thể thay đổi"></i>
+                    </div>
+                  </div>
+                  <div class="acc-field-row">
+                    <div class="acc-field">
+                      <label class="acc-label">Vai trò</label>
+                      <p class="acc-static" id="accRole"></p>
+                    </div>
+                    <div class="acc-field">
+                      <label class="acc-label">Ngày tham gia</label>
+                      <p class="acc-static" id="accCreated"></p>
+                    </div>
+                  </div>
+                  <button class="auth-submit" type="submit">
+                    <span class="auth-submit-label">
+                      <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                    </span>
+                  </button>
+                </form>
+              </section>
+
+              <section class="acc-section acc-section--history">
+                <div class="acc-section-head">
+                  <h3 class="acc-section-title">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đặt sân
+                  </h3>
+                  <label class="acc-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                      type="search"
+                      id="accSearch"
+                      placeholder="Tìm sân hoặc mã đơn..."
+                      autocomplete="off"
+                    />
+                  </label>
+                </div>
+                <div class="acc-filters" id="accFilters">
+                  <button type="button" class="acc-chip is-active" data-filter="all">Tất cả</button>
+                  <button type="button" class="acc-chip" data-filter="upcoming">Sắp diễn ra</button>
+                  <button type="button" class="acc-chip" data-filter="processing">Đang xử lý</button>
+                  <button type="button" class="acc-chip" data-filter="done">Hoàn thành</button>
+                  <button type="button" class="acc-chip" data-filter="incomplete">Chưa hoàn thành</button>
+                  <button type="button" class="acc-chip" data-filter="cancelled">Đã huỷ</button>
+                  <button type="button" class="acc-chip" data-filter="paid">Đã thanh toán</button>
+                  <button type="button" class="acc-chip" data-filter="unpaid">Chưa thanh toán</button>
+                </div>
+                <div class="acc-history" id="accHistory"></div>
+                <nav class="acc-pager" id="accPager" aria-label="Phân trang lịch sử đặt sân"></nav>
+              </section>
+            </div>
+          </section>
         </div>
 
         <p class="auth-foot">

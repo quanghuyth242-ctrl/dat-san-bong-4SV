@@ -1,3 +1,5 @@
+import { initProfile, openProfile } from './profile.js'
+
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
@@ -87,6 +89,13 @@ function setMode(next, { updateHash = true, focus = true } = {}) {
     panel.hidden = panel.dataset.panel !== next
   })
 
+  // Panel tài khoản rộng hơn (2 cột) nên mở rộng thẻ và ẩn hẳn cột quảng cáo
+  // bên trái để không chiếm chỗ.
+  const card = $('.auth-card')
+  if (card) card.classList.toggle('auth-card--wide', next === 'profile')
+  const page = $('.auth-page')
+  if (page) page.classList.toggle('auth-page--account', next === 'profile')
+
   const isTabMode = next === 'login' || next === 'register'
   tabs.hidden = !isTabMode
   tabs.dataset.active = isTabMode ? next : tabs.dataset.active
@@ -103,6 +112,17 @@ function setMode(next, { updateHash = true, focus = true } = {}) {
     const first = $(`[data-panel="${next}"] [data-rule]`)
     if (first) setTimeout(() => first.focus(), 60)
   }
+}
+
+/** Chỉ mở được panel tài khoản khi đã đăng nhập; chưa thì đưa về đăng nhập. */
+function goProfile() {
+  if (!SV.currentUser()) {
+    toast('Vui lòng đăng nhập để xem tài khoản của bạn')
+    setMode('login')
+    return
+  }
+  openProfile()
+  setMode('profile')
 }
 
 /* ---------- HIỂN THỊ LỖI ---------- */
@@ -337,6 +357,10 @@ function initTabs() {
       setMode('login')
       return
     }
+    if (target === 'profile') {
+      goProfile()
+      return
+    }
     setMode(target)
   })
 }
@@ -567,8 +591,19 @@ function init() {
   initFields()
   initOtpInputs()
   initForms()
+  initProfile({ toast })
 
   const hash = location.hash.slice(1)
+  if (hash === 'profile') {
+    if (SV.currentUser()) {
+      openProfile()
+      setMode('profile', { updateHash: false })
+    } else {
+      setMode('login', { updateHash: false })
+      toast('Vui lòng đăng nhập để xem tài khoản của bạn')
+    }
+    return
+  }
   setMode(hash === 'register' ? 'register' : 'login', { updateHash: false })
 }
 
