@@ -80,6 +80,7 @@ function normalizePublicBooking(b) {
     endTime: hourToHHMM(b.endHour),
     total: b.total,
     status: b.status || 'pending',
+    services: Array.isArray(b.services) ? b.services : [],
     _source: 'public',
   };
 }
@@ -566,6 +567,7 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${Array.isArray(b.services) && b.services.length ? `<div class="detail-row"><div class="detail-label">Dịch vụ:</div><div class="detail-value">${b.services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</div></div>` : ''}
       <div class="detail-row"><div class="detail-label">Tổng tiền:</div><div class="detail-value"><strong>${formatCurrency(b.total)}</strong></div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái:</div><div class="detail-value">${getStatusBadge(b.status, 'booking')}</div></div>
     `;

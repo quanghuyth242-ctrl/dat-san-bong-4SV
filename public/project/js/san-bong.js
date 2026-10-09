@@ -205,9 +205,10 @@ function saveBookings(list) {
   }
 }
 
+let bookingSeq = 0;
 function addBooking(booking) {
   const list = loadBookings();
-  booking.id = 'BD' + Date.now();
+  booking.id = 'BD' + (Date.now() + bookingSeq++);
   list.push(booking);
   saveBookings(list);
   return booking;
@@ -216,11 +217,13 @@ function addBooking(booking) {
 /**
  * Slot đã bị chiếm: giờ bắt đầu -> giờ kết thúc (số thập phân).
  * duration có thể 1.5 nên giữ dạng số thập phân, ví dụ 17.5 = 17:30.
+ * Đơn đã hủy không tính là chiếm sân.
  */
 function isSlotTaken(courtId, date, startHour, duration) {
   const endHour = startHour + duration;
   return loadBookings().some(
     (b) =>
+      b.status !== 'cancelled' &&
       b.courtId === courtId &&
       b.date === date &&
       startHour < b.endHour &&
@@ -228,25 +231,10 @@ function isSlotTaken(courtId, date, startHour, duration) {
   );
 }
 
-function isCourtFullyBooked(courtId, date) {
-  return loadBookings().some((b) => b.courtId === courtId && b.date === date);
-}
-
 function isPastSlot(date, startHour) {
   if (date !== todayStr()) return false;
   const now = new Date();
   return startHour < now.getHours() + now.getMinutes() / 60;
-}
-
-/** Khung giờ còn khả dụng = trong giờ mở cửa, chưa qua, chưa bị đặt, đủ sức chứa duration. */
-function availableHours(court, date) {
-  const out = [];
-  for (let h = court.hours.open; h <= court.hours.close - 1; h += 0.5) {
-    if (h < court.hours.open) continue;
-    if (isPastSlot(date, h)) continue;
-    out.push(h);
-  }
-  return out;
 }
 
 // ============================= STATE =============================
@@ -257,7 +245,7 @@ const state = {
   onlyAvailable: false,
   sort: 'default',
   activeCourt: null,
-  booking: { date: '', time: '', duration: 1 },
+  booking: { date: '', time: '', duration: 1, repeat: 'none', repeatCount: 1, services: {} },
 };
 
 // ============================= RENDER LIST =============================
@@ -431,53 +419,181 @@ function openDetail(court) {
 }
 
 // ---------- ĐẶT SÂN ----------
-/**
- * Khung giờ khả dụng cho một ngày + duration.
- * Bỏ khung nào đã qua, đã có đơn, hoặc không đủ sức chứa duration.
- */
-function buildTimeOptions(court, date, duration) {
-  const opts = [];
-  for (let h = court.hours.open; h < court.hours.close; h += 1) {
-    if (h + duration > court.hours.close) continue;
-    if (isPastSlot(date, h)) continue;
-    if (isSlotTaken(court.id, date, h, duration)) continue;
-    opts.push(
-      `<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`
-    );
-  }
-  return opts.join('');
+const REPEAT_LABEL = {
+  none: 'Không lặp lại',
+  weekly: 'Hàng tuần',
+  monthly: 'Hàng tháng',
+  quarterly: 'Hàng quý',
+  yearly: 'Hàng năm',
+};
+
+// Dịch vụ đi kèm khi đặt sân (giá tính cho mỗi buổi)
+const SERVICES = [
+  { id: 'nuoc-suoi', name: 'Nước suối', price: 10000, unit: 'chai', icon: 'fa-bottle-water' },
+  { id: 'nuoc-tang-luc', name: 'Nước tăng lực', price: 15000, unit: 'chai', icon: 'fa-bolt' },
+  { id: 'thue-bong', name: 'Thuê bóng thi đấu', price: 50000, unit: 'quả', icon: 'fa-futbol' },
+  { id: 'ao-bib', name: 'Áo bib', price: 20000, unit: 'bộ', icon: 'fa-shirt' },
+  { id: 'trong-tai', name: 'Trọng tài', price: 200000, unit: 'trận', icon: 'fa-user-tie', max: 1 },
+  { id: 'var', name: 'VAR (trợ lý video)', price: 300000, unit: 'trận', icon: 'fa-video', max: 1 },
+];
+
+function getService(id) {
+  return SERVICES.find((s) => s.id === id) || null;
 }
 
-function refreshTimeOptions() {
-  const court = state.activeCourt;
-  const sel = $('#timeSelect');
-  if (!court || !sel) return;
+/** Danh sách dịch vụ đã chọn (qty > 0) kèm giá mỗi buổi. */
+function selectedServices() {
+  return SERVICES.map((s) => ({ ...s, qty: state.booking.services?.[s.id] || 0 })).filter(
+    (s) => s.qty > 0
+  );
+}
 
-  const date = $('#dateInput').value;
+/** Tổng tiền dịch vụ cho 1 buổi. */
+function serviceCostPerSession() {
+  return selectedServices().reduce((sum, s) => sum + s.price * s.qty, 0);
+}
+
+function toDateStr(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return toDateStr(d);
+}
+
+/** Cộng tháng và tự kẹp ngày về cuối tháng đích (31/1 + 1 tháng = 28/2). */
+function addMonths(dateStr, months) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return toDateStr(d);
+}
+
+/** Danh sách ngày cho đặt lịch định kỳ theo tuần/tháng/quý/năm. */
+function repeatDates(startDate, type, count) {
+  const total = Math.max(1, Math.min(52, Number(count) || 1));
+  const out = [];
+  for (let i = 0; i < total; i += 1) {
+    if (type === 'weekly') out.push(addDays(startDate, i * 7));
+    else if (type === 'monthly') out.push(addMonths(startDate, i));
+    else if (type === 'quarterly') out.push(addMonths(startDate, i * 3));
+    else if (type === 'yearly') out.push(addMonths(startDate, i * 12));
+    else out.push(startDate);
+  }
+  return out;
+}
+
+/**
+ * Trạng thái từng khung giờ bắt đầu cho ngày + thời lượng hiện tại.
+ * Giữ lại cả khung đã bị đặt để người dùng thấy, nhưng không cho chọn.
+ */
+function slotList(court, date, duration) {
+  const list = [];
+  for (let h = court.hours.open; h < court.hours.close; h += 1) {
+    const bookedHour = isSlotTaken(court.id, date, h, 1);
+    list.push({
+      hour: h,
+      end: h + duration,
+      past: isPastSlot(date, h),
+      bookedHour,
+      overlaps: !bookedHour && isSlotTaken(court.id, date, h, duration),
+    });
+  }
+  return list;
+}
+
+/** Vẽ lưới khung giờ: còn trống / đã đặt / trùng giờ / đã qua. */
+function renderSlots(court, date, duration) {
+  const grid = $('#slotGrid');
+  if (!grid) return;
+
   if (!date) {
-    sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>';
-    sel.value = '';
+    grid.innerHTML = '<p class="slot-empty">Chọn ngày để xem khung giờ trống.</p>';
     return;
   }
 
-  const duration = parseFloat($('#durationSelect').value) || 1;
-  const prev = sel.value;
-  sel.innerHTML = buildTimeOptions(court, date, duration);
-
-  if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
-  if (!sel.value) sel.selectedIndex = 0;
-
-  if (!sel.options.length) {
-    sel.innerHTML = `<option value="">-- ${
-      isCourtFullyBooked(court.id, date) ? 'Đã kín lịch' : 'Không còn khung giờ trống'
-    } --</option>`;
-    sel.value = '';
+  const slots = slotList(court, date, duration);
+  if (!slots.length) {
+    grid.innerHTML = '<p class="slot-empty">Sân không có khung giờ nào.</p>';
+    return;
   }
+
+  grid.innerHTML = slots
+    .map((s) => {
+      const selected = Number(state.booking.time) === s.hour ? ' selected' : '';
+      let mod = 'free';
+      let note = 'Còn trống';
+      if (s.past) {
+        mod = 'past';
+        note = 'Đã qua';
+      } else if (s.bookedHour) {
+        mod = 'booked';
+        note = 'Đã đặt';
+      } else if (s.overlaps) {
+        mod = 'blocked';
+        note = 'Trùng giờ';
+      }
+      return `<button type="button" class="slot slot-${mod}${selected}" data-hour="${s.hour}">
+        <span class="slot-time">${timeLabel(s.hour)}</span>
+        <span class="slot-note">${note}</span>
+      </button>`;
+    })
+    .join('');
+}
+
+/** Bấm vào khung giờ: chọn được nếu trống, còn lại thì thông báo lý do. */
+function bindSlotGrid(court) {
+  const grid = $('#slotGrid');
+  if (!grid) return;
+  grid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.slot');
+    if (!btn) return;
+    const hour = parseFloat(btn.dataset.hour);
+    const date = $('#dateInput').value;
+    const duration = parseFloat($('#durationSelect').value) || 1;
+    const end = hour + duration;
+
+    if (btn.classList.contains('slot-past')) {
+      showToast('Khung giờ đã qua', `${timeLabel(hour)} đã qua, vui lòng chọn khung giờ khác.`);
+      return;
+    }
+    if (btn.classList.contains('slot-booked')) {
+      showToast(
+        'Khung giờ đã có người đặt',
+        `${timeLabel(hour)} – ${timeLabel(hour + 1)} đã được đặt. Vui lòng chọn khung giờ khác.`
+      );
+      return;
+    }
+    if (btn.classList.contains('slot-blocked')) {
+      showToast(
+        'Khung giờ trùng lịch đã đặt',
+        `Khung ${timeLabel(hour)} – ${timeLabel(end)} trùng với lịch đã có người đặt. Vui lòng chọn khung khác.`
+      );
+      return;
+    }
+
+    state.booking.time = hour;
+    $('#f-time')?.classList.remove('invalid');
+    renderSlots(court, date, duration);
+  });
+}
+
+function updateRepeatUI() {
+  const repeat = $('#repeatSelect')?.value || 'none';
+  const wrap = $('#f-repeatCount');
+  if (wrap) wrap.style.display = repeat === 'none' ? 'none' : 'flex';
 }
 
 function openBook(court) {
   state.activeCourt = court;
-  state.booking = { date: '', time: '', duration: 1 };
+  state.booking = { date: '', time: '', duration: 1, repeat: 'none', repeatCount: 1, services: {} };
   renderBookForm(court);
 
   const info = $('#bookInfo');
@@ -491,11 +607,15 @@ function openBook(court) {
 
   const dateInput = $('#dateInput');
   dateInput.min = todayStr();
-  $('#dateInput').value = todayStr();
+  dateInput.value = todayStr();
   state.booking.date = todayStr();
   $('#durationSelect').value = '1';
+  $('#repeatSelect').value = 'none';
+  $('#repeatCount').value = '1';
+  updateRepeatUI();
 
-  refreshTimeOptions();
+  const duration = 1;
+  renderSlots(court, state.booking.date, duration);
   updateTotal();
   openModal($('#bookModal'));
 }
@@ -511,14 +631,29 @@ function updateTotal() {
   const court = state.activeCourt;
   if (!court) return;
   const duration = parseFloat($('#durationSelect').value) || 1;
-  const total = court.price * duration;
-  $('#totalAmount').textContent = formatPrice(total);
+  const repeat = $('#repeatSelect').value || 'none';
+  const count = repeat === 'none' ? 1 : Math.max(1, Math.min(52, parseInt($('#repeatCount').value, 10) || 1));
+  const sessions = count;
+  const courtPer = court.price * duration;
+  const servicePer = serviceCostPerSession();
+  const total = (courtPer + servicePer) * sessions;
   state.booking.duration = duration;
+  state.booking.repeat = repeat;
+  state.booking.repeatCount = count;
+
+  const amount = $('#totalAmount');
+  const parts = [`${formatPrice(courtPer)} × ${sessions}`];
+  if (servicePer > 0) parts.push(`+ DV ${formatPrice(servicePer)}`);
+  if (repeat !== 'none' && sessions > 1) {
+    amount.innerHTML = `${formatPrice(total)} <small>(${sessions} buổi)</small><span class="t-detail">${parts.join(' ')}</span>`;
+  } else {
+    amount.innerHTML = `${formatPrice(total)}<span class="t-detail">${parts.join(' ')}</span>`;
+  }
 }
 
 function validateBooking() {
   const set = (field, ok) => {
-    $('#f-' + field).classList.toggle('invalid', !ok);
+    $('#f-' + field)?.classList.toggle('invalid', !ok);
   };
 
   const court = state.activeCourt;
@@ -531,12 +666,12 @@ function validateBooking() {
   set('date', dateOk);
   if (!dateOk) ok = false;
 
-  // Giờ: phải còn trong giờ mở cửa, chưa qua và chưa bị đặt
-  const timeVal = parseFloat($('#timeSelect').value);
+  // Giờ: chưa qua và chưa bị đặt (cho phép kéo dài quá giờ đóng cửa)
+  const timeVal = Number(state.booking.time);
   const duration = parseFloat($('#durationSelect').value) || 1;
-  let timeOk = Number.isFinite(timeVal) && !!dateVal;
+  let timeOk = Number.isFinite(timeVal) && timeVal !== 0 && !!dateVal;
   if (timeOk) {
-    if (timeVal < court.hours.open || timeVal + duration > court.hours.close) {
+    if (timeVal < court.hours.open) {
       timeOk = false;
     } else if (isPastSlot(dateVal, timeVal)) {
       timeOk = false;
@@ -546,6 +681,15 @@ function validateBooking() {
   }
   set('time', timeOk);
   if (!timeOk) ok = false;
+
+  // Lịch định kỳ: số buổi hợp lệ và không vượt quá tương lai quá xa
+  const repeat = $('#repeatSelect').value || 'none';
+  if (repeat !== 'none') {
+    const count = parseInt($('#repeatCount').value, 10);
+    const countOk = Number.isFinite(count) && count >= 1 && count <= 52;
+    set('repeatCount', countOk);
+    if (!countOk) ok = false;
+  }
 
   // Họ tên
   const nameVal = $('#nameInput').value.trim();
@@ -570,43 +714,97 @@ function validateBooking() {
 
 function showSuccess() {
   const court = state.activeCourt;
-  const date = $('#dateInput').value;
-  const startHour = parseFloat($('#timeSelect').value);
+  const startDate = $('#dateInput').value;
+  const startHour = Number(state.booking.time);
   const duration = state.booking.duration;
+  const repeat = $('#repeatSelect').value || 'none';
+  const count = repeat === 'none' ? 1 : Math.max(1, Math.min(52, parseInt($('#repeatCount').value, 10) || 1));
+  const dates = repeatDates(startDate, repeat, count);
   const time = `${timeLabel(startHour)} – ${timeLabel(startHour + duration)}`;
 
-  const booking = addBooking({
-    courtId: court.id,
-    courtName: court.name,
-    date,
-    startHour,
-    endHour: startHour + duration,
-    duration,
-    total: court.price * duration,
-    customer: {
-      name: $('#nameInput').value.trim(),
-      phone: $('#phoneInput').value.trim(),
-      email: $('#emailInput').value.trim(),
-    },
-    status: 'pending',
+  const customer = {
+    name: $('#nameInput').value.trim(),
+    phone: $('#phoneInput').value.trim(),
+    email: $('#emailInput').value.trim(),
+  };
+
+  const services = selectedServices().map((s) => ({
+    id: s.id,
+    name: s.name,
+    price: s.price,
+    unit: s.unit,
+    qty: s.qty,
+  }));
+  const servicePer = serviceCostPerSession();
+  const courtTotal = court.price * duration;
+  const bookingTotal = courtTotal + servicePer;
+
+  const created = [];
+  const skipped = [];
+  dates.forEach((date) => {
+    // Bỏ qua buổi bị trùng (đã có người đặt hoặc đã qua) thay vì chặn toàn bộ
+    if (isPastSlot(date, startHour) || isSlotTaken(court.id, date, startHour, duration)) {
+      skipped.push(date);
+      return;
+    }
+    created.push(
+      addBooking({
+        courtId: court.id,
+        courtName: court.name,
+        date,
+        startHour,
+        endHour: startHour + duration,
+        duration,
+        courtTotal,
+        serviceTotal: servicePer,
+        services,
+        total: bookingTotal,
+        repeat: repeat,
+        customer,
+        status: 'pending',
+      })
+    );
   });
+
+  if (!created.length) {
+    showToast('Không thể đặt sân', 'Tất cả khung giờ đã chọn đều đã có người đặt. Vui lòng chọn lại.');
+    return;
+  }
+
+  const total = bookingTotal * created.length;
+  const firstId = created[0].id;
+  const repeatLine =
+    repeat === 'none'
+      ? ''
+      : `<div><span>Hình thức</span><b>${REPEAT_LABEL[repeat]} · ${created.length} buổi</b></div>`;
+  const serviceLine = services.length
+    ? `<div><span>Dịch vụ đi kèm</span><b>${services
+        .map((s) => `${s.name} ×${s.qty}`)
+        .join(', ')}</b></div>
+       <div><span>Tiền dịch vụ</span><b>${formatPrice(servicePer)}${
+        created.length > 1 ? ` × ${created.length} buổi` : ''
+      }</b></div>`
+    : '';
 
   $('#bookBody').innerHTML = `
     <div class="success-wrap">
       <div class="success-icon"><i class="fa-solid fa-check"></i></div>
       <h3>Đặt sân thành công!</h3>
-      <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.</p>
+      <p>Mã đơn <b>${firstId}</b>${created.length > 1 ? ` (+${created.length - 1} buổi)` : ''} · Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.</p>
       <div class="success-summary">
         <div><span>Sân</span><b>${court.name}</b></div>
-        <div><span>Ngày</span><b>${date}</b></div>
+        <div><span>Ngày</span><b>${created.length > 1 ? `${dates[0]} → ${dates[dates.length - 1]}` : startDate}</b></div>
         <div><span>Giờ</span><b>${time}</b></div>
         <div><span>Thời lượng</span><b>${duration} giờ</b></div>
-        <div><span>Tổng tiền</span><b>${formatPrice(court.price * duration)}</b></div>
+        ${repeatLine}
+        <div><span>Số buổi</span><b>${created.length}${skipped.length ? ` (bỏ ${skipped.length} buổi trùng)` : ''}</b></div>
+        ${serviceLine}
+        <div><span>Tổng tiền</span><b>${formatPrice(total)}</b></div>
       </div>
       <div class="success-summary">
-        <div><span>Họ tên</span><b>${$('#nameInput').value.trim()}</b></div>
-        <div><span>Số điện thoại</span><b>${$('#phoneInput').value.trim()}</b></div>
-        <div><span>Email</span><b>${$('#emailInput').value.trim()}</b></div>
+        <div><span>Họ tên</span><b>${customer.name}</b></div>
+        <div><span>Số điện thoại</span><b>${customer.phone}</b></div>
+        <div><span>Email</span><b>${customer.email}</b></div>
       </div>
       <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-plus"></i> Đặt sân khác</button>
     </div>
@@ -617,7 +815,10 @@ function showSuccess() {
   });
 
   renderGrid();
-  showToast('Đặt sân thành công', `${court.name} · ${date} · ${time}`);
+  showToast(
+    'Đặt sân thành công',
+    `${court.name} · ${created.length} buổi · ${time}`
+  );
 }
 
 function renderBookForm(court) {
@@ -630,11 +831,6 @@ function renderBookForm(court) {
           <input type="date" id="dateInput" required />
           <span class="error-msg">Vui lòng chọn ngày hợp lệ (không ở quá khứ).</span>
         </div>
-        <div class="form-field" id="f-time">
-          <label><i class="fa-regular fa-clock"></i> Chọn giờ</label>
-          <select id="timeSelect" required></select>
-          <span class="error-msg">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa. Vui lòng chọn khung khác.</span>
-        </div>
         <div class="form-field" id="f-duration">
           <label><i class="fa-solid fa-hourglass-half"></i> Thời lượng</label>
           <select id="durationSelect">
@@ -643,6 +839,32 @@ function renderBookForm(court) {
             <option value="2">2 giờ</option>
             <option value="3">3 giờ</option>
           </select>
+        </div>
+        <div class="form-field full" id="f-time">
+          <label><i class="fa-regular fa-clock"></i> Chọn khung giờ</label>
+          <div class="slot-legend">
+            <span class="legend-item"><i class="dot dot-free"></i> Còn trống</span>
+            <span class="legend-item"><i class="dot dot-booked"></i> Đã có người đặt</span>
+            <span class="legend-item"><i class="dot dot-blocked"></i> Trùng giờ</span>
+            <span class="legend-item"><i class="dot dot-past"></i> Đã qua</span>
+          </div>
+          <div class="slot-grid" id="slotGrid"></div>
+          <span class="error-msg">Vui lòng chọn một khung giờ còn trống.</span>
+        </div>
+        <div class="form-field" id="f-repeat">
+          <label><i class="fa-solid fa-repeat"></i> Đặt định kỳ</label>
+          <select id="repeatSelect">
+            <option value="none">Không lặp lại</option>
+            <option value="weekly">Hàng tuần</option>
+            <option value="monthly">Hàng tháng</option>
+            <option value="quarterly">Hàng quý</option>
+            <option value="yearly">Hàng năm</option>
+          </select>
+        </div>
+        <div class="form-field" id="f-repeatCount" style="display:none">
+          <label><i class="fa-solid fa-hashtag"></i> Số buổi</label>
+          <input type="number" id="repeatCount" min="1" max="52" value="1" />
+          <span class="error-msg">Số buổi phải từ 1 đến 52.</span>
         </div>
         <div class="form-field full" id="f-name">
           <label><i class="fa-solid fa-user"></i> Họ tên</label>
@@ -659,6 +881,30 @@ function renderBookForm(court) {
           <input type="email" id="emailInput" placeholder="VD: an@email.com" autocomplete="email" required />
           <span class="error-msg">Email không hợp lệ.</span>
         </div>
+        <div class="form-field full" id="f-services">
+          <label><i class="fa-solid fa-cart-plus"></i> Dịch vụ đi kèm <span class="label-hint">(tuỳ chọn · ✓ chọn 1 · +/− chọn số lượng)</span></label>
+          <div class="service-list" id="serviceList">
+            ${SERVICES.map(
+              (s) => `
+              <div class="service-item" data-id="${s.id}">
+                <i class="fa-solid ${s.icon} svc-icon"></i>
+                <div class="svc-info">
+                  <div class="svc-name">${s.name}</div>
+                  <div class="svc-price">${formatPrice(s.price)} / ${s.unit}</div>
+                </div>
+                <div class="s-qty">
+                  ${
+                    s.max === 1
+                      ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="false" aria-label="Chọn ${s.name}"><i class="fa-solid fa-check"></i></button>`
+                      : `<button type="button" class="qty-btn" data-act="dec" data-id="${s.id}" aria-label="Giảm">−</button>
+                  <span class="qty-val" id="qty-${s.id}">0</span>
+                  <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" aria-label="Tăng">+</button>`
+                  }
+                </div>
+              </div>`
+            ).join('')}
+          </div>
+        </div>
         <div class="total-box">
           <div class="t-lbl"><i class="fa-solid fa-calculator"></i> Tổng tiền</div>
           <div class="t-amount" id="totalAmount">0đ</div>
@@ -671,15 +917,47 @@ function renderBookForm(court) {
   $('#dateInput').min = todayStr();
   $('#dateInput').addEventListener('change', (e) => {
     state.booking.date = e.target.value;
-    refreshTimeOptions();
-  });
-  $('#timeSelect').addEventListener('change', (e) => {
-    state.booking.time = e.target.value;
+    state.booking.time = '';
+    renderSlots(court, e.target.value, parseFloat($('#durationSelect').value) || 1);
   });
   $('#durationSelect').addEventListener('change', () => {
+    state.booking.time = '';
     updateTotal();
-    refreshTimeOptions();
+    renderSlots(court, $('#dateInput').value, parseFloat($('#durationSelect').value) || 1);
   });
+  $('#repeatSelect').addEventListener('change', () => {
+    updateRepeatUI();
+    updateTotal();
+  });
+  $('#repeatCount').addEventListener('input', updateTotal);
+
+  $('#serviceList').addEventListener('click', (e) => {
+    const btn = e.target.closest('.qty-btn, .qty-check');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const act = btn.dataset.act;
+    const cur = state.booking.services[id] || 0;
+    const max = getService(id)?.max ?? 99;
+    const delta = act === 'inc' ? 1 : act === 'dec' ? -1 : 0;
+    const next = Math.max(
+      0,
+      Math.min(max, act === 'toggle' ? (cur > 0 ? 0 : 1) : cur + delta)
+    );
+    if (next === 0) delete state.booking.services[id];
+    else state.booking.services[id] = next;
+    const valEl = $('#qty-' + id);
+    if (valEl) valEl.textContent = next;
+    const item = btn.closest('.service-item');
+    item?.classList.toggle('active', next > 0);
+    if (btn.classList.contains('qty-check')) {
+      btn.setAttribute('aria-pressed', String(next > 0));
+    } else if (act === 'inc') {
+      btn.toggleAttribute('disabled', next >= max);
+    }
+    updateTotal();
+  });
+
+  bindSlotGrid(court);
 
   // Gỡ trạng thái lỗi ngay khi user sửa, không bắt submit lại mới hết đỏ
   $('#bookForm').querySelectorAll('input, select').forEach((el) => {
