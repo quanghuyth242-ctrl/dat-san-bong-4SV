@@ -951,9 +951,8 @@ function renderBookForm(court) {
     item?.classList.toggle('active', next > 0);
     if (btn.classList.contains('qty-check')) {
       btn.setAttribute('aria-pressed', String(next > 0));
-    } else if (act === 'inc') {
-      btn.toggleAttribute('disabled', next >= max);
     }
+    item?.querySelector('.qty-btn[data-act="inc"]')?.toggleAttribute('disabled', next >= max);
     updateTotal();
   });
 
