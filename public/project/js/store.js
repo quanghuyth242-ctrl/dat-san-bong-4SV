@@ -43,6 +43,8 @@
   var MIGRATED_FLAG = NS + '_store_v1'
   // Màu thương hiệu mặc định của trang chủ, admin đổi ở trang Giao diện.
   var BRANDING_FLAG = NS + '_branding_v2'
+  // Đã bổ sung sân ở các tỉnh thành khác vào bộ dữ liệu demo chưa.
+  var PROVINCE_SEED_FLAG = NS + '_province_seed_v1'
   var LEGACY_PRIMARY = ['#2563eb', '#1d4ed8']
   // Tên website mặc định của bản admin cũ, giờ ghi đè logo/footer ở trang chủ.
   var LEGACY_SITE_NAME = ['QUẢN LÝ ĐẶT SÂN', 'QUẢN LÝ ĐẶT SÂN BÓNG', 'QUẢN LÝ ĐẶT SÂN BÓNG ĐÁ']
@@ -56,7 +58,7 @@
     'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=800&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
   ]
 
@@ -373,6 +375,50 @@
     { id: 'SAN008', name: 'Sân Bóng Đá Nam Từ Liêm', type: 'Sân 11', address: 'Đường Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: 1200000, courts: 2, hours: { open: 7, close: 22 }, lat: 21.019, lng: 105.78, status: 'active' },
   ]
 
+  /**
+   * Sân demo ở các tỉnh thành khác ngoài Hà Nội, để lưới "Đặt sân bóng đá theo
+   * tỉnh thành" trên trang chủ có đủ 34 tỉnh - bấm vào tỉnh nào cũng ra sân thật.
+   * Để riêng một mảng vì seedDemoProvinces() còn dùng để bổ sung cho trình duyệt
+   * đã lưu bộ dữ liệu cũ (chỉ có Hà Nội) trong localStorage.
+   */
+  var DEFAULT_PROVINCE_FIELDS = [
+    { id: 'SAN101', name: 'Sân Bóng Đá Tao Đàn', type: 'Sân 5', address: 'Quận 1, TP. Hồ Chí Minh', price: 320000, courts: 4, hours: { open: 6, close: 23 }, lat: 10.7769, lng: 106.7009, status: 'active' },
+    { id: 'SAN102', name: 'Sân Bóng Đá Hải Châu', type: 'Sân 7', address: 'Hải Châu, Đà Nẵng', price: 600000, courts: 3, hours: { open: 6, close: 22 }, lat: 16.0544, lng: 108.2022, status: 'active' },
+    { id: 'SAN103', name: 'Sân Bóng Đá Lạch Tray', type: 'Sân 5', address: 'Ngô Quyền, Hải Phòng', price: 300000, courts: 4, hours: { open: 6, close: 22 }, lat: 20.8449, lng: 106.6881, status: 'active' },
+    { id: 'SAN104', name: 'Sân Bóng Đá Ninh Kiều', type: 'Sân 7', address: 'Ninh Kiều, Cần Thơ', price: 500000, courts: 2, hours: { open: 6, close: 22 }, lat: 10.0452, lng: 105.7469, status: 'active' },
+    { id: 'SAN105', name: 'Sân Bóng Đá Thủ Dầu Một', type: 'Sân 5', address: 'Thủ Dầu Một, Bình Dương', price: 280000, courts: 5, hours: { open: 6, close: 22 }, lat: 10.9804, lng: 106.6519, status: 'active' },
+    { id: 'SAN106', name: 'Sân Bóng Đá Biên Hòa', type: 'Sân 7', address: 'Biên Hòa, Đồng Nai', price: 480000, courts: 3, hours: { open: 6, close: 22 }, lat: 10.9574, lng: 106.8427, status: 'active' },
+    { id: 'SAN107', name: 'Sân Bóng Đá Nha Trang', type: 'Sân 5', address: 'Nha Trang, Khánh Hòa', price: 300000, courts: 4, hours: { open: 6, close: 22 }, lat: 12.2388, lng: 109.1967, status: 'active' },
+    { id: 'SAN108', name: 'Sân Bóng Đá Vinh', type: 'Sân 7', address: 'TP. Vinh, Nghệ An', price: 450000, courts: 3, hours: { open: 6, close: 22 }, lat: 18.6796, lng: 105.6813, status: 'active' },
+    { id: 'SAN109', name: 'Sân Bóng Đá Đông Sơn', type: 'Sân 5', address: 'Đông Sơn, Thanh Hóa', price: 260000, courts: 4, hours: { open: 6, close: 22 }, lat: 19.8067, lng: 105.7851, status: 'active' },
+    { id: 'SAN110', name: 'Sân Bóng Đá Phú Xuân', type: 'Sân 7', address: 'TP. Huế', price: 420000, courts: 2, hours: { open: 6, close: 22 }, lat: 16.4637, lng: 107.5909, status: 'active' },
+    { id: 'SAN111', name: 'Sân Bóng Đá Hạ Long', type: 'Sân 7', address: 'TP. Hạ Long, Quảng Ninh', price: 520000, courts: 3, hours: { open: 6, close: 22 }, lat: 20.9501, lng: 107.0731, status: 'active' },
+    { id: 'SAN112', name: 'Sân Bóng Đá Vũng Tàu', type: 'Sân 5', address: 'TP. Vũng Tàu, Bà Rịa - Vũng Tàu', price: 320000, courts: 4, hours: { open: 6, close: 22 }, lat: 10.346, lng: 107.0843, status: 'active' },
+    { id: 'SAN113', name: 'Sân Bóng Đá Đà Lạt', type: 'Sân 7', address: 'TP. Đà Lạt, Lâm Đồng', price: 500000, courts: 2, hours: { open: 6, close: 22 }, lat: 11.9404, lng: 108.4583, status: 'active' },
+    { id: 'SAN114', name: 'Sân Bóng Đá Rạch Giá', type: 'Sân 5', address: 'Rạch Giá, Kiên Giang', price: 270000, courts: 3, hours: { open: 6, close: 22 }, lat: 10.0125, lng: 105.0809, status: 'active' },
+    { id: 'SAN115', name: 'Sân Bóng Đá Từ Sơn', type: 'Sân 7', address: 'Từ Sơn, Bắc Ninh', price: 460000, courts: 3, hours: { open: 6, close: 22 }, lat: 21.1861, lng: 106.0763, status: 'active' },
+    { id: 'SAN116', name: 'Sân Bóng Đá Hải Dương', type: 'Sân 5', address: 'TP. Hải Dương', price: 290000, courts: 4, hours: { open: 6, close: 22 }, lat: 20.9373, lng: 106.3145, status: 'active' },
+    { id: 'SAN117', name: 'Sân Bóng Đá Văn Giang', type: 'Sân 7', address: 'Văn Giang, Hưng Yên', price: 440000, courts: 3, hours: { open: 6, close: 22 }, lat: 20.93, lng: 105.975, status: 'active' },
+    { id: 'SAN118', name: 'Sân Bóng Đá Nam Định', type: 'Sân 5', address: 'TP. Nam Định', price: 280000, courts: 3, hours: { open: 6, close: 22 }, lat: 20.42, lng: 106.1683, status: 'active' },
+    { id: 'SAN119', name: 'Sân Bóng Đá Thái Nguyên', type: 'Sân 7', address: 'TP. Thái Nguyên', price: 430000, courts: 3, hours: { open: 6, close: 22 }, lat: 21.5928, lng: 105.8447, status: 'active' },
+    { id: 'SAN120', name: 'Sân Bóng Đá Hội An', type: 'Sân 5', address: 'TP. Hội An, Quảng Nam', price: 300000, courts: 4, hours: { open: 6, close: 22 }, lat: 15.8801, lng: 108.338, status: 'active' },
+    { id: 'SAN121', name: 'Sân Bóng Đá Quy Nhơn', type: 'Sân 7', address: 'TP. Quy Nhơn, Bình Định', price: 470000, courts: 3, hours: { open: 6, close: 22 }, lat: 13.7829, lng: 109.2196, status: 'active' },
+    { id: 'SAN122', name: 'Sân Bóng Đá Pleiku', type: 'Sân 5', address: 'TP. Pleiku, Gia Lai', price: 250000, courts: 3, hours: { open: 6, close: 22 }, lat: 13.9833, lng: 108, status: 'active' },
+    { id: 'SAN123', name: 'Sân Bóng Đá Buôn Ma Thuột', type: 'Sân 7', address: 'TP. Buôn Ma Thuột, Đắk Lắk', price: 450000, courts: 2, hours: { open: 6, close: 22 }, lat: 12.6667, lng: 108.05, status: 'active' },
+    { id: 'SAN124', name: 'Sân Bóng Đá Tân An', type: 'Sân 5', address: 'TP. Tân An, Long An', price: 260000, courts: 3, hours: { open: 6, close: 22 }, lat: 10.535, lng: 106.413, status: 'active' },
+    { id: 'SAN125', name: 'Sân Bóng Đá Mỹ Tho', type: 'Sân 7', address: 'TP. Mỹ Tho, Tiền Giang', price: 440000, courts: 2, hours: { open: 6, close: 22 }, lat: 10.36, lng: 106.36, status: 'active' },
+    { id: 'SAN126', name: 'Sân Bóng Đá Vĩnh Long', type: 'Sân 5', address: 'TP. Vĩnh Long', price: 250000, courts: 3, hours: { open: 6, close: 22 }, lat: 10.253, lng: 105.972, status: 'active' },
+    { id: 'SAN127', name: 'Sân Bóng Đá Long Xuyên', type: 'Sân 7', address: 'TP. Long Xuyên, An Giang', price: 430000, courts: 2, hours: { open: 6, close: 22 }, lat: 10.386, lng: 105.435, status: 'active' },
+    { id: 'SAN128', name: 'Sân Bóng Đá Phan Thiết', type: 'Sân 5', address: 'TP. Phan Thiết, Bình Thuận', price: 280000, courts: 3, hours: { open: 6, close: 22 }, lat: 10.9333, lng: 108.1, status: 'active' },
+    { id: 'SAN129', name: 'Sân Bóng Đá Phan Rang', type: 'Sân 7', address: 'TP. Phan Rang - Tháp Chàm, Ninh Thuận', price: 420000, courts: 2, hours: { open: 6, close: 22 }, lat: 11.5667, lng: 108.9833, status: 'active' },
+    { id: 'SAN130', name: 'Sân Bóng Đá Tuy Hòa', type: 'Sân 5', address: 'TP. Tuy Hòa, Phú Yên', price: 260000, courts: 3, hours: { open: 6, close: 22 }, lat: 13.095, lng: 109.32, status: 'active' },
+    { id: 'SAN131', name: 'Sân Bóng Đá Quảng Ngãi', type: 'Sân 7', address: 'TP. Quảng Ngãi', price: 430000, courts: 2, hours: { open: 6, close: 22 }, lat: 15.12, lng: 108.8, status: 'active' },
+    { id: 'SAN132', name: 'Sân Bóng Đá Đồng Xoài', type: 'Sân 5', address: 'TP. Đồng Xoài, Bình Phước', price: 250000, courts: 3, hours: { open: 6, close: 22 }, lat: 11.534, lng: 106.9, status: 'active' },
+    { id: 'SAN133', name: 'Sân Bóng Đá Tây Ninh', type: 'Sân 7', address: 'TP. Tây Ninh', price: 420000, courts: 2, hours: { open: 6, close: 22 }, lat: 11.31, lng: 106.1, status: 'active' },
+  ]
+
+  DEFAULT_FIELDS = DEFAULT_FIELDS.concat(DEFAULT_PROVINCE_FIELDS)
+
   // Số điện thoại phải là duy nhất: tài khoản demo đã giữ 0912345678 nên
   // các tài khoản mẫu còn lại dùng dải số khác để đăng nhập không bị nhập nhằng.
   var DEFAULT_USERS = [
@@ -590,6 +636,42 @@
       if (next !== current) writeJSON(KEYS.settings, normSettings(next))
 
       global.localStorage.setItem(BRANDING_FLAG, String(Date.now()))
+    } catch (e) {
+      /* bỏ qua */
+    }
+  }
+
+  /**
+   * Bổ sung sân ở các tỉnh thành khác cho trình duyệt đã lưu bộ dữ liệu cũ (chỉ
+   * có Hà Nội) từ trước. Chỉ chạy một lần, chỉ thêm sân có mã chưa tồn tại và chỉ
+   * khi dữ liệu hiện tại vẫn còn sân demo - nên không hồi sinh sân mà chủ sân đã
+   * xoá trên dữ liệu thật.
+   */
+  function seedDemoProvinces() {
+    try {
+      if (global.localStorage.getItem(PROVINCE_SEED_FLAG)) return
+
+      var current = readJSON(KEYS.fields, null)
+      var defaultIds = DEFAULT_FIELDS.map(function (f) {
+        return f.id
+      })
+      var looksDemo =
+        Array.isArray(current) &&
+        current.some(function (f) {
+          return f && defaultIds.indexOf(f.id) !== -1
+        })
+
+      if (looksDemo) {
+        var ids = current.map(function (f) {
+          return f && f.id
+        })
+        var additions = DEFAULT_PROVINCE_FIELDS.filter(function (f) {
+          return ids.indexOf(f.id) === -1
+        })
+        if (additions.length) store('fields', current.concat(additions))
+      }
+
+      global.localStorage.setItem(PROVINCE_SEED_FLAG, String(Date.now()))
     } catch (e) {
       /* bỏ qua */
     }
@@ -1007,5 +1089,6 @@
 
   migrate()
   resetLegacyBranding()
+  seedDemoProvinces()
   global.SV = SV
 })(window)

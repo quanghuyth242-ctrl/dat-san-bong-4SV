@@ -19,16 +19,56 @@ function parsePitchType(value) {
   return PITCH_TYPES.includes(match?.[0]) ? match[0] : '7'
 }
 
-// Ảnh mặc định cho sân bóng đá theo loại sân
+// Ảnh cho mục "Sân nổi bật". Có sẵn 44 ảnh bóng đá (sân vận động, mặt cỏ, trận
+// đấu) để mỗi sân hiển thị một ảnh khác nhau. Nguồn: Wikimedia Commons (CC).
 const FIELD_IMAGES = [
-  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&q=75',
-  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&q=75',
-  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&q=75',
-  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&q=75',
-  'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75',
-  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=400&q=75',
+  // Sân vận động
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Allianz_arena_daylight_Richard_Bartz.jpg/960px-Allianz_arena_daylight_Richard_Bartz.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Olympiastadion_at_dusk.JPG/960px-Olympiastadion_at_dusk.JPG',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Santiagobernabeupanoramav45.JPG/960px-Santiagobernabeupanoramav45.JPG',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Anfield_Football_Stadium_-_geograph.org.uk_-_6297559.jpg/960px-Anfield_Football_Stadium_-_geograph.org.uk_-_6297559.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/SydneyFootballStadium_Aug2022_Pre-open.jpg/960px-SydneyFootballStadium_Aug2022_Pre-open.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Huntington_Bank_Stadium_Aerial.jpg/960px-Huntington_Bank_Stadium_Aerial.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Petrovskiy_football_stadium_in_SPB.jpg/960px-Petrovskiy_football_stadium_in_SPB.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/TEDA_Football_Stadium_2.jpg/960px-TEDA_Football_Stadium_2.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Olympic_Stadium_Munich_-_Rows_of_Seats%2C_April_2019_-04.jpg/960px-Olympic_Stadium_Munich_-_Rows_of_Seats%2C_April_2019_-04.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Petrovskiy_Football_Stadium_SPB.jpg/960px-Petrovskiy_Football_Stadium_SPB.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Football_and_athletics_stadium%2C_Doln%C3%BD_Kub%C3%ADn%2C_Slovakia.jpg/960px-Football_and_athletics_stadium%2C_Doln%C3%BD_Kub%C3%ADn%2C_Slovakia.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Football_stadium_Za_Lu%C5%BE%C3%A1nkami_Brno_Panorama_2010.jpg/960px-Football_stadium_Za_Lu%C5%BE%C3%A1nkami_Brno_Panorama_2010.jpg',
+  // Sân bóng / mặt cỏ
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Floating_Pitch%2C_Frankfurt_am_Main_%281X7A5564%29.jpg/960px-Floating_Pitch%2C_Frankfurt_am_Main_%281X7A5564%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Football_pitch_in_Gspon%2C_Staldenried.jpg/960px-Football_pitch_in_Gspon%2C_Staldenried.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Football_pitch_in_Shurskol_settlement.jpg/960px-Football_pitch_in_Shurskol_settlement.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Football_pitch_-_geograph.org.uk_-_2679895.jpg/960px-Football_pitch_-_geograph.org.uk_-_2679895.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/Football_pitch_-_geograph.org.uk_-_2681293.jpg/960px-Football_pitch_-_geograph.org.uk_-_2681293.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Football_pitch_and_Charlton_Court_-_geograph.org.uk_-_3682477.jpg/960px-Football_pitch_and_Charlton_Court_-_geograph.org.uk_-_3682477.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Football_pitch%2C_Ebonyi_State_University_Abakaliki.jpg/960px-Football_pitch%2C_Ebonyi_State_University_Abakaliki.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Football_Pitch%2C_Hampden_Park_sports_park_-_geograph.org.uk_-_4453952.jpg/960px-Football_Pitch%2C_Hampden_Park_sports_park_-_geograph.org.uk_-_4453952.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Football_pitch%2C_Iona_-_geograph.org.uk_-_4762347.jpg/960px-Football_pitch%2C_Iona_-_geograph.org.uk_-_4762347.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Football_Pitch%2C_Naphill_-_geograph.org.uk_-_5211535.jpg/960px-Football_Pitch%2C_Naphill_-_geograph.org.uk_-_5211535.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Football_pitch%2C_Sheringham_-_geograph.org.uk_-_5311969.jpg/960px-Football_pitch%2C_Sheringham_-_geograph.org.uk_-_5311969.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Bangor_City_Football_Club_training_pitch_-_geograph.org.uk_-_5319039.jpg/960px-Bangor_City_Football_Club_training_pitch_-_geograph.org.uk_-_5319039.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Football_pitch%2C_Meadowbank_Recreation_Ground%2C_Dorking_Surrey.jpg/960px-Football_pitch%2C_Meadowbank_Recreation_Ground%2C_Dorking_Surrey.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Football_pitch%2C_Ralegh_Crescent_Recreation_%26_Play_Park%2C_Witney%2C_Oxon_-_geograph.org.uk_-_5692545.jpg/960px-Football_pitch%2C_Ralegh_Crescent_Recreation_%26_Play_Park%2C_Witney%2C_Oxon_-_geograph.org.uk_-_5692545.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Football_pitch%2C_Farmers%27_Showfield_-_geograph.org.uk_-_5708398.jpg/960px-Football_pitch%2C_Farmers%27_Showfield_-_geograph.org.uk_-_5708398.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Five-a-side_pitch_at_Plantation_Park_Football_Ground_-_geograph.org.uk_-_5832811.jpg/960px-Five-a-side_pitch_at_Plantation_Park_Football_Ground_-_geograph.org.uk_-_5832811.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Football_pitch%2C_Normandy_Common%2C_Hunts_Hill_Road%2C_Normandy%2C_Surrey.jpg/960px-Football_pitch%2C_Normandy_Common%2C_Hunts_Hill_Road%2C_Normandy%2C_Surrey.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Football_pitch%2C_Shieldaig_-_geograph.org.uk_-_7300278.jpg/960px-Football_pitch%2C_Shieldaig_-_geograph.org.uk_-_7300278.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Soccer_pitch_at_Bentham_Sports_Club_-_geograph.org.uk_-_8348344.jpg/960px-Soccer_pitch_at_Bentham_Sports_Club_-_geograph.org.uk_-_8348344.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Overview_of_soccer_field_near_Veleslav%C3%ADnova_street_in_Jarom%C4%9B%C5%99ice_nad_Rokytnou%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg/960px-Overview_of_soccer_field_near_Veleslav%C3%ADnova_street_in_Jarom%C4%9B%C5%99ice_nad_Rokytnou%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/June_2007%2C_soccer_field_in_Mexico_City.jpg/960px-June_2007%2C_soccer_field_in_Mexico_City.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/June_2007%2C_soccer_field_in_Mexico_City_3.jpg/960px-June_2007%2C_soccer_field_in_Mexico_City_3.jpg',
+  // Trận đấu / cầu thủ
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/20191002_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Olympique_Lyonnais_by_Stepro_StP_0064-2.jpg/960px-20191002_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Olympique_Lyonnais_by_Stepro_StP_0064-2.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Germany_and_Argentina_face_off_in_the_final_of_the_World_Cup_2014_-2014-07-13_%285%29.jpg/960px-Germany_and_Argentina_face_off_in_the_final_of_the_World_Cup_2014_-2014-07-13_%285%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/David_Villa_-_01.jpg/960px-David_Villa_-_01.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Beitar_Jerusalem_FC_vs._MTK_Budapest_FC_2016-06-18_%28016%29.jpg/960px-Beitar_Jerusalem_FC_vs._MTK_Budapest_FC_2016-06-18_%28016%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Ryan_Valentine_scores.jpg/960px-Ryan_Valentine_scores.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Christian_Mendes_-_SC_Austria_Lustenau_%2808%29.jpg/960px-Christian_Mendes_-_SC_Austria_Lustenau_%2808%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Alg%C3%A9rie_-_Arm%C3%A9nie_-_20140531_-_Yacine_Brahimi_%28Alg%29_face_%C3%A0_Taron_Voskanyan_%28Arm%29.jpg/960px-Alg%C3%A9rie_-_Arm%C3%A9nie_-_20140531_-_Yacine_Brahimi_%28Alg%29_face_%C3%A0_Taron_Voskanyan_%28Arm%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/1alessandromartinelli2015.jpg/960px-1alessandromartinelli2015.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Hertha_BSC_vs._West_Ham_United_20190731_%28032%29.jpg/960px-Hertha_BSC_vs._West_Ham_United_20190731_%28032%29.jpg',
+  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Milan_Baro%C5%A13%2C_FCB-SLAVIA_30092018.jpg/960px-Milan_Baro%C5%A13%2C_FCB-SLAVIA_30092018.jpg',
 ]
 
 // Sân demo KHÔNG khai ở trang chủ nữa: sân lấy hoàn toàn từ store chung
@@ -318,6 +358,17 @@ function toast(msg, type = 'success') {
   }, type === 'error' ? 4000 : 2500)
 }
 
+/**
+ * Ảnh cho từng thẻ ở mục "Sân nổi bật": lấy theo vị trí của sân trong danh sách
+ * chung nên mỗi sân một ảnh khác nhau và giữ nguyên ảnh dù đang lọc theo tỉnh,
+ * loại sân hay giờ.
+ */
+function featuredImage(v) {
+  const i = VENUES.findIndex((x) => x.id === v.id)
+  const idx = i >= 0 ? i : Math.abs(String(v.id).length)
+  return FIELD_IMAGES[idx % FIELD_IMAGES.length]
+}
+
 function renderVenues(list, filters) {
   const grid = document.getElementById('featuredGrid')
   const empty = document.getElementById('venueEmpty')
@@ -352,7 +403,7 @@ function renderVenues(list, filters) {
     .map((v) => `
     <div class="court-card">
       <div class="court-img-wrap">
-        <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
+        <img src="${esc(featuredImage(v))}" alt="${esc(v.name)}" loading="lazy" onerror="this.onerror=null;this.src='${esc(FIELD_IMAGES[0])}'">
         <span class="court-badge">${v.icon} ${esc(typeLabel(v.type))}</span>
       </div>
       <div class="court-body">
