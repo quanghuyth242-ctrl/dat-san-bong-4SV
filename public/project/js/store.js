@@ -311,6 +311,10 @@
         raw.paymentStatus ||
         (raw.paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid'),
       status: raw.status || 'pending',
+      refundAmount: raw.refundAmount ? toPrice(raw.refundAmount) : 0,
+      refundReason: String(raw.refundReason || ''),
+      refundNote: String(raw.refundNote || ''),
+      refundedAt: String(raw.refundedAt || ''),
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
     }
@@ -1165,17 +1169,30 @@
       store('bookings', list)
       return { ok: true, booking: list[idx] }
     },
-    setPaymentStatus: function (id, paymentStatus) {
+    setPaymentStatus: function (id, paymentStatus, extra) {
       var list = collection('bookings').slice()
       var idx = list.findIndex(function (b) {
         return b.id === String(id)
       })
       if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' }
       list[idx].paymentStatus = paymentStatus
+      if (extra && typeof extra === 'object') {
+        Object.assign(list[idx], extra)
+      }
       store('bookings', list)
       return { ok: true, booking: list[idx] }
     },
-    /** Slot đã bị chiếm: giờ bắt đầu -> giờ kết thúc (số thập phân). Đơn đã huỷ không còn chiếm slot. */
+    updateBooking: function (id, patch) {
+      var list = collection('bookings').slice()
+      var idx = list.findIndex(function (b) {
+        return b.id === String(id)
+      })
+      if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' }
+      Object.assign(list[idx], patch)
+      store('bookings', list)
+      return { ok: true, booking: list[idx] }
+    },
+    /** Slot đã bị chiếm: giờ bắt đầu -> giờ kết thúc (số thập phân). Đơn đã huỷ hoặc đã hoàn tiền không còn chiếm slot. */
     isSlotTaken: function (fieldId, date, startHour, duration, ignoreId) {
       var key = courtKey(fieldId)
       var endHour = startHour + duration
@@ -1183,6 +1200,8 @@
         return (
           b.id !== String(ignoreId) &&
           b.status !== 'cancelled' &&
+          b.status !== 'refunded' &&
+          b.paymentStatus !== 'refunded' &&
           courtKey(b.fieldId) === key &&
           b.date === date &&
           startHour < b.endHour &&
