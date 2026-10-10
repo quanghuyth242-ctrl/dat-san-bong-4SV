@@ -1,6 +1,5 @@
-/* ==========================================================================
-   4SV.vn AUTH LOGIC - FAGLEAGUE SPLIT-SCREEN REPLICATION
-   ========================================================================== */
+
+/* 
 
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
@@ -47,12 +46,14 @@ function setMode(next, { updateHash = true } = {}) {
     panel.hidden = panel.dataset.panel !== next
   })
 
+
   // Cập nhật Header Action CTA & Showcase Panel Text
   const headerNote = $('#headerSwitchNote')
   const headerCta = $('#headerSwitchCta')
   const showcaseBadge = $('#showcaseBadge')
   const showcaseTitle = $('#showcaseTitle')
   const showcaseDesc = $('#showcaseDesc')
+
 
   if (next === 'register') {
     document.title = 'Đăng Ký Tài Khoản - 4SV.vn'
@@ -101,9 +102,11 @@ function setMode(next, { updateHash = true } = {}) {
   }
 }
 
+
 /* ---------- PASSWORD STRENGTH (FAGLEAGUE REPLICA) ---------- */
 function calcStrength(pass) {
   if (!pass) return { score: 0, text: 'Nhập mật khẩu để kiểm tra độ mạnh', color: '#94a3b8' }
+
 
   let score = 0
   if (pass.length >= 6) score += 25
@@ -223,6 +226,7 @@ function findUser(identity) {
   )
 }
 
+
 function setError(id, msg) {
   const el = $(`[data-error-for="${id}"]`)
   if (el) el.textContent = msg || ''
@@ -230,6 +234,7 @@ function setError(id, msg) {
   if (input) {
     input.closest('.form-group')?.classList.toggle('has-error', !!msg)
   }
+
 }
 
 /* ---------- PROFILE VIEW ---------- */
@@ -471,6 +476,8 @@ function initRouting() {
     const cur = window.SV?.currentUser()
     setMode(cur ? 'profile' : 'login', { updateHash: false })
   }
+
+
 }
 
 /* ---------- INIT ---------- */

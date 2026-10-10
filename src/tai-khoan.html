@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Tài khoản 4SV.vn: thông tin cá nhân và lịch sử đặt sân bóng đá của bạn."
+    />
+    <title>Tài khoản của tôi · 4SV.vn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lexend:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container">
+        <nav class="nav-inner">
+          <a class="nav-brand" href="../">4SV<span>.vn</span></a>
+          <div class="nav-menu" id="navMenu">
+            <ul class="nav-links">
+              <li><a class="nav-link" href="../#tim-san">Tìm sân</a></li>
+              <li><a class="nav-link" href="../#san-noi-bat">Sân nổi bật</a></li>
+              <li><a class="nav-link" href="../project/pages/dashboard.html">Quản trị Admin</a></li>
+            </ul>
+
+            <div class="nav-actions">
+              <a href="auth.html#login" class="nav-link"
+                ><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a
+              >
+              <a href="auth.html#register" class="nav-link nav-register"
+                >Đăng ký</a
+              >
+              <a href="../" class="btn-cta"
+                ><i class="fa-solid fa-house"></i> Trang chủ</a
+              >
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="account-page">
+      <div class="container">
+        <nav class="account-crumbs">
+          <a href="../"><i class="fa-solid fa-house"></i> Trang chủ</a>
+          <i class="fa-solid fa-angle-right"></i>
+          <span>Tài khoản của tôi</span>
+        </nav>
+
+        <!-- HỒ SƠ CÁ NHÂN -->
+        <section class="account-card" id="profileCard">
+          <div class="account-avatar" id="accAvatar">4</div>
+          <div class="account-id">
+            <h1 class="account-name" id="accName"></h1>
+            <p class="account-mail" id="accMail"></p>
+            <span class="account-role" id="accRole"></span>
+          </div>
+          <dl class="account-meta">
+            <div>
+              <dt>Số điện thoại</dt>
+              <dd id="accPhone">—</dd>
+            </div>
+            <div>
+              <dt>Thành viên từ</dt>
+              <dd id="accSince">—</dd>
+            </div>
+            <div>
+              <dt>Phương thức đăng nhập</dt>
+              <dd id="accRemember">—</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- SỐ LIỆU -->
+        <section class="hist-stats acc-stats">
+          <div class="hist-stat">
+            <strong id="accTotal">0</strong><span>Tổng đơn</span>
+          </div>
+          <div class="hist-stat">
+            <strong id="accUpcoming">0</strong><span>Sắp diễn ra</span>
+          </div>
+          <div class="hist-stat">
+            <strong id="accDone">0</strong><span>Đã hoàn thành</span>
+          </div>
+          <div class="hist-stat">
+            <strong id="accSpent">0đ</strong><span>Tổng chi tiêu</span>
+          </div>
+        </section>
+
+        <div class="account-grid">
+          <!-- LỊCH SỬ ĐẶT SÂN -->
+          <section class="account-card account-history">
+            <div class="account-card-head">
+              <h2><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đặt sân</h2>
+              <div class="acc-filters" id="accFilters">
+                <button type="button" class="acc-chip is-active" data-filter="all">
+                  Tất cả
+                </button>
+                <button type="button" class="acc-chip" data-filter="upcoming">
+                  Sắp diễn ra
+                </button>
+                <button type="button" class="acc-chip" data-filter="pending">
+                  Chờ xử lý
+                </button>
+                <button type="button" class="acc-chip" data-filter="cancelled">
+                  Đã huỷ
+                </button>
+              </div>
+            </div>
+            <div class="hist-list" id="historyList"></div>
+          </section>
+
+          <!-- CẬP NHẬT THÔNG TIN -->
+          <section class="account-card account-form-card">
+            <div class="account-card-head">
+              <h2><i class="fa-solid fa-user-pen"></i> Thông tin tài khoản</h2>
+            </div>
+            <form class="acc-form" id="profileForm" novalidate>
+              <div class="acc-field">
+                <label for="accFormName">Họ tên</label>
+                <input type="text" id="accFormName" autocomplete="name" />
+                <span class="acc-err" data-err="name"></span>
+              </div>
+
+              <div class="acc-field">
+                <label for="accFormPhone">Số điện thoại</label>
+                <input type="tel" id="accFormPhone" autocomplete="tel" />
+                <span class="acc-err" data-err="phone"></span>
+              </div>
+
+              <div class="acc-field">
+                <label for="accFormMail">Email</label>
+                <input type="email" id="accFormMail" disabled />
+                <span class="acc-err" data-err="mail"></span>
+              </div>
+
+              <label class="acc-check">
+                <input type="checkbox" id="accFormRemember" />
+                <span>Ghi nhớ đăng nhập trên thiết bị này</span>
+              </label>
+
+              <button type="submit" class="btn btn-light-dark acc-submit">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+              </button>
+            </form>
+
+            <div class="acc-links">
+              <a href="auth.html#login" id="accSwitch"
+                ><i class="fa-solid fa-right-left"></i> Đổi tài khoản</a
+              >
+              <button type="button" id="accLogout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> 4SV.vn · Sân bóng đá giá rẻ cho mọi người.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="./tai-khoan.js"></script>
+  </body>
+</html>

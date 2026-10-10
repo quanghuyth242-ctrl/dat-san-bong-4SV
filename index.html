@@ -82,11 +82,39 @@
             <li>
               <a class="nav-link" href="project/pages/danh-sach-san.html">Lịch đặt sân</a>
             </li>
+            <li class="dropdown" id="ddType">
+              <a class="nav-link dropdown-toggle" href="#"
+                >Loại sân <i class="fa-solid fa-chevron-down dd-caret"></i
+              ></a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-type="5"
+                    >⚽ Sân 5 người</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-type="7"
+                    >⚽ Sân 7 người</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-type="11"
+                    >⚽ Sân 11 người</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#tim-san" data-type=""
+                    >🏅 Tất cả loại sân</a
+                  >
+                </li>
+              </ul>
+            </li>
             <li>
               <a class="nav-link" href="#how">Hướng dẫn</a>
             </li>
             <li>
               <a class="nav-link" href="#software">Phần mềm</a>
+            </li>
             </li>
             <li>
               <a class="nav-link" href="#reviews">Đánh giá</a>
@@ -365,6 +393,7 @@
               <p>Quản lý khung giờ, chặn trùng, tự động cập nhật lịch theo thời gian thực.</p>
             </div>
           </div>
+
           <div class="col-md-6 col-lg-3">
             <div class="feature-card">
               <div class="feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
@@ -454,6 +483,28 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+        <!-- SEO: TỈNH THÀNH -->
+    <section class="seo-grid-section">
+      <div class="container">
+        <div class="text-center">
+          <div class="section-label">
+            <i class="fa-solid fa-map-location-dot"></i> Toàn quốc
+          </div>
+          <h2 class="section-title">Đặt sân bóng đá theo tỉnh thành</h2>
+          <p class="section-sub">
+            Chọn loại sân để xem các tỉnh đang có sân đặt được
+          </p>
+        </div>
+        <div class="sport-tabs" id="seoTabs">
+          <button class="sport-tab active" data-type="">⚽ Tất cả</button>
+          <button class="sport-tab" data-type="5">⚽ Sân 5</button>
+          <button class="sport-tab" data-type="7">⚽ Sân 7</button>
+          <button class="sport-tab" data-type="11">⚽ Sân 11</button>
+        </div>
+        <div class="province-grid" id="provinceGrid"></div>
       </div>
     </section>
 
