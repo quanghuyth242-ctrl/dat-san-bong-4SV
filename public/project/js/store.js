@@ -211,6 +211,7 @@
     raw = raw || {}
     var open = toHour(raw.hours ? raw.hours.open : raw.openHour, 6)
     var close = toHour(raw.hours ? raw.hours.close : raw.closeHour, 22)
+    var sports = Array.isArray(raw.sports) && raw.sports.length ? raw.sports : [raw.sport || 'Bóng đá']
     return {
       id: normalizeId(raw.id, 'field') || PREFIX.field + pad((idx || 0) + 1, PAD.field),
       name: String(raw.name || 'Sân chưa đặt tên'),
@@ -224,6 +225,11 @@
       img: raw.img || FIELD_IMAGES[(idx || 0) % FIELD_IMAGES.length],
       desc: String(raw.desc || ''),
       status: raw.status === 'inactive' || raw.status === 'maintenance' ? 'inactive' : 'active',
+      sport: String(raw.sport || sports[0] || 'Bóng đá'),
+      sports: sports,
+      rating: raw.rating || 4.9,
+      reviewCount: raw.reviewCount || 150,
+      badge: raw.badge || (sports.length > 1 ? sports.length + ' môn thể thao' : '1 môn thể thao'),
     }
   }
 
@@ -325,9 +331,13 @@
 
   function normSettings(raw) {
     raw = raw || {}
+    var siteName = String(raw.siteName || '4SV.vn')
+    if (siteName === '4SV.com') siteName = '4SV.vn'
+    var primaryColor = String(raw.primaryColor || '#8B1E1E')
+    if (primaryColor === '#2563EB' || primaryColor === '#16a34a') primaryColor = '#8B1E1E'
     return {
-      siteName: String(raw.siteName || '4SV.vn'),
-      primaryColor: String(raw.primaryColor || '#16a34a'),
+      siteName: siteName,
+      primaryColor: primaryColor,
       darkMode: Boolean(raw.darkMode),
       logo: String(raw.logo || ''),
       adminUsername: String(raw.adminUsername || 'admin'),
@@ -363,20 +373,120 @@
   // ================================ DỮ LIỆU MẶC ĐỊNH ================================
 
   var DEFAULT_FIELDS = [
-    { id: 'SAN001', name: 'Sân Bóng Đá Thành Công', type: 'Sân 5', address: '18 Thành Công, Ba Đình, Hà Nội', price: 300000, courts: 3, hours: { open: 6, close: 22 }, lat: 21.0465, lng: 105.8069, status: 'active' },
-    { id: 'SAN002', name: 'Sân Bóng Cầu Giấy', type: 'Sân 7', address: '68 Cầu Giấy, Cầu Giấy, Hà Nội', price: 500000, courts: 2, hours: { open: 6, close: 23 }, lat: 21.0409, lng: 105.7822, status: 'active' },
-    { id: 'SAN003', name: 'Sân Bóng Đá Minh Khai', type: 'Sân 5', address: '85 Trần Hưng Đạo, Hai Bà Trưng, Hà Nội', price: 350000, courts: 4, hours: { open: 5, close: 22 }, lat: 21.0285, lng: 105.78, status: 'active' },
-    { id: 'SAN004', name: 'Sân Bóng Tây Hồ 11 Người', type: 'Sân 11', address: 'Ngõ 431 Âu Cơ, Tây Hồ, Hà Nội', price: 900000, courts: 1, hours: { open: 7, close: 22 }, lat: 21.066, lng: 105.85, status: 'active' },
-    { id: 'SAN005', name: 'Sân Bóng Đá Hoàng Mai', type: 'Sân 7', address: 'Đường Tân Mai, Hoàng Mai, Hà Nội', price: 550000, courts: 3, hours: { open: 6, close: 22 }, lat: 20.9955, lng: 105.845, status: 'active' },
-    { id: 'SAN006', name: 'Sân Bóng Đá Ba Đình', type: 'Sân 7', address: '120 Xuân La, Ba Đình, Hà Nội', price: 480000, courts: 2, hours: { open: 6, close: 23 }, lat: 21.052, lng: 105.8, status: 'active' },
-    { id: 'SAN007', name: 'Sân Bóng Đá Long Biên', type: 'Sân 5', address: '92 Nguyễn Văn Cừ, Long Biên, Hà Nội', price: 280000, courts: 5, hours: { open: 6, close: 21 }, lat: 21.0384, lng: 105.86, status: 'active' },
-    { id: 'SAN008', name: 'Sân Bóng Đá Nam Từ Liêm', type: 'Sân 11', address: 'Đường Lê Đức Thọ, Nam Từ Liêm, Hà Nội', price: 1200000, courts: 2, hours: { open: 7, close: 22 }, lat: 21.019, lng: 105.78, status: 'active' },
+    {
+      id: 'SAN001',
+      name: 'Sân Bóng Hồng Phúc',
+      type: 'Sân 7',
+      sport: 'Bóng đá',
+      sports: ['Bóng đá'],
+      address: 'Thành phố Thanh Hóa, Tỉnh Thanh Hóa',
+      price: 300000,
+      courts: 4,
+      hours: { open: 5, close: 22 },
+      lat: 19.807,
+      lng: 105.776,
+      status: 'active',
+      img: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80',
+      rating: 4.9,
+      reviewCount: 157,
+      badge: '1 môn thể thao'
+    },
+    {
+      id: 'SAN002',
+      name: 'Trung tâm thể thao 4SV Sport Complex',
+      type: 'Sân 7',
+      sport: 'Bóng đá',
+      sports: ['Bóng đá', 'Cầu lông', 'Pickleball'],
+      address: 'Quận Tây Hồ, Thành phố Hà Nội',
+      price: 250000,
+      courts: 6,
+      hours: { open: 6, close: 23 },
+      lat: 21.066,
+      lng: 105.85,
+      status: 'active',
+      img: 'https://cdn.ketnoibongda.vn/upload/images/sports-field/cover-20260720145342-3f18e3cd.jpg',
+      rating: 4.9,
+      reviewCount: 980,
+      badge: '3 môn thể thao'
+    },
+    {
+      id: 'SAN003',
+      name: 'Sân bóng Thành Công',
+      type: 'Sân 5',
+      sport: 'Bóng đá',
+      sports: ['Bóng đá'],
+      address: 'Huyện Thanh Trì, Thành phố Hà Nội',
+      price: 300000,
+      courts: 3,
+      hours: { open: 6, close: 22 },
+      lat: 21.0465,
+      lng: 105.8069,
+      status: 'active',
+      img: 'https://cdn.ketnoibongda.vn/upload/images/sports-field/cover-20260720190703-874d96d7.jpg',
+      rating: 4.9,
+      reviewCount: 342,
+      badge: '1 môn thể thao'
+    },
+    {
+      id: 'SAN004',
+      name: 'Cụm Sân Pickleball GreenPark',
+      type: 'Pickleball',
+      sport: 'Pickleball',
+      sports: ['Pickleball'],
+      address: 'Quận Cầu Giấy, Thành phố Hà Nội',
+      price: 200000,
+      courts: 4,
+      hours: { open: 6, close: 22 },
+      lat: 21.0409,
+      lng: 105.7822,
+      status: 'active',
+      img: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
+      rating: 4.8,
+      reviewCount: 120,
+      badge: '1 môn thể thao'
+    },
+    {
+      id: 'SAN005',
+      name: 'Nhà Thi Đấu Cầu Lông Ba Đình',
+      type: 'Cầu lông',
+      sport: 'Cầu lông',
+      sports: ['Cầu lông'],
+      address: 'Quận Ba Đình, Thành phố Hà Nội',
+      price: 180000,
+      courts: 6,
+      hours: { open: 6, close: 22 },
+      lat: 21.0384,
+      lng: 105.82,
+      status: 'active',
+      img: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80',
+      rating: 4.9,
+      reviewCount: 210,
+      badge: '1 môn thể thao'
+    },
+    {
+      id: 'SAN006',
+      name: 'Sân Bóng Đá PVV - Thanh Xuân',
+      type: 'Sân 11',
+      sport: 'Bóng đá',
+      sports: ['Bóng đá'],
+      address: 'Quận Thanh Xuân, Thành phố Hà Nội',
+      price: 400000,
+      courts: 2,
+      hours: { open: 6, close: 23 },
+      lat: 21.002,
+      lng: 105.81,
+      status: 'active',
+      img: 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80',
+      rating: 4.9,
+      reviewCount: 415,
+      badge: '1 môn thể thao'
+    }
   ]
 
   // Số điện thoại phải là duy nhất: tài khoản demo đã giữ 0912345678 nên
   // các tài khoản mẫu còn lại dùng dải số khác để đăng nhập không bị nhập nhằng.
   var DEFAULT_USERS = [
-    { id: 'ND001', name: 'Nguyễn Minh Tuấn', email: 'demo@4sv.vn', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05' },
+    { id: 'ND001', name: 'Nguyễn Minh Tuấn', email: 'demo@4sv.com', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05' },
     { id: 'ND002', name: 'Nguyễn Văn An', email: 'nguyenvanan@gmail.com', phone: '0901234567', status: 'active', createdAt: '2026-02-11' },
     { id: 'ND003', name: 'Trần Thị Bình', email: 'tranthibinh@gmail.com', phone: '0912345679', status: 'active', createdAt: '2026-03-02' },
     { id: 'ND004', name: 'Lê Hoàng Cường', email: 'lehoangcuong@gmail.com', phone: '0923456789', status: 'active', createdAt: '2026-03-19' },
@@ -412,7 +522,7 @@
 
   var DEFAULT_SETTINGS = {
     siteName: '4SV.vn',
-    primaryColor: '#16a34a',
+    primaryColor: '#8B1E1E',
     darkMode: false,
     logo: '',
     adminUsername: 'admin',

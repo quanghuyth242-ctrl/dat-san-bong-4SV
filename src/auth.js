@@ -1,12 +1,14 @@
+/* ==========================================================================
+   4SV.vn AUTH LOGIC - FAGLEAGUE SPLIT-SCREEN REPLICATION
+   ========================================================================== */
+
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
 const OTP_DEMO = '123456'
 const RESEND_SECONDS = 60
-const REDIRECT_MS = 3000
-// Cả tài khoản lẫn phiên đăng nhập đều do store chung quản lý
-// (public/project/js/store.js): đăng ký ở đây thì trang quản trị thấy ngay,
-// đăng nhập xong thì header mọi trang đổi sang ô tài khoản.
+const REDIRECT_MS = 2000
+
 const DEMO_USER = {
   name: 'Nguyễn Minh Tuấn',
   email: 'demo@4sv.vn',
@@ -15,9 +17,9 @@ const DEMO_USER = {
   role: 'player',
 }
 
-function toast(message) {
+function toast(message, type = 'success') {
   const el = document.createElement('div')
-  el.className = 'toast-4sv'
+  el.className = 'toast-4sv' + (type === 'error' ? ' toast-error' : '')
   el.textContent = message
   document.body.appendChild(el)
   requestAnimationFrame(() => el.classList.add('show'))
@@ -28,51 +30,8 @@ function toast(message) {
 }
 
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim())
-const isPhone = (v) => /^0?\d{9,10}$/.test(v.replace(/[\s.]/g, ''))
+const isPhone = (v) => /^0?\d{9,10}$/.test(v.replace(/[\s.-]/g, ''))
 const digits = (v) => String(v || '').replace(/\D/g, '')
-
-const RULES = {
-  identity: (v) => {
-    if (!v.trim()) return 'Vui lòng nhập email hoặc số điện thoại'
-    if (!isEmail(v) && !isPhone(v))
-      return 'Email hoặc số điện thoại chưa đúng định dạng'
-    return ''
-  },
-  password: (v) => {
-    if (!v) return 'Vui lòng nhập mật khẩu'
-    if (v.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự'
-    return ''
-  },
-  name: (v) => {
-    if (!v.trim()) return 'Vui lòng nhập họ và tên'
-    if (v.trim().length < 2) return 'Họ tên quá ngắn'
-    if (/\d/.test(v)) return 'Họ tên không được chứa chữ số'
-    return ''
-  },
-  email: (v) => {
-    if (!v.trim()) return 'Vui lòng nhập email'
-    if (!isEmail(v)) return 'Email chưa đúng định dạng'
-    return ''
-  },
-  phone: (v) => {
-    if (!v.trim()) return 'Vui lòng nhập số điện thoại'
-    if (!isPhone(v)) return 'Số điện thoại phải có 9-10 chữ số'
-    return ''
-  },
-}
-
-const tabs = $('#authTabs')
-const panels = $$('[data-panel]')
-const forms = {
-  login: $('#loginForm'),
-  register: $('#registerForm'),
-  forgot: $('#forgotForm'),
-  otp: $('#otpForm'),
-  newpass: $('#newPassForm'),
-}
-const otpBoxes = $$('[data-otp] input')
-const otpError = $('[data-error-for="otp"]')
-const resendBtn = $('[data-otp-resend]')
 
 let mode = 'login'
 let otpContext = 'register'
@@ -81,495 +40,449 @@ let resendTimer = null
 let redirectTimer = null
 
 /* ---------- CHUYỂN MÀN HÌNH ---------- */
-function setMode(next, { updateHash = true, focus = true } = {}) {
+function setMode(next, { updateHash = true } = {}) {
   mode = next
+  const panels = $$('[data-panel]')
   panels.forEach((panel) => {
     panel.hidden = panel.dataset.panel !== next
   })
 
-  const isTabMode = next === 'login' || next === 'register'
-  tabs.hidden = !isTabMode
-  tabs.dataset.active = isTabMode ? next : tabs.dataset.active
-  $$('.auth-tab', tabs).forEach((tab) => {
-    const active = tab.dataset.mode === next
-    tab.classList.toggle('active', active)
-    tab.setAttribute('aria-selected', String(active))
-  })
+  // Cập nhật Header Action CTA & Showcase Panel Text
+  const headerNote = $('#headerSwitchNote')
+  const headerCta = $('#headerSwitchCta')
+  const showcaseBadge = $('#showcaseBadge')
+  const showcaseTitle = $('#showcaseTitle')
+  const showcaseDesc = $('#showcaseDesc')
 
-  if (updateHash && isTabMode && location.hash.slice(1) !== next) {
+  if (next === 'register') {
+    document.title = 'Đăng Ký Tài Khoản - 4SV.vn'
+    if (headerNote) headerNote.textContent = 'Đã có tài khoản?'
+    if (headerCta) {
+      headerCta.textContent = 'Đăng nhập ngay'
+      headerCta.href = '#login'
+    }
+    if (showcaseBadge) {
+      showcaseBadge.innerHTML = '<span>🚀 Khởi Tạo Hệ Thống Thể Thao All-In-One</span>'
+    }
+    if (showcaseTitle) {
+      showcaseTitle.innerHTML = 'Tạo tài khoản quản trị <span>chỉ trong 1 phút</span>'
+    }
+    if (showcaseDesc) {
+      showcaseDesc.textContent = 'Trải nghiệm đầy đủ ba bộ công cụ quản lý giải đấu, quản lý đội thể thao và vận hành cụm sân hoàn toàn miễn phí trên nền tảng 4SV.vn.'
+    }
+  } else if (next === 'login') {
+    document.title = 'Đăng Nhập - 4SV.vn'
+    if (headerNote) headerNote.textContent = 'Chưa có tài khoản?'
+    if (headerCta) {
+      headerCta.textContent = 'Đăng ký ngay'
+      headerCta.href = '#register'
+    }
+    if (showcaseBadge) {
+      showcaseBadge.innerHTML = '<span>🏆 4SV.vn All-In-One Sports Platform</span>'
+    }
+    if (showcaseTitle) {
+      showcaseTitle.innerHTML = 'Nền tảng quản lý <span>Giải đấu, Đội bóng &amp; Cụm sân</span>'
+    }
+    if (showcaseDesc) {
+      showcaseDesc.textContent = 'Giải pháp chuyển đổi số thể thao toàn diện — đồng bộ dữ liệu tức thì giữa ban tổ chức giải đấu, ban quản lý đội thể thao và chủ cụm sân trên một hệ thống duy nhất.'
+    }
+  } else if (next === 'profile') {
+    document.title = 'Tài Khoản Của Tôi - 4SV.vn'
+    if (headerNote) headerNote.textContent = 'Xin chào'
+    if (headerCta) {
+      headerCta.textContent = 'Về trang chủ'
+      headerCta.href = '../index.html'
+    }
+    renderProfile()
+  }
+
+  if (updateHash && ['login', 'register', 'forgot', 'profile'].includes(next)) {
     history.replaceState(null, '', `#${next}`)
   }
-  if (focus) {
-    const first = $(`[data-panel="${next}"] [data-rule]`)
-    if (first) setTimeout(() => first.focus(), 60)
-  }
 }
 
-/* ---------- HIỂN THỊ LỖI ---------- */
-function setFieldState(input, message) {
-  const field = input.closest('.auth-field')
-  const error = $(`[data-error-for="${input.id}"]`)
-  field.classList.toggle('invalid', Boolean(message))
-  field.classList.toggle('valid', !message && input.value.trim() !== '')
-  if (!error) return
-  error.innerHTML = message
-    ? `<i class="fa-solid fa-circle-exclamation"></i> ${message}`
-    : ''
-  error.hidden = !message
-  input.setAttribute('aria-invalid', String(Boolean(message)))
-}
+/* ---------- PASSWORD STRENGTH (FAGLEAGUE REPLICA) ---------- */
+function calcStrength(pass) {
+  if (!pass) return { score: 0, text: 'Nhập mật khẩu để kiểm tra độ mạnh', color: '#94a3b8' }
 
-function validateField(input) {
-  const rule = RULES[input.dataset.rule]
-  const message = rule ? rule(input.value) : ''
-  setFieldState(input, message)
-  return !message
-}
-
-function validateForm(form) {
-  const inputs = $$('[data-rule]', form)
-  let firstBad = null
-  let ok = true
-  inputs.forEach((input) => {
-    if (!validateField(input) && !firstBad) {
-      firstBad = input
-      ok = false
-    }
-  })
-
-  const confirm = $('[data-rule="confirm"]', form)
-  if (confirm && ok) {
-    const source = document.getElementById(confirm.dataset.pair)
-    if (source && confirm.value !== source.value) {
-      setFieldState(confirm, 'Mật khẩu xác nhận chưa khớp')
-      firstBad = confirm
-      ok = false
-    }
-  }
-
-  const terms = $('#regTerms')
-  if (terms && form === forms.register && !terms.checked) {
-    $('#termsLabel').classList.add('invalid')
-    toast('Bạn cần đồng ý với điều khoản sử dụng')
-    if (!firstBad) firstBad = terms
-    ok = false
-  }
-
-  if (firstBad) firstBad.focus()
-  return ok
-}
-
-/* ---------- ĐỘ MẠNH MẬT KHẨU ---------- */
-const METER_TEXT = [
-  'Nên gồm chữ, số và ký tự đặc biệt',
-  'Yếu - nên có chữ hoa, chữ số và ký tự đặc biệt',
-  'Trung bình - thêm ký tự đặc biệt để an toàn hơn',
-  'Mạnh - mật khẩu khá tốt',
-  'Rất mạnh - an toàn tuyệt đối',
-]
-
-function scorePassword(value) {
-  if (!value) return 0
   let score = 0
-  if (value.length >= 6) score += 1
-  if (value.length >= 10) score += 1
-  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1
-  if (/\d/.test(value)) score += 1
-  if (/[^A-Za-z0-9]/.test(value)) score += 1
-  return score
+  if (pass.length >= 6) score += 25
+  if (pass.length >= 10) score += 25
+  if (/[0-9]/.test(pass)) score += 25
+  if (/[^A-Za-z0-9]/.test(pass)) score += 25
+
+  if (score <= 25) {
+    return {
+      score,
+      text: 'Mật khẩu Yếu (Nên dài trên 8 ký tự và bao gồm số)',
+      color: '#ef4444'
+    }
+  } else if (score <= 75) {
+    return {
+      score,
+      text: 'Mật khẩu Trung Bình (Thêm ký tự đặc biệt để an toàn hơn)',
+      color: '#d97706'
+    }
+  } else {
+    return {
+      score: 100,
+      text: 'Mật khẩu Rất Mạnh! Bạn có thể yên tâm sử dụng',
+      color: '#059669'
+    }
+  }
 }
 
-function updateMeter(input) {
-  const field = input.closest('.auth-field')
-  const meter = $('[data-meter]', field)
-  const text = $('[data-meter-text]', field)
-  if (!meter || !text) return
-  const score = scorePassword(input.value)
-  meter.dataset.level = String(score)
-  text.textContent = METER_TEXT[score]
-  text.style.color =
-    score >= 4 ? 'var(--green-primary)' : score >= 2 ? '#b45309' : '#dc2626'
-}
+function bindPasswordStrength() {
+  const input = $('#regPass')
+  const fill = $('#strengthBarFill')
+  const text = $('#strengthText')
+  if (!input || !fill || !text) return
 
-/* ---------- NÚT / TRẠNG THÁI ---------- */
-function setLoading(form, loading) {
-  const button = $('button[type="submit"]', form)
-  if (!button) return
-  button.classList.toggle('loading', loading)
-  button.classList.toggle('auth-submit--loading', loading)
-  button.disabled = loading
-}
-
-function fakeRequest(form, delay = 900) {
-  return new Promise((resolve) => {
-    setLoading(form, true)
-    setTimeout(() => {
-      setLoading(form, false)
-      resolve()
-    }, delay)
+  input.addEventListener('input', () => {
+    const { score, text: t, color } = calcStrength(input.value)
+    fill.style.width = score + '%'
+    fill.style.backgroundColor = color
+    text.textContent = t
+    text.style.color = color
   })
 }
 
-/* ---------- OTP ---------- */
-function readOtp() {
-  return otpBoxes.map((box) => box.value).join('')
+/* ---------- TOGGLE EYE PASSWORDS ---------- */
+function bindEyeToggles() {
+  document.addEventListener('click', (e) => {
+    const toggle = e.target.closest('[data-toggle-pass]')
+    if (!toggle) return
+    const id = toggle.dataset.togglePass
+    const input = document.getElementById(id)
+    if (!input) return
+    const isPass = input.type === 'password'
+    input.type = isPass ? 'text' : 'password'
+    toggle.innerHTML = isPass
+      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`
+      : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`
+  })
 }
 
-function resetOtp() {
-  otpBoxes.forEach((box) => (box.value = ''))
-  $('[data-otp]').classList.remove('is-filled')
-  otpError.hidden = true
+/* ---------- LOGIN TAB SWITCHER (Tài Khoản / QR) ---------- */
+function bindLoginTabs() {
+  const tabs = $$('#loginAuthTabs .auth-tab-btn')
+  const accTab = $('#accountTab')
+  const qrTab = $('#qrTab')
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.remove('active'))
+      tab.classList.add('active')
+      const which = tab.dataset.tab
+      if (which === 'qr') {
+        if (accTab) accTab.style.display = 'none'
+        if (qrTab) qrTab.style.display = 'block'
+      } else {
+        if (accTab) accTab.style.display = 'block'
+        if (qrTab) qrTab.style.display = 'none'
+      }
+    })
+  })
 }
 
-function startResendCountdown() {
-  let left = RESEND_SECONDS
-  resendBtn.disabled = true
-  resendBtn.textContent = `Gửi lại mã (${left}s)`
-  clearInterval(resendTimer)
-  resendTimer = setInterval(() => {
-    left -= 1
-    if (left <= 0) {
-      clearInterval(resendTimer)
-      resendBtn.disabled = false
-      resendBtn.textContent = 'Gửi lại mã'
-      return
-    }
-    resendBtn.textContent = `Gửi lại mã (${left}s)`
-  }, 1000)
+/* ---------- OTP INPUTS ---------- */
+function bindOtp() {
+  const boxes = $$('[data-otp] input')
+  const form = $('#otpForm')
+  const error = $('[data-error-for="otp"]')
+  const resend = $('#btnResendOtp')
+
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+      box.value = digits(box.value).slice(-1)
+      if (box.value && i < boxes.length - 1) boxes[i + 1].focus()
+      const code = boxes.map((b) => b.value).join('')
+      if (code.length === 6) form?.requestSubmit()
+    })
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus()
+    })
+  })
+
+  resend?.addEventListener('click', () => {
+    boxes.forEach((b) => (b.value = ''))
+    boxes[0]?.focus()
+    toast(`Đã gửi lại mã xác thực tới ${otpTarget}`)
+  })
 }
 
-function showOtp(context, target) {
-  otpContext = context
-  otpTarget = target
-  $('[data-otp-target]').textContent = target
-  resetOtp()
-  setMode('otp')
-  startResendCountdown()
-  setTimeout(() => otpBoxes[0].focus(), 80)
-}
-
-function submitOtp() {
-  const code = readOtp()
-  if (code.length < 6) {
-    otpError.innerHTML =
-      '<i class="fa-solid fa-circle-exclamation"></i> Vui lòng nhập đủ 6 số mã xác thực'
-    otpError.hidden = false
-    otpBoxes[code.length].focus()
-    return
-  }
-  if (code !== OTP_DEMO) {
-    otpError.innerHTML =
-      '<i class="fa-solid fa-circle-exclamation"></i> Mã xác thực không đúng, thử lại (demo: 123456)'
-    otpError.hidden = false
-    otpBoxes[0].focus()
-    otpBoxes[0].select()
-    return
-  }
-  otpError.hidden = true
-  clearInterval(resendTimer)
-  resendBtn.disabled = false
-  resendBtn.textContent = 'Gửi lại mã'
-
-  if (otpContext === 'register') {
-    showSuccess(
-      'Tạo tài khoản thành công!',
-      `Voucher giảm 20% đã gửi tới ${otpTarget}. Chào mừng bạn đến với 4SV.vn.`,
-      '/',
-    )
-    return
-  }
-  setMode('newpass')
-}
-
-/* ---------- THÀNH CÔNG ---------- */
-function showSuccess(title, desc, redirectTo) {
-  $('[data-success-title]').textContent = title
-  $('[data-success-desc]').textContent = desc
-  setMode('success', { focus: false })
-  clearTimeout(redirectTimer)
-  if (redirectTo) {
-    redirectTimer = setTimeout(() => {
-      window.location.href = redirectTo
-    }, REDIRECT_MS)
-  }
-}
-
-/* ---------- NGƯỜI DÙNG (lấy từ store dùng chung) ---------- */
-function getUsers() {
-  return SV.users()
-}
-
-/**
- * Chỉ nhận email hoặc số điện thoại. SV.findUser() còn khớp cả tên để tiện
- * tìm kiếm ở trang quản trị, nhưng đăng nhập thì không nên cho đăng nhập
- * bằng tên vì hai người có thể trùng tên.
- */
+/* ---------- USERS STORE INTERFACE ---------- */
 function findUser(identity) {
   const key = identity.trim().toLowerCase()
   const phone = digits(identity)
   return (
-    getUsers().find(
+    window.SV?.users().find(
       (u) =>
         String(u.email || '').toLowerCase() === key ||
-        (phone && digits(u.phone) === phone),
+        (phone && digits(u.phone) === phone)
     ) || null
   )
 }
 
-/* ---------- KHỞI TẠO ---------- */
-function initTabs() {
-  $$('.auth-tab', tabs).forEach((tab) => {
-    tab.addEventListener('click', () => {
-      setMode(tab.dataset.mode)
-    })
-  })
-
-  document.addEventListener('click', (e) => {
-    const trigger = e.target.closest('[data-go]')
-    if (!trigger) return
-    const target = trigger.dataset.go
-    if (target === 'back-otp') {
-      setMode(otpContext === 'register' ? 'register' : 'forgot')
-      return
-    }
-    if (target === 'login') {
-      clearTimeout(redirectTimer)
-      setMode('login')
-      return
-    }
-    setMode(target)
-  })
+function setError(id, msg) {
+  const el = $(`[data-error-for="${id}"]`)
+  if (el) el.textContent = msg || ''
+  const input = document.getElementById(id)
+  if (input) {
+    input.closest('.form-group')?.classList.toggle('has-error', !!msg)
+  }
 }
 
-function initFields() {
-  $$('[data-rule]').forEach((input) => {
-    input.addEventListener('blur', () => validateField(input))
-    input.addEventListener('input', () => {
-      if (input.closest('.auth-field').classList.contains('invalid')) {
-        validateField(input)
-      }
-      const clearBtn = $(`[data-clear="${input.id}"]`)
-      if (clearBtn) clearBtn.hidden = input.value === ''
-      if (input.hasAttribute('data-meter-for')) updateMeter(input)
-    })
-  })
+/* ---------- PROFILE VIEW ---------- */
+function renderProfile() {
+  const user = window.SV?.currentUser()
+  if (!user) {
+    setMode('login')
+    return
+  }
+  const nameEl = $('#pfName')
+  const emailEl = $('#pfEmail')
+  const roleEl = $('#pfRole')
+  const listEl = $('#pfBookingsList')
 
-  document.addEventListener('click', (e) => {
-    const clearBtn = e.target.closest('[data-clear]')
-    if (clearBtn) {
-      const input = document.getElementById(clearBtn.dataset.clear)
-      input.value = ''
-      clearBtn.hidden = true
-      setFieldState(input, '')
-      if (input.hasAttribute('data-meter-for')) updateMeter(input)
-      input.focus()
-      return
+  if (nameEl) nameEl.textContent = user.name || 'Tài khoản'
+  if (emailEl) emailEl.textContent = user.email || user.phone || ''
+  if (roleEl) roleEl.textContent = user.role === 'admin' ? 'Quản trị viên' : (user.role === 'owner' ? 'Chủ sân' : 'Người chơi')
+
+  const bookings = window.SV?.bookings() || []
+  const my = bookings.filter((b) => b.userId === user.id || b.userName === user.name)
+
+  if (listEl) {
+    if (!my.length) {
+      listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Chưa có lịch đặt sân nào.</p>'
+    } else {
+      listEl.innerHTML = my.slice(0, 5).map((b) => `
+        <div class="history-item">
+          <div class="history-item-head">
+            <strong>${b.courtName || 'Sân thể thao'}</strong>
+            <span class="history-status is-${b.status || 'pending'}">${b.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xử lý'}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-sub);">
+            <span><i class="fa-solid fa-calendar-days"></i> ${b.date || ''} (${b.startHour}:00 - ${b.endHour || b.startHour + 1}:00)</span> ·
+            <strong style="color: var(--fag-red);">${(b.total || 0).toLocaleString('vi-VN')}đ</strong>
+          </div>
+        </div>
+      `).join('')
     }
-
-    const toggle = e.target.closest('[data-toggle-pass]')
-    if (toggle) {
-      const input = document.getElementById(toggle.dataset.togglePass)
-      const show = input.type === 'password'
-      input.type = show ? 'text' : 'password'
-      toggle.classList.toggle('is-on', show)
-      toggle.setAttribute('aria-label', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu')
-      input.focus()
-      return
-    }
-
-    const noop = e.target.closest('[data-noop]')
-    if (noop) {
-      e.preventDefault()
-      toast('Nội dung điều khoản đang được cập nhật')
-    }
-  })
-}
-
-function initOtpInputs() {
-  otpBoxes.forEach((box, index) => {
-    box.addEventListener('input', () => {
-      box.value = digits(box.value).slice(-1)
-      const code = readOtp()
-      $('[data-otp]').classList.toggle('is-filled', code.length === 6)
-      if (box.value && index < otpBoxes.length - 1) otpBoxes[index + 1].focus()
-      if (code.length === 6) forms.otp.requestSubmit()
-    })
-
-    box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && index > 0) otpBoxes[index - 1].focus()
-      if (e.key === 'ArrowLeft' && index > 0) otpBoxes[index - 1].focus()
-      if (e.key === 'ArrowRight' && index < otpBoxes.length - 1) otpBoxes[index + 1].focus()
-    })
-
-    box.addEventListener('paste', (e) => {
-      e.preventDefault()
-      const pasted = digits(e.clipboardData.getData('text')).slice(0, 6)
-      otpBoxes.forEach((b, i) => (b.value = pasted[i] || ''))
-      $('[data-otp]').classList.toggle('is-filled', pasted.length === 6)
-      const next = Math.min(pasted.length, otpBoxes.length - 1)
-      otpBoxes[next].focus()
-      if (pasted.length === 6) forms.otp.requestSubmit()
-    })
-  })
-
-  resendBtn.addEventListener('click', () => {
-    if (resendBtn.disabled) return
-    startResendCountdown()
-    resetOtp()
-    toast(`Đã gửi lại mã xác thực tới ${otpTarget}`)
-    otpBoxes[0].focus()
-  })
-}
-
-function initForms() {
-  const filled = $('[data-fill-demo]')
-  if (filled) {
-    filled.addEventListener('click', () => {
-      $('#loginIdentity').value = DEMO_USER.email
-      $('#loginPassword').value = DEMO_USER.password
-      setFieldState($('#loginIdentity'), '')
-      setFieldState($('#loginPassword'), '')
-      toast('Đã điền tài khoản demo, nhấn Đăng nhập')
-    })
   }
 
-  $$('[data-social]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      toast(`Đăng nhập bằng ${btn.dataset.social} đang được phát triển`)
-    })
+  $('#btnPfLogout')?.addEventListener('click', () => {
+    window.SV?.signOut()
+    toast('Đã đăng xuất thành công')
+    setTimeout(() => {
+      window.location.href = '../index.html'
+    }, 500)
   })
+}
 
-  forms.login.addEventListener('submit', async (e) => {
+/* ---------- FORMS SUBMISSION ---------- */
+function bindForms() {
+  // Login Form
+  $('#loginForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
-    if (!validateForm(forms.login)) return
-    await fakeRequest(forms.login)
-    const identity = $('#loginIdentity').value.trim()
-    const password = $('#loginPassword').value
+    setError('loginIdentity', '')
+    setError('loginPass', '')
+
+    const identity = $('#loginIdentity')?.value?.trim() || ''
+    const password = $('#loginPass')?.value || ''
+
+    if (!identity) {
+      setError('loginIdentity', 'Vui lòng nhập email hoặc số điện thoại')
+      return
+    }
+    if (!password) {
+      setError('loginPass', 'Vui lòng nhập mật khẩu')
+      return
+    }
+
     const user = findUser(identity)
-    if (user && user.password !== password) {
-      setFieldState($('#loginPassword'), 'Mật khẩu không đúng, vui lòng thử lại')
-      return
-    }
     if (!user) {
-      setFieldState(
-        $('#loginIdentity'),
-        'Tài khoản chưa tồn tại, vui lòng đăng ký mới',
-      )
+      setError('loginIdentity', 'Tài khoản chưa tồn tại, vui lòng đăng ký mới')
       return
     }
-    // Admin khoá tài khoản ở trang quản trị thì không cho đăng nhập.
+    if (user.password !== password) {
+      setError('loginPass', 'Mật khẩu không chính xác, vui lòng thử lại')
+      return
+    }
     if (user.status === 'locked') {
-      setFieldState(
-        $('#loginIdentity'),
-        'Tài khoản đã bị khoá, vui lòng liên hệ quản trị viên',
-      )
+      setError('loginIdentity', 'Tài khoản đã bị khoá, vui lòng liên hệ quản trị viên')
       return
     }
-    const remember = $('#loginRemember').checked
-    // Phiên do store quản lý để mọi trang đều thấy đăng nhập, không tự đọc
-    // localStorage ở đây nữa.
-    SV.signIn(user, remember)
-    showSuccess(
-      `Xin chào, ${user.name}!`,
-      'Bạn đã đăng nhập thành công. Chúc bạn có những trận đấu thật chất!',
-      '/',
-    )
+
+    const remember = $('#loginRemember')?.checked
+    window.SV?.signIn(user, remember)
+    toast(`Xin chào, ${user.name}! Đăng nhập thành công.`)
+
+    setTimeout(() => {
+      window.location.href = '../index.html'
+    }, 900)
   })
 
-  forms.register.addEventListener('submit', async (e) => {
+  // Register Form
+  $('#registerForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
-    if (!validateForm(forms.register)) return
-    const email = $('#regEmail').value.trim()
-    const phone = digits($('#regPhone').value)
-    // Báo trùng ngay khi gõ, không đợi qua bước OTP mới biết.
-    const takenBy = SV.users().find(
+    setError('regName', '')
+    setError('regEmail', '')
+    setError('regPhone', '')
+    setError('regPass', '')
+
+    const name = $('#regName')?.value?.trim() || ''
+    const email = $('#regEmail')?.value?.trim() || ''
+    const phone = digits($('#regPhone')?.value || '')
+    const pass = $('#regPass')?.value || ''
+
+    if (!name || name.length < 2) {
+      setError('regName', 'Vui lòng nhập họ tên đầy đủ (tối thiểu 2 ký tự)')
+      return
+    }
+    if (!isEmail(email)) {
+      setError('regEmail', 'Email không đúng định dạng')
+      return
+    }
+    if (!phone || phone.length < 9) {
+      setError('regPhone', 'Số điện thoại phải có 9 - 10 chữ số')
+      return
+    }
+    if (!pass || pass.length < 6) {
+      setError('regPass', 'Mật khẩu phải có ít nhất 6 ký tự')
+      return
+    }
+
+    const taken = window.SV?.users().find(
       (u) =>
         String(u.email || '').toLowerCase() === email.toLowerCase() ||
-        (phone && digits(u.phone) === phone),
+        (phone && digits(u.phone) === phone)
     )
-    if (takenBy) {
-      setFieldState(
-        takenBy.email && takenBy.email.toLowerCase() === email.toLowerCase()
-          ? $('#regEmail')
-          : $('#regPhone'),
-        'Thông tin này đã được đăng ký trước đó',
-      )
+    if (taken) {
+      setError('regEmail', 'Email hoặc số điện thoại này đã được đăng ký trước đó')
       return
     }
-    await fakeRequest(forms.register)
-    const result = SV.addUser({
-      name: $('#regName').value.trim(),
+
+    const result = window.SV?.addUser({
+      name,
       email,
       phone,
-      password: $('#regPassword').value,
-      role: $('input[name="role"]:checked').value,
+      password: pass,
+      role: 'player',
     })
-    if (!result.ok) {
-      setFieldState($('#regEmail'), result.error || 'Không tạo được tài khoản')
+
+    if (!result?.ok) {
+      setError('regEmail', result?.error || 'Không tạo được tài khoản')
       return
     }
-    showOtp('register', email)
+
+    otpTarget = email
+    $('#otpSubtitle').textContent = `Nhập mã 6 chữ số gửi đến ${email} (Mã demo: 123456)`
+    setMode('otp')
+    toast('Mã OTP đã được gửi (Mã demo: 123456)')
   })
 
-  forms.forgot.addEventListener('submit', async (e) => {
+  // Forgot Form
+  $('#forgotForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
-    if (!validateForm(forms.forgot)) return
-    const email = $('#forgotEmail').value.trim()
-    await fakeRequest(forms.forgot)
-    showOtp('reset', email)
-  })
-
-  forms.otp.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    if (readOtp().length < 6) {
-      submitOtp()
+    setError('forgotIdentity', '')
+    const id = $('#forgotIdentity')?.value?.trim() || ''
+    if (!id) {
+      setError('forgotIdentity', 'Vui lòng nhập email hoặc số điện thoại')
       return
     }
-    await fakeRequest(forms.otp, 700)
-    submitOtp()
+    const user = findUser(id)
+    if (!user) {
+      setError('forgotIdentity', 'Không tìm thấy tài khoản với thông tin này')
+      return
+    }
+    otpTarget = user.email || user.phone
+    $('#otpSubtitle').textContent = `Nhập mã xác thực gửi tới ${otpTarget} (Mã demo: 123456)`
+    setMode('otp')
+    toast('Mã OTP đã gửi (demo: 123456)')
   })
 
-  forms.newpass.addEventListener('submit', async (e) => {
+  // OTP Form
+  $('#otpForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
-    if (!validateForm(forms.newpass)) return
-    const password = $('#newPassword').value
-    const email = $('#forgotEmail').value.trim()
-    await fakeRequest(forms.newpass)
-    const user = findUser(email)
-    if (user) SV.updateUser(user.id, { password })
-    forms.newpass.reset()
-    $('#newPassword').dispatchEvent(new Event('input'))
-    toast('Đặt mật khẩu mới thành công, hãy đăng nhập lại')
-    $('#loginIdentity').value = email
+    const boxes = $$('[data-otp] input')
+    const code = boxes.map((b) => b.value).join('')
+    const err = $('[data-error-for="otp"]')
+    if (code !== OTP_DEMO) {
+      if (err) err.textContent = 'Mã OTP không đúng, vui lòng thử lại (mã demo: 123456)'
+      return
+    }
+    if (err) err.textContent = ''
+    toast('Xác thực OTP thành công!')
+
+    if (otpContext === 'register') {
+      const u = findUser(otpTarget)
+      if (u) window.SV?.signIn(u, true)
+      setTimeout(() => {
+        window.location.href = '../index.html'
+      }, 1000)
+    } else {
+      setMode('newpass')
+    }
+  })
+
+  // New Pass Form
+  $('#newPassForm')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    setError('newPassInput', '')
+    setError('newPassConfirm', '')
+    const p1 = $('#newPassInput')?.value || ''
+    const p2 = $('#newPassConfirm')?.value || ''
+    if (p1.length < 6) {
+      setError('newPassInput', 'Mật khẩu phải có ít nhất 6 ký tự')
+      return
+    }
+    if (p1 !== p2) {
+      setError('newPassConfirm', 'Mật khẩu xác nhận không khớp')
+      return
+    }
+    const u = findUser(otpTarget)
+    if (u) window.SV?.updateUser(u.id, { password: p1 })
+    toast('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
     setMode('login')
   })
+
+  // Social OAuth buttons
+  $$('[data-oauth]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      toast(`Đăng nhập bằng ${btn.dataset.oauth.toUpperCase()} đang được kết nối`)
+    })
+  })
 }
 
-function init() {
-  const year = $('#year')
-  if (year) year.textContent = String(new Date().getFullYear())
+/* ---------- ROUTING HASH ---------- */
+function initRouting() {
+  window.addEventListener('hashchange', () => {
+    const hash = location.hash.slice(1)
+    if (['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(hash)) {
+      setMode(hash, { updateHash: false })
+    }
+  })
 
-  // Tài khoản demo do store cung cấp sẵn, không tự tạo ở đây để tránh hai nơi
-  // cùng ghi một danh sách và sinh ra bản ghi trùng.
-  const demo = findUser(DEMO_USER.email)
-  if (!demo) SV.addUser({ ...DEMO_USER })
-
-  // Ô nhập tài khoản điền sẵn email đã "ghi nhớ" để bấm 1 phát là vào.
-  const remembered = SV.remembered()
-  if (remembered) {
-    $('#loginRemember').checked = true
-    $('#loginIdentity').value = remembered.email || ''
-    const clearBtn = $('[data-clear="loginIdentity"]')
-    if (clearBtn) clearBtn.hidden = !remembered.email
+  const initial = location.hash.slice(1)
+  if (initial && ['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(initial)) {
+    setMode(initial, { updateHash: false })
+  } else {
+    // Nếu đã đăng nhập, vào profile; nếu chưa thì vào login
+    const cur = window.SV?.currentUser()
+    setMode(cur ? 'profile' : 'login', { updateHash: false })
   }
-
-  initTabs()
-  initFields()
-  initOtpInputs()
-  initForms()
-
-  const hash = location.hash.slice(1)
-  setMode(hash === 'register' ? 'register' : 'login', { updateHash: false })
 }
 
-document.addEventListener('DOMContentLoaded', init)
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  // Đảm bảo demo user có trong store
+  const demo = findUser(DEMO_USER.email)
+  if (!demo) window.SV?.addUser({ ...DEMO_USER })
+
+  bindLoginTabs()
+  bindEyeToggles()
+  bindPasswordStrength()
+  bindOtp()
+  bindForms()
+  initRouting()
+})

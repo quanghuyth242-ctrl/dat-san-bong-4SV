@@ -96,20 +96,28 @@ function esc(value) {
 function normalizeVenue(v, idx = 0) {
   const open = toHour(v.hours?.open, DEFAULT_OPEN)
   const close = toHour(v.hours?.close, DEFAULT_CLOSE)
+  const sports = Array.isArray(v.sports) && v.sports.length
+    ? v.sports
+    : (v.sport ? [v.sport] : ['Bóng đá'])
+  const sport = v.sport || sports[0] || 'Bóng đá'
   return {
     id: String(v.id ?? 'san-' + (idx + 1)),
     name: String(v.name || 'Sân chưa đặt tên'),
-    sport: SPORT,
+    sport,
+    sports,
     type: parsePitchType(v.type),
     addr: String(v.addr || v.address || ''),
     price: toPriceNumber(v.price),
-    per: v.per || '/tiếng',
+    per: v.per || ' đ/giờ',
     courts: Math.max(1, parseInt(v.courts, 10) || 1),
     hours: { open, close: close > open ? close : open + 1 },
     lat: toCoord(v.lat),
     lng: toCoord(v.lng),
     img: v.img || FIELD_IMAGES[idx % FIELD_IMAGES.length],
-    icon: '⚽',
+    badge: v.badge || (sports.length > 1 ? `${sports.length} môn thể thao` : '1 môn thể thao'),
+    rating: v.rating || 4.9,
+    reviewCount: v.reviewCount || 150,
+    icon: sport.includes('Pickleball') ? '🏓' : (sport.includes('Cầu lông') ? '🏸' : '⚽'),
   }
 }
 
@@ -121,9 +129,6 @@ function typeLabel(type) {
 /**
  * Sân lấy thẳng từ store dùng chung: sửa sân ở trang quản trị là trang chủ
  * đổi theo, kể cả khi đang mở trang chủ ở một tab khác.
- *
- * Không fallback về dữ liệu mẫu: admin khoá hết sân thì trang chủ phải
- * hiện 0 sân chứ không tự bật lại sân demo.
  */
 function loadVenues() {
   return SV.fields()
@@ -135,16 +140,10 @@ let VENUES = loadVenues()
 
 const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Khánh Hòa','Nghệ An','Thanh Hóa','Huế','Quảng Ninh','Bà Rịa - Vũng Tàu','Lâm Đồng','Kiên Giang','Bắc Ninh','Hải Dương','Hưng Yên','Nam Định','Thái Nguyên','Quảng Nam','Bình Định','Gia Lai','Đắk Lắk','Long An','Tiền Giang','Vĩnh Long','An Giang','Bình Thuận','Ninh Thuận','Phú Yên','Quảng Ngãi','Bình Phước','Tây Ninh']
 
-/**
- * Quy mô nền tảng dùng cho phần giới thiệu (promo + footer). Đây là số liệu
- * quảng bá, KHÔNG phải số đếm từ dữ liệu. Phần tìm sân, hero và lưới tỉnh
- * dùng số thật từ VENUES (xem datasetStats() và provinceStats()).
- */
 const PLATFORM = { venues: 629, courts: 858 }
 
 // ================================ CHUẨN HOÁ TIẾNG VIỆT ================================
 
-/** Bỏ dấu + lowercase. "Hồ Chí Minh" -> "ho chi minh", "Đà Nẵng" -> "da nang". */
 function deaccent(str) {
   return str
     .normalize('NFD')
@@ -153,7 +152,6 @@ function deaccent(str) {
     .replace(/Đ/g, 'D')
 }
 
-/** Chuẩn hoá để so khớp: bỏ dấu, hạ chữ thường, gộp khoảng trắng, bỏ dấu phẩy/chấm. */
 function norm(str) {
   return deaccent(String(str || ''))
     .toLowerCase()
@@ -162,8 +160,6 @@ function norm(str) {
     .trim()
 }
 
-// Cách viết tắt thường gặp -> dạng đầy đủ. Áp dụng cho cả dữ liệu lẫn từ khoá người dùng.
-// Lưu ý: norm() đã đổi dấu chấm thành khoảng trắng, nên "TP.HCM" tới đây là "tp hcm".
 const ABBREVIATIONS = [
   [/\btp\s*ho\s*chi\s*minh\b|\btp\s*hcm\b|\btphcm\b|\bho\s*chi\s*minh\b/g, 'tp ho chi minh'],
   [/\btp\s*ha\s*noi\b|\btp\s*hn\b|\bthanh\s*pho\b|\bha\s*noi\b/g, 'ha noi'],
@@ -179,16 +175,15 @@ const ABBREVIATIONS = [
   [/\bq\.?\s*dn\b/g, 'dong nai'],
 ]
 
-/** Mở rộng viết tắt để "q.10" và "quận 10" không khác nhau. */
 function expand(str) {
   let out = norm(str)
   for (const [re, to] of ABBREVIATIONS) out = out.replace(re, to)
   return out
 }
 
-/** Chuỗi để tìm kiếm của một sân: tên + địa chỉ + loại sân, đã chuẩn hoá. */
 function haystack(v) {
-  return expand(`${v.name} ${v.addr} ${typeLabel(v.type)}`)
+  const sportsStr = (v.sports || [v.sport]).join(' ')
+  return expand(`${v.name} ${v.addr} ${typeLabel(v.type)} ${sportsStr}`)
 }
 
 // ================================ LỌC ================================
@@ -204,7 +199,6 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** "YYYY-MM-DDTHH:MM" theo giờ địa phương, làm giá trị min cho input datetime-local. */
 function nowLocalInput() {
   const d = new Date()
   const hh = String(d.getHours()).padStart(2, '0')
@@ -212,7 +206,6 @@ function nowLocalInput() {
   return `${todayStr()}T${hh}:${mm}`
 }
 
-/** Đọc giờ từ input datetime-local ("2026-05-01T18:30") hoặc date ("2026-05-01"). */
 function parseWhen(value) {
   if (!value) return null
   const m = value.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -222,7 +215,6 @@ function parseWhen(value) {
   return { date, hour, hasTime: m[2] !== undefined }
 }
 
-/** Khoảng giờ sân còn phục vụ tại giờ đã chọn. */
 function isOpenAt(v, when) {
   if (!when || when.hour === null) return true
   return when.hour >= v.hours.open && when.hour < v.hours.close
@@ -234,13 +226,33 @@ function isPastSlot(date, hour) {
   return hour < now.getHours() + now.getMinutes() / 60
 }
 
-function matches(v, filters) {
-  const { loc, type, when } = filters
+let activeSportFilter = 'all'
 
-  if (type && v.type !== type) return false
+function matches(v, filters) {
+  const { loc, type, when, sport } = filters
+
+  if (sport && sport !== 'all') {
+    const sNorm = norm(sport)
+    const hasSport = (v.sports || [v.sport]).some((s) => norm(s).includes(sNorm))
+    if (!hasSport) return false
+  }
+
+  if (type) {
+    if (['5', '7', '11'].includes(type)) {
+      if (v.type !== type) return false
+    } else if (type === 'caulong') {
+      const has = (v.sports || [v.sport]).some((s) => norm(s).includes('cau long'))
+      if (!has) return false
+    } else if (type === 'pickleball') {
+      const has = (v.sports || [v.sport]).some((s) => norm(s).includes('pickleball'))
+      if (!has) return false
+    } else if (v.type !== type) {
+      return false
+    }
+  }
+
   if (loc) {
     const hay = haystack(v)
-    // Mọi từ trong từ khoá đều phải xuất hiện -> "sân 7 hà nội" hoạt động
     if (!loc.split(' ').every((t) => hay.includes(t))) return false
   }
   if (when && !isOpenAt(v, when)) return false
@@ -253,15 +265,17 @@ function readFilters() {
     loc: expand(document.getElementById('qLocation')?.value || ''),
     type: document.getElementById('qType')?.value || '',
     when: parseWhen(document.getElementById('qDate')?.value || ''),
+    sport: activeSportFilter,
   }
 }
 
 function hasAnyFilter(f) {
-  return Boolean(f.loc || f.type || f.when)
+  return Boolean(f.loc || f.type || f.when || (f.sport && f.sport !== 'all'))
 }
 
 function describeFilters(f) {
   const bits = []
+  if (f.sport && f.sport !== 'all') bits.push(`môn ${f.sport}`)
   if (f.type) bits.push(typeLabel(f.type))
   if (f.loc) bits.push(`tại "${f.loc}"`)
   if (f.when?.hasTime) bits.push(`${f.when.date} lúc ${timeLabel(f.when.hour)}`)
@@ -275,12 +289,6 @@ function loadBookings() {
   return SV.bookings()
 }
 
-/**
- * Khoá so khớp duy nhất cho một sân. Ba nguồn từng dùng ba kiểu mã khác nhau:
- * sân demo trang chủ 'demo-N', sân trang danh sách 'san-N', sân admin tạo
- * 'SAN003'. Store đã chuẩn hoá mã khi ghi nhưng đơn cũ vẫn còn trong máy
- * người dùng, nên vẫn cần quy về cùng một khuôn khi so khớp.
- */
 function courtKey(id) {
   const raw = String(id)
   const digits = raw.replace(/^san-/, '')
@@ -288,8 +296,6 @@ function courtKey(id) {
 }
 
 function isSlotTaken(venueId, date, startHour, duration) {
-  // Nhờ store quyết định để đơn đã huỷ không còn chiếm slot và không lệch
-  // với trang đặt sân / trang quản trị.
   return SV.isSlotTaken(venueId, date, startHour, duration)
 }
 
@@ -349,24 +355,46 @@ function renderVenues(list, filters) {
   if (empty) empty.style.display = 'none'
 
   grid.innerHTML = list
-    .map((v) => `
-    <div class="court-card">
-      <div class="court-img-wrap">
-        <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
-        <span class="court-badge">${v.icon} ${esc(typeLabel(v.type))}</span>
+    .map((v) => {
+      const tagsHtml = (v.sports || [v.sport || 'Bóng đá'])
+        .map((s) => `<span class="tag green">${esc(s)}</span>`)
+        .join('')
+
+      return `
+      <div class="col-md-6 col-lg-4 field-col">
+        <article class="field-card">
+          <div class="field-thumb">
+            <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
+            <span class="field-badge">${esc(v.badge || '1 môn thể thao')}</span>
+          </div>
+          <div class="field-body">
+            <h3 class="field-name">
+              <a href="#fields" class="text-decoration-none text-reset" data-book="${esc(v.id)}">
+                ${esc(v.name)}
+              </a>
+            </h3>
+            <p class="field-loc">
+              <i class="bi bi-geo-alt-fill"></i> ${esc(v.addr)}
+            </p>
+            <div class="field-tags">
+              ${tagsHtml}
+            </div>
+            <div class="field-foot">
+              <div class="field-price">
+                <strong>từ ${v.price.toLocaleString('vi-VN')} đ/giờ</strong>
+                <div class="field-rating">
+                  <i class="bi bi-star-fill"></i> ${v.rating || '4.9'} · ${v.reviewCount || 150} đánh giá
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary-grad" data-book="${esc(v.id)}">
+                Đặt sân
+              </button>
+            </div>
+          </div>
+        </article>
       </div>
-      <div class="court-body">
-        <div class="court-name">${esc(v.name)}</div>
-        <div class="court-addr"><i class="fa-solid fa-location-dot"></i><span>${esc(v.addr)}</span></div>
-        <div class="court-hours"><i class="fa-regular fa-clock"></i> ${timeLabel(v.hours.open)} – ${timeLabel(v.hours.close)}</div>
-        <div class="court-meta">
-          <div class="court-price">${formatPriceShort(v.price)} <small>${esc(v.per)}</small></div>
-          <div class="court-courts">${v.courts} sân</div>
-        </div>
-        <a href="#" class="btn-book" data-book="${esc(v.id)}">Đặt sân</a>
-      </div>
-    </div>
-  `)
+      `
+    })
     .join('')
 
   grid.querySelectorAll('[data-book]').forEach((a) => {
@@ -535,6 +563,7 @@ function shakeField(fieldId) {
 function openBook(venue) {
   bookState.venue = venue
   bookState.duration = 1
+  bookState.selectedHour = null
 
   const user = window.SV?.currentUser ? window.SV.currentUser() : null
   const defaultName = user ? (user.name || '') : ''
@@ -542,25 +571,34 @@ function openBook(venue) {
 
   const body = document.getElementById('bookBody')
   if (body) {
+    const sports = venue.sports || [venue.sport || 'Bóng đá']
+    const sportPicksHtml = sports.map((s, idx) => `
+      <button type="button" class="sport-pick ${idx === 0 ? 'selected' : ''}" data-sport="${esc(s)}">${esc(s)}</button>
+    `).join('')
+
     body.innerHTML = `
-      <div class="bk-info">
+      <div class="booking-thumb">
         <img src="${esc(venue.img)}" alt="${esc(venue.name)}" />
-        <div>
-          <div class="bk-name">${esc(venue.name)}</div>
-          <div class="bk-sub">${venue.icon} ${esc(typeLabel(venue.type))} · ${formatPriceShort(venue.price)}${esc(venue.per)} · ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</div>
+        <div class="booking-thumb-overlay">
+          <h4>${esc(venue.name)}</h4>
         </div>
       </div>
+      <div class="booking-meta-row">
+        <span><i class="bi bi-geo-alt-fill"></i> ${esc(venue.addr)}</span>
+        <span><i class="bi bi-star-fill" style="color:var(--accent)"></i> ${venue.rating || '4.9'} (${venue.reviewCount || 150} đánh giá)</span>
+        <span><i class="bi bi-clock"></i> ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</span>
+      </div>
       <form id="bookForm" novalidate>
+        <div class="sb-label">MÔN THỂ THAO</div>
+        <div class="sport-pick-list" id="bkSportList">
+          ${sportPicksHtml}
+        </div>
+
         <div class="bk-grid">
           <div class="bk-field" id="f-date">
-            <label for="bkDate">Ngày <span style="color:#dc2626">*</span></label>
+            <label for="bkDate">Ngày chơi <span style="color:#dc2626">*</span></label>
             <input type="date" id="bkDate" required />
             <span class="bk-err">Vui lòng chọn ngày không ở quá khứ.</span>
-          </div>
-          <div class="bk-field" id="f-time">
-            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
-            <select id="bkTime" required></select>
-            <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
           </div>
           <div class="bk-field" id="f-duration">
             <label for="bkDuration">Thời lượng</label>
@@ -571,6 +609,16 @@ function openBook(venue) {
               <option value="3">3 giờ</option>
             </select>
           </div>
+        </div>
+
+        <div class="slot-section" id="f-time">
+          <label class="sb-label">CHỌN KHUNG GIỜ TRỐNG <span style="color:#dc2626">*</span></label>
+          <div class="slot-grid" id="bkSlotGrid"></div>
+          <select id="bkTime" style="display:none;" required></select>
+          <span class="bk-err" style="margin-top:6px;">Vui lòng chọn một khung giờ trống.</span>
+        </div>
+
+        <div class="bk-grid">
           <div class="bk-field" id="f-name">
             <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
             <input type="text" id="bkName" placeholder="VD: Nguyễn Văn A" autocomplete="name" value="${esc(defaultName)}" required />
@@ -579,19 +627,34 @@ function openBook(venue) {
           <div class="bk-field" id="f-phone">
             <label for="bkPhone">Số điện thoại <span style="color:#dc2626">*</span></label>
             <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" value="${esc(defaultPhone)}" required />
-            <span class="bk-err">Số điện thoại không hợp lệ (VD: 0912345678).</span>
+            <span class="bk-err">Số điện thoại không hợp lệ (10 số).</span>
           </div>
-          <div class="bk-field" id="f-voucher">
+          <div class="bk-field full" id="f-voucher">
             <label for="bkVoucher">Mã giảm giá (nếu có)</label>
             <input type="text" id="bkVoucher" placeholder="VD: WELCOME4SV" autocomplete="off" />
             <span class="bk-err">Mã giảm giá không dùng được với đơn này.</span>
           </div>
-          <div class="bk-field" id="f-total">
-            <label>Tổng tiền</label>
-            <div class="bk-total" id="bkTotal">0đ</div>
+        </div>
+
+        <div class="pay-summary">
+          <div class="pay-row">
+            <span>Đơn giá thuê sân:</span>
+            <span>${venue.price.toLocaleString('vi-VN')} đ/giờ</span>
+          </div>
+          <div class="pay-row">
+            <span>Thời lượng thuê:</span>
+            <span id="payDuration">1 giờ</span>
+          </div>
+          <div class="pay-total">
+            <span>Tổng thanh toán:</span>
+            <strong id="bkTotal">0đ</strong>
           </div>
         </div>
-        <button type="submit" class="btn-book btn-book-full" id="btnConfirmBook"><i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân</button>
+
+        <button type="submit" class="btn-book-main" id="btnConfirmBook">
+          <i class="bi bi-bag-check-fill"></i> Xác nhận đặt sân ngay
+        </button>
+        <p class="booking-secure"><i class="bi bi-shield-check"></i> Thanh toán an toàn · Xác nhận tức thì</p>
       </form>
     `
   }
@@ -600,26 +663,94 @@ function openBook(venue) {
   dateInput.min = todayStr()
   dateInput.value = todayStr()
 
-  const refresh = () => {
+  // Handle Sport Picks click
+  document.querySelectorAll('#bkSportList .sport-pick').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#bkSportList .sport-pick').forEach((b) => b.classList.remove('selected'))
+      btn.classList.add('selected')
+    })
+  })
+
+  const refreshSlots = () => {
     const date = dateInput.value
+    const grid = document.getElementById('bkSlotGrid')
     const sel = document.getElementById('bkTime')
+    if (!grid || !sel) return
+
     if (!date) {
-      sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
+      grid.innerHTML = '<p class="text-muted small">Vui lòng chọn ngày trước</p>'
+      sel.innerHTML = '<option value="">-- Chọn ngày --</option>'
       return
     }
-    const html = buildTimeOptions(bookState.venue || venue, date, bookState.duration)
-    sel.innerHTML = html || '<option value="">-- Đã kín lịch --</option>'
+
+    const duration = bookState.duration
+    let hasAvailable = false
+    let gridHtml = ''
+    let selHtml = ''
+
+    for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
+      if (h + duration > venue.hours.close) continue
+      const isPast = isPastSlot(date, h)
+      const isTaken = isSlotTaken(venue.id, date, h, duration)
+      const disabled = isPast || isTaken
+      const label = `${timeLabel(h)} - ${timeLabel(h + duration)}`
+
+      if (!disabled) hasAvailable = true
+
+      const isSelected = bookState.selectedHour === h
+      gridHtml += `
+        <button type="button" class="time-slot ${disabled ? 'taken' : ''} ${isSelected ? 'selected' : ''}" data-hour="${h}" ${disabled ? 'disabled' : ''}>
+          ${label}
+        </button>
+      `
+      if (!disabled) {
+        selHtml += `<option value="${h}" ${isSelected ? 'selected' : ''}>${label}</option>`
+      }
+    }
+
+    if (!hasAvailable) {
+      grid.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;grid-column:1/-1;">Đã kín lịch trong ngày này.</p>'
+      sel.innerHTML = '<option value="">-- Kín lịch --</option>'
+      bookState.selectedHour = null
+    } else {
+      grid.innerHTML = gridHtml
+      sel.innerHTML = selHtml
+
+      grid.querySelectorAll('.time-slot:not([disabled])').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          grid.querySelectorAll('.time-slot').forEach((b) => b.classList.remove('selected'))
+          btn.classList.add('selected')
+          bookState.selectedHour = parseFloat(btn.dataset.hour)
+          sel.value = String(bookState.selectedHour)
+          const fTime = document.getElementById('f-time')
+          if (fTime) fTime.classList.remove('invalid')
+        })
+      })
+
+      // Auto-select first available if none selected
+      if (bookState.selectedHour === null || !sel.querySelector(`option[value="${bookState.selectedHour}"]`)) {
+        const firstBtn = grid.querySelector('.time-slot:not([disabled])')
+        if (firstBtn) {
+          firstBtn.classList.add('selected')
+          bookState.selectedHour = parseFloat(firstBtn.dataset.hour)
+          sel.value = String(bookState.selectedHour)
+        }
+      }
+    }
   }
 
   const updateTotal = () => {
     bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
     const current = bookState.venue || venue
     const subtotal = Math.round(current.price * bookState.duration)
-    const code = document.getElementById('bkVoucher').value.trim().toUpperCase()
+    const code = document.getElementById('bkVoucher')?.value?.trim().toUpperCase() || ''
     const voucher = code && window.SV?.previewVoucher ? window.SV.previewVoucher(code, subtotal) : null
     const usable = !!(voucher && voucher.ok)
 
     document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
+
+    const durEl = document.getElementById('payDuration')
+    if (durEl) durEl.textContent = `${bookState.duration} giờ`
 
     const el = document.getElementById('bkTotal')
     if (usable) {
@@ -627,14 +758,15 @@ function openBook(venue) {
     } else {
       el.textContent = subtotal.toLocaleString('vi-VN') + 'đ'
     }
-    refresh()
+    refreshSlots()
   }
 
   bookState.refresh = updateTotal
 
-  dateInput.addEventListener('change', refresh)
+  dateInput.addEventListener('change', refreshSlots)
   document.getElementById('bkDuration').addEventListener('change', updateTotal)
-  document.getElementById('bkVoucher').addEventListener('input', updateTotal)
+  document.getElementById('bkVoucher')?.addEventListener('input', updateTotal)
+
   document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
     if (el.id === 'bkVoucher') return
     const clearErr = () => {
@@ -656,6 +788,7 @@ function openBook(venue) {
   updateTotal()
   openModal('bookModal')
 }
+
 
 function openModal(id) {
   const m = document.getElementById(id)
@@ -1011,8 +1144,8 @@ function applySettings() {
   }
   // Trang giao diện admin đặt ở --primary, trang chủ dùng --4sv-primary (mà
   // các biến xanh trong style.css dẫn xuất từ nó): ghi cả hai cho nhất quán.
-  document.documentElement.style.setProperty('--primary', s.primaryColor || '#16a34a')
-  document.documentElement.style.setProperty('--4sv-primary', s.primaryColor || '#16a34a')
+  document.documentElement.style.setProperty('--primary', s.primaryColor || '#8b1e1e')
+  document.documentElement.style.setProperty('--4sv-primary', s.primaryColor || '#8b1e1e')
   document.documentElement.classList.toggle('dark', !!s.darkMode)
   document.body.classList.toggle('dark-mode', !!s.darkMode)
   document.querySelectorAll('img[data-site-logo]').forEach((el) => {
@@ -1077,6 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ô tìm kiếm: lọc ngay khi gõ để không phải bấm nút
   const locInput = document.getElementById('qLocation')
   locInput?.addEventListener('input', () => applyFilters({ silent: true }))
+  locInput?.addEventListener('change', () => applyFilters({ silent: true }))
 
   const searchForm = document.getElementById('searchForm')
   if (searchForm) searchForm.addEventListener('submit', handleSearch)
@@ -1085,8 +1219,10 @@ document.addEventListener('DOMContentLoaded', () => {
   typeSelect?.addEventListener('change', () => applyFilters({ scroll: true }))
 
   const dateInput = document.getElementById('qDate')
-  // Không cho chọn ngày giờ trong quá khứ (ngoài ra JS vẫn kiểm tra lại khi lọc).
-  if (dateInput) dateInput.min = nowLocalInput()
+  if (dateInput) {
+    dateInput.min = todayStr()
+    if (!dateInput.value) dateInput.value = todayStr()
+  }
   dateInput?.addEventListener('change', () => applyFilters({ scroll: true }))
 
   document.getElementById('venueEmptyReset')?.addEventListener('click', clearFilters)
@@ -1242,8 +1378,8 @@ function initAuthNav() {
   function avatarFor(initial) {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56">' +
-      '<rect width="56" height="56" rx="28" fill="#dcfce7"/>' +
-      '<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Be Vietnam Pro,sans-serif" font-size="24" font-weight="700" fill="#16a34a">' +
+      '<rect width="56" height="56" rx="28" fill="#fee2e2"/>' +
+      '<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Be Vietnam Pro,sans-serif" font-size="24" font-weight="700" fill="#8b1e1e">' +
       esc(initial) +
       '</text></svg>'
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)

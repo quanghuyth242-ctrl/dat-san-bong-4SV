@@ -179,7 +179,7 @@ function renderProfile() {
     // Không có avatar thì lấy chữ cái đầu, không gọi mạng bên ngoài.
     const initial = label.trim().charAt(0).toUpperCase() || '4'
     avatar.src = user.avatar || `data:image/svg+xml,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="48" fill="#16a34a"/><text x="48" y="62" font-family="sans-serif" font-size="42" fill="#fff" text-anchor="middle">${initial}</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="48" fill="#8b1e1e"/><text x="48" y="62" font-family="sans-serif" font-size="42" fill="#fff" text-anchor="middle">${initial}</text></svg>`,
     )}`
     avatar.alt = label
   }
