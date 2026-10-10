@@ -1344,7 +1344,7 @@ function watchStore() {
 window.handleSearch = handleSearch
 window.locateMe = locateMe
 
-document.addEventListener('DOMContentLoaded', () => {
+function boot() {
   const y = document.getElementById('year')
   if (y) y.textContent = String(new Date().getFullYear())
 
@@ -1479,7 +1479,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Trợ lý đặt sân: hiểu yêu cầu tiếng Việt, lọc sân và mở form đặt sân.
   mountAssistant(assistantHandlers())
   applyStashedIntent()
-})
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot)
+} else {
+  boot()
+}
 
 // ================================ TÀI KHOẢN ĐANG ĐĂNG NHẬP ================================
 
@@ -1501,11 +1507,13 @@ function initAuthNav() {
 
   function render() {
     const user = SV.currentUser()
-    // Ẩn/hiện theo data-auth nên không phải nhớ 2 nút riêng.
+    // Ẩn/hiện triệt để theo data-auth kết hợp thuộc tính hidden và inline style display
     document.querySelectorAll('[data-auth="login"], [data-auth="register"]').forEach((el) => {
       el.hidden = !!user
+      el.style.display = user ? 'none' : ''
     })
     box.hidden = !user
+    box.style.display = user ? 'inline-flex' : 'none'
     if (!user) {
       closeMenu()
       return
@@ -1534,26 +1542,30 @@ function initAuthNav() {
 
   function openMenu() {
     menu.hidden = false
+    menu.style.display = 'block'
     btn.setAttribute('aria-expanded', 'true')
   }
   function closeMenu() {
     menu.hidden = true
+    menu.style.display = 'none'
     btn.setAttribute('aria-expanded', 'false')
   }
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation()
-    if (menu.hidden) openMenu()
+    if (menu.hidden || menu.style.display === 'none') openMenu()
     else closeMenu()
   })
   document.addEventListener('click', (e) => {
-    if (!menu.hidden && !box.contains(e.target)) closeMenu()
+    if ((!menu.hidden || menu.style.display === 'block') && !box.contains(e.target)) closeMenu()
   })
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeMenu()
   })
 
-  logout?.addEventListener('click', () => {
+  logout?.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
     SV.signOut()
     closeMenu()
     render()
@@ -1563,6 +1575,11 @@ function initAuthNav() {
   SV.on((key) => {
     if (key === 'auth' || key === 'users' || key === '*') render()
   })
+  window.addEventListener('storage', (e) => {
+    if (!e.key || e.key.includes('auth') || e.key.includes('users')) {
+      render()
+    }
+  })
 
   render()
 }
@@ -1570,4 +1587,9 @@ function initAuthNav() {
 // Cho trang khác (danh sách sân) dùng lại: đăng nhập xong thì về trang trước.
 window.svSignOut = () => {
   SV.signOut()
+}
+
+// Chạy khởi tạo auth nav ngay lập tức nếu DOM đã có sẵn
+if (document.querySelector('[data-auth="user"]')) {
+  initAuthNav()
 }

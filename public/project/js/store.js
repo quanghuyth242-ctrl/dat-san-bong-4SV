@@ -532,7 +532,7 @@
   // Số điện thoại phải là duy nhất: tài khoản demo đã giữ 0912345678 nên
   // các tài khoản mẫu còn lại dùng dải số khác để đăng nhập không bị nhập nhằng.
   var DEFAULT_USERS = [
-    { id: 'ND001', name: 'Nguyễn Minh Tuấn', email: 'demo@4sv.com', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05' },
+    { id: 'ND001', name: 'Nguyễn Minh Tuấn', email: 'demo@4sv.vn', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05' },
     { id: 'ND002', name: 'Nguyễn Văn An', email: 'nguyenvanan@gmail.com', phone: '0901234567', status: 'active', createdAt: '2026-02-11' },
     { id: 'ND003', name: 'Trần Thị Bình', email: 'tranthibinh@gmail.com', phone: '0912345679', status: 'active', createdAt: '2026-03-02' },
     { id: 'ND004', name: 'Lê Hoàng Cường', email: 'lehoangcuong@gmail.com', phone: '0923456789', status: 'active', createdAt: '2026-03-19' },
@@ -931,10 +931,13 @@
     findUser: function (identity) {
       var key = String(identity || '').trim().toLowerCase()
       var phone = String(identity || '').replace(/\D/g, '')
+      var isDemo = key === 'demo@4sv.vn' || key === 'demo@4sv.com'
       return SV.users().filter(function (u) {
+        var uEmail = String(u.email || '').trim().toLowerCase()
+        var matchEmail = uEmail === key || (isDemo && (uEmail === 'demo@4sv.vn' || uEmail === 'demo@4sv.com'))
         return (
-          (u.email && u.email.toLowerCase() === key) ||
-          (phone && u.phone === phone) ||
+          matchEmail ||
+          (phone && phone.length >= 9 && u.phone === phone) ||
           (u.name && u.name.toLowerCase() === key)
         )
       })[0]
@@ -973,11 +976,35 @@
     },
 
     // ---------------------------- Phiên đăng nhập -----------------------------
-    // Phiên chỉ nhớ email + thời điểm, không sao chép cả user: tên/avatar/trạng
-    // thái luôn đọc ở users() nên admin sửa hay khoá tài khoản thì mọi trang
-    // thấy ngay, không phải đăng nhập lại.
+    // Lưu thông tin phiên đăng nhập đầy đủ và đồng bộ ngược vào users()
     signIn: function (user, remember) {
-      var payload = { email: user.email, name: user.name, role: user.role, at: Date.now() }
+      if (!user) return null
+      var payload = {
+        id: user.id || '',
+        name: user.name || user.email || 'Thành viên 4SV',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: user.role || 'player',
+        avatar: user.avatar || '',
+        at: Date.now()
+      }
+
+      // Đảm bảo user có mặt trong danh sách users()
+      try {
+        var list = collection('users').slice()
+        var exists = list.some(function (u) {
+          return (user.id && u.id === user.id) ||
+            (user.email && u.email && u.email.toLowerCase() === user.email.toLowerCase()) ||
+            (user.phone && u.phone && u.phone === user.phone)
+        })
+        if (!exists) {
+          list.push(normUser(user, list.length))
+          store('users', list)
+        }
+      } catch (e) {
+        console.warn('[SV] Không thể cập nhật users khi signIn', e)
+      }
+
       // Chỉ giữ một kiểu phiên: tick "ghi nhớ" thì xoá phiên tạm và ngược lại.
       removeKey(remember ? AUTH_KEYS.session : AUTH_KEYS.remember)
       writeJSON(remember ? AUTH_KEYS.remember : AUTH_KEYS.session, payload)
@@ -1000,17 +1027,34 @@
     /** Tài khoản đang đăng nhập, hoặc null. Tài khoản bị khoá thì huỷ phiên. */
     currentUser: function () {
       var s = SV.session()
-      if (!s || !s.email) return null
-      var user = SV.findUser(s.email)
-      if (!user) {
-        SV.signOut()
-        return null
+      if (!s) return null
+
+      // Tìm người dùng trong danh sách theo id, email, phone hoặc tên
+      var user = null
+      if (s.id) user = SV.user(s.id)
+      if (!user && s.email) user = SV.findUser(s.email)
+      if (!user && s.phone) user = SV.findUser(s.phone)
+      if (!user && s.name) user = SV.findUser(s.name)
+
+      if (user) {
+        if (user.status === 'locked') {
+          SV.signOut()
+          return null
+        }
+        return user
       }
-      if (user.status === 'locked') {
-        SV.signOut()
-        return null
+
+      // Nếu không tìm thấy trong users() (ví dụ phiên cũ chưa migrate),
+      // KHÔNG xoá phiên mà trả về đối tượng từ session để người dùng không bị văng đăng nhập
+      return {
+        id: s.id || 'ND000',
+        name: s.name || s.email || 'Tài khoản',
+        email: s.email || '',
+        phone: s.phone || '',
+        role: s.role || 'player',
+        status: 'active',
+        avatar: s.avatar || ''
       }
-      return user
     },
 
     // ----------------------------- Đơn đặt -----------------------------
@@ -1197,8 +1241,39 @@
     },
   }
 
+  function syncDemoAccounts() {
+    try {
+      var raw = readJSON(KEYS.users, null)
+      if (Array.isArray(raw)) {
+        var modified = false
+        var next = raw.map(function (u) {
+          if (u.email === 'demo@4sv.com' || (u.id === 'ND001' && u.email !== 'demo@4sv.vn')) {
+            modified = true
+            return Object.assign({}, u, { email: 'demo@4sv.vn' })
+          }
+          return u
+        })
+        if (modified) {
+          writeJSON(KEYS.users, next)
+          cache.users = next
+        }
+      }
+      var s = readJSON(AUTH_KEYS.session, null)
+      if (s && s.email === 'demo@4sv.com') {
+        s.email = 'demo@4sv.vn'
+        writeJSON(AUTH_KEYS.session, s)
+      }
+      var rem = readJSON(AUTH_KEYS.remember, null)
+      if (rem && rem.email === 'demo@4sv.com') {
+        rem.email = 'demo@4sv.vn'
+        writeJSON(AUTH_KEYS.remember, rem)
+      }
+    } catch (e) {}
+  }
+
   migrate()
   resetLegacyBranding()
   seedDemoProvinces()
+  syncDemoAccounts()
   global.SV = SV
 })(window)

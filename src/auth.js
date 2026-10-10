@@ -298,15 +298,21 @@ function bindOtp() {
 /* ---------- TÌM TÀI KHOẢN TRONG STORE ---------- */
 function findUser(identity) {
   if (!identity) return null
+  if (window.SV?.findUser) {
+    const hit = window.SV.findUser(identity)
+    if (hit) return hit
+  }
   const key = String(identity).trim().toLowerCase()
   const phone = digits(identity)
+  const isDemo = key === 'demo@4sv.vn' || key === 'demo@4sv.com'
   const users = window.SV?.users() || []
   return (
     users.find(
       (u) =>
         String(u.email || '').toLowerCase() === key ||
+        (isDemo && (String(u.email || '').toLowerCase() === 'demo@4sv.vn' || String(u.email || '').toLowerCase() === 'demo@4sv.com')) ||
         String(u.name || '').toLowerCase() === key ||
-        (phone && digits(u.phone) === phone)
+        (phone && phone.length >= 9 && digits(u.phone) === phone)
     ) || null
   )
 }
@@ -677,7 +683,7 @@ function initRouting() {
 }
 
 /* ---------- KHỞI TẠO HỆ THỐNG ---------- */
-document.addEventListener('DOMContentLoaded', () => {
+function bootAuth() {
   // Đảm bảo demo user có sẵn trong store để test
   if (window.SV) {
     const demo = findUser(DEMO_USER.email)
@@ -692,4 +698,10 @@ document.addEventListener('DOMContentLoaded', () => {
   bindOtp()
   bindForms()
   initRouting()
-})
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootAuth)
+} else {
+  bootAuth()
+}

@@ -753,9 +753,11 @@ function initAuthNav() {
     const user = SV.currentUser();
     document.querySelectorAll('[data-auth="login"]').forEach((el) => {
       el.hidden = !!user;
+      el.style.display = user ? 'none' : '';
     });
     document.querySelectorAll('[data-auth="user"]').forEach((el) => {
       el.hidden = !user;
+      el.style.display = user ? 'inline-flex' : 'none';
     });
     if (user) nameEl.textContent = user.name || user.email || 'Tài khoản';
   }
@@ -767,6 +769,10 @@ function initAuthNav() {
 
   SV.on((key) => {
     if (key === 'auth' || key === 'users' || key === '*') render();
+  });
+
+  window.addEventListener('storage', () => {
+    render();
   });
 
   render();

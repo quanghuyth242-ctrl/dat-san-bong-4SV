@@ -300,7 +300,21 @@ ul { list-style: none; padding-left: 0; margin-bottom: 0; }
 .nav-auth-link:hover { color: var(--primary); }
 
 /* User avatar & dropdown */
-.nav-user { position: relative; }
+/* Đảm bảo ẩn triệt để nút đăng nhập/đăng ký khi đã đăng nhập */
+[hidden],
+[data-auth="login"][hidden],
+[data-auth="register"][hidden],
+.nav-actions [data-auth][hidden],
+.nav-user[hidden] {
+  display: none !important;
+}
+
+/* User avatar & dropdown */
+.nav-user {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 .nav-user-btn {
   display: inline-flex;
   align-items: center;
