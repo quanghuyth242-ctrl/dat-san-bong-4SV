@@ -2526,4 +2526,295 @@ select {
   .confirm-btn-actions {
     flex-direction: column;
   }
+
+  .bank-transfer-box {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
 }
+
+/* ==========================================================================
+   CHỨC NĂNG THANH TOÁN & QR NGÂN HÀNG (4SV.COM)
+   ========================================================================== */
+
+.payment-method-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.payment-method-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 10px;
+}
+
+.payment-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 580px) {
+  .payment-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payment-opt-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-opt-card:hover {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+.payment-opt-card input[type="radio"] {
+  margin-top: 3px;
+  margin-right: 10px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.payment-opt-card.active {
+  border-color: var(--primary);
+  background: #fff7f7;
+  box-shadow: 0 0 0 3px rgba(139, 30, 30, 0.12);
+}
+
+.payment-opt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.payment-opt-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.payment-opt-head i {
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.payment-opt-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* KHỐI QR THANH TOÁN NGÂN HÀNG CHÍNH CHỦ */
+.bank-transfer-box {
+  background: #ffffff;
+  border: 1.5px solid #fecdd3;
+  border-radius: var(--radius);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 18px;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(139, 30, 30, 0.06);
+  margin-bottom: 12px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.bank-qr-wrap {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bank-qr-image {
+  width: 100%;
+  max-width: 165px;
+  height: auto;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  object-fit: contain;
+  background: #fff;
+}
+
+.qr-guide-text {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.35;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qr-guide-text i {
+  color: var(--primary);
+}
+
+.bank-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bank-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.bank-detail-row span {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.bank-detail-row strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.copy-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-copy-sm {
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-copy-sm:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.bank-alert-note {
+  background: #fff1f2;
+  border-left: 3px solid var(--primary);
+  padding: 8px 10px;
+  border-radius: 0 6px 6px 0;
+  font-size: 11.5px;
+  color: #991b1b;
+  line-height: 1.4;
+  margin-top: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.bank-alert-note i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* KHỐI THANH TOÁN TẠI SÂN */
+.at-court-box {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.at-court-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.localstorage-notice {
+  font-size: 11.5px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  line-height: 1.4;
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.localstorage-notice i {
+  color: #3b82f6;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* BADGES TRẠNG THÁI THANH TOÁN & ĐẶT SÂN */
+.succ-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.succ-badge.pay-bank {
+  background: #fef2f2;
+  color: var(--primary);
+}
+
+.succ-badge.pay-court {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.succ-badge.pay-status-awaiting {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.succ-badge.pay-status-unpaid {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.succ-badge.pay-status-paid {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.succ-badge.booking-status-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+

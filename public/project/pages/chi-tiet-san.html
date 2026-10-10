@@ -441,10 +441,96 @@
               <input type="text" id="cfNote" placeholder="VD: Chuẩn bị 1 bộ áo bib cam và 1 quả bóng số 5" />
             </div>
 
+            <!-- CHỌN PHƯƠNG THỨC THANH TOÁN (YÊU CẦU 2) -->
+            <div class="payment-method-section">
+              <div class="form-title-sub"><i class="fa-solid fa-wallet"></i> Chọn phương thức thanh toán <span style="color:red">*</span></div>
+              <div class="payment-options-grid">
+                <label class="payment-opt-card active" for="pmBank">
+                  <input type="radio" name="paymentMethod" id="pmBank" value="bank_transfer" checked />
+                  <div class="payment-opt-content">
+                    <div class="payment-opt-head">
+                      <i class="fa-solid fa-qrcode"></i>
+                      <strong>Chuyển khoản ngân hàng</strong>
+                    </div>
+                    <span class="payment-opt-desc">Quét mã QR VietQR (MBBank chính chủ)</span>
+                  </div>
+                </label>
+
+                <label class="payment-opt-card" for="pmCourt">
+                  <input type="radio" name="paymentMethod" id="pmCourt" value="at_court" />
+                  <div class="payment-opt-content">
+                    <div class="payment-opt-head">
+                      <i class="fa-solid fa-hand-holding-dollar"></i>
+                      <strong>Thanh toán tại sân</strong>
+                    </div>
+                    <span class="payment-opt-desc">Thanh toán trực tiếp khi đến nhận sân thi đấu</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- KHỐI QR THANH TOÁN NGÂN HÀNG CHÍNH CHỦ (MB - LE THANH LONG) -->
+              <div class="bank-transfer-box" id="bankTransferBox">
+                <div class="bank-qr-wrap">
+                  <img id="bankQrImg" src="/project/images/qr-bank.png" alt="Mã QR MBBank LE THANH LONG" class="bank-qr-image" />
+                  <p class="qr-guide-text"><i class="fa-solid fa-camera"></i> Mở app ngân hàng quét mã QR để thanh toán</p>
+                </div>
+                <div class="bank-details-list">
+                  <div class="bank-detail-row">
+                    <span>Ngân hàng:</span>
+                    <strong id="bankNameDisplay">MB (Ngân hàng TMCP Quân Đội)</strong>
+                  </div>
+                  <div class="bank-detail-row">
+                    <span>Chủ tài khoản:</span>
+                    <strong id="bankHolderDisplay">LE THANH LONG</strong>
+                  </div>
+                  <div class="bank-detail-row">
+                    <span>Số tài khoản:</span>
+                    <div class="copy-field">
+                      <strong id="bankAccDisplay">207987</strong>
+                      <button type="button" class="btn-copy-sm" id="btnCopyBankAcc" title="Sao chép số tài khoản"><i class="fa-regular fa-copy"></i> Copy</button>
+                    </div>
+                  </div>
+                  <div class="bank-detail-row">
+                    <span>Số tiền cần chuyển:</span>
+                    <strong id="bankAmountDisplay" style="color: var(--primary); font-size: 1.15rem;">0 đ</strong>
+                  </div>
+                  <div class="bank-detail-row">
+                    <span>Nội dung chuyển khoản:</span>
+                    <div class="copy-field">
+                      <strong id="bankTransferContent" style="color: #b91c1c;">4SV DATSAN</strong>
+                      <button type="button" class="btn-copy-sm" id="btnCopyTransferContent" title="Sao chép nội dung"><i class="fa-regular fa-copy"></i> Copy</button>
+                    </div>
+                  </div>
+                  <div class="bank-alert-note">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Sau khi chuyển khoản thành công, nhấn <strong>“Tôi đã chuyển khoản”</strong> bên dưới. Trạng thái thanh toán của bạn sẽ là <em>“Chờ xác nhận thanh toán”</em> cho đến khi ban quản trị đối soát sao kê.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI HƯỚNG DẪN THANH TOÁN TẠI SÂN -->
+              <div class="at-court-box" id="atCourtBox" style="display: none;">
+                <div class="at-court-note">
+                  <i class="fa-solid fa-circle-check" style="color: #16a34a; font-size: 1.3rem;"></i>
+                  <div>
+                    <strong>Thanh toán trực tiếp tại sân</strong>
+                    <p style="margin: 4px 0 0; font-size: 0.88rem; color: var(--text-sub);">
+                      Bạn chỉ cần có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán tiền mặt trực tiếp cho ban quản lý. Trạng thái thanh toán: <em>Chưa thanh toán (Thanh toán tại sân)</em>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="localstorage-notice">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Lưu ý kỹ thuật: Hệ thống demo lưu trữ dữ liệu tại trình duyệt (LocalStorage). Khi triển khai thực tế trên nhiều thiết bị cần tích hợp máy chủ Backend để kiểm tra đặt trùng và đồng bộ sao kê ngân hàng real-time.</span>
+              </div>
+            </div>
+
             <div class="confirm-btn-actions">
               <button type="button" class="btn-cancel-modal" id="btnCancelConfirm">Quay lại</button>
               <button type="submit" class="btn-confirm-final" id="btnFinalBook">
-                <i class="fa-solid fa-check"></i> Xác nhận giữ sân
+                <i class="fa-solid fa-check-double"></i> <span id="btnFinalBookText">Tôi đã chuyển khoản</span>
               </button>
             </div>
           </form>

@@ -775,6 +775,25 @@
               </div>
             </div>
           </div>
+
+          <!-- MODAL XÁC NHẬN HỦY ĐẶT SÂN -->
+          <div class="pf-modal-overlay" id="pfCancelBookingModal" hidden>
+            <div class="pf-modal-box">
+              <div class="pf-modal-icon-warn" style="color: #dc2626; background: #fee2e2;">
+                <i class="fa-solid fa-calendar-xmark"></i>
+              </div>
+              <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 10px;">Xác Nhận Hủy Đặt Sân</h3>
+              <p style="font-size: 0.92rem; color: var(--text-sub); margin-top: 6px; line-height: 1.5;">
+                Bạn có chắc chắn muốn hủy đơn đặt sân mã <b id="cancelBookingTargetId" style="color: #dc2626; font-family: monospace; font-size: 1.05rem;"></b> không? Khung giờ này sẽ được giải phóng để người khác có thể đặt.
+              </p>
+              <div class="pf-modal-btns">
+                <button type="button" class="pf-btn pf-btn-outline" id="btnDismissCancelModal">Giữ lại đơn</button>
+                <button type="button" class="pf-btn pf-btn-danger" id="btnExecuteCancelBooking">
+                  <i class="fa-solid fa-ban"></i> Xác nhận hủy đơn
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

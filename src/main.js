@@ -771,8 +771,56 @@ function openBook(venue, preset = {}) {
           </div>
         </div>
 
+        <!-- PHƯƠNG THỨC THANH TOÁN (YÊU CẦU 2) -->
+        <div class="bk-payment-section" style="margin-top:14px; padding-top:12px; border-top:1px dashed #e2e8f0;">
+          <label style="display:block; font-size:13px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+            <i class="fa-solid fa-credit-card"></i> Phương thức thanh toán <span style="color:#dc2626">*</span>
+          </label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            <label class="bk-pay-opt active" id="lblHomePayBank" style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; border:2px solid #8b1e1e; background:#fff5f5; cursor:pointer;">
+              <input type="radio" name="homePaymentMethod" value="bank_transfer" checked style="accent-color:#8b1e1e;" />
+              <div>
+                <strong style="display:block; font-size:13px; color:#1e293b;"><i class="fa-solid fa-qrcode"></i> Chuyển khoản MB</strong>
+                <span style="font-size:11px; color:#64748b;">Quét VietQR chính chủ</span>
+              </div>
+            </label>
+            <label class="bk-pay-opt" id="lblHomePayCourt" style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; border:2px solid #e2e8f0; background:#f8fafc; cursor:pointer;">
+              <input type="radio" name="homePaymentMethod" value="at_court" style="accent-color:#8b1e1e;" />
+              <div>
+                <strong style="display:block; font-size:13px; color:#1e293b;"><i class="fa-solid fa-hand-holding-dollar"></i> Thanh toán tại sân</strong>
+                <span style="font-size:11px; color:#64748b;">Tiền mặt khi nhận sân</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- BOX CHUYỂN KHOẢN NGÂN HÀNG CHÍNH CHỦ -->
+          <div id="homeBankBox" style="background:#fff; border:1.5px solid #fecdd3; border-radius:8px; padding:12px; margin-bottom:12px; display:flex; gap:14px; align-items:center;">
+            <img src="/project/images/qr-bank.png" onerror="this.onerror=null;this.src='/images/qr-bank.png';" alt="Mã QR MBBank LE THANH LONG" style="width:110px; height:auto; border-radius:6px; border:1px solid #e2e8f0; object-fit:contain; box-shadow:0 2px 6px rgba(0,0,0,0.08);" />
+            <div style="font-size:12.5px; line-height:1.45; color:#334155; flex:1;">
+              <div>Ngân hàng: <b>MB (Ngân hàng TMCP Quân Đội)</b></div>
+              <div>Chủ tài khoản: <b>LE THANH LONG</b></div>
+              <div>Số tài khoản: <b style="color:#8b1e1e; font-size:13.5px; font-family:monospace;">207987</b></div>
+              <div>Số tiền: <b style="color:#8b1e1e; font-size:13px;" id="homePayAmount">0đ</b></div>
+              <div>Nội dung CK: <b style="color:#8b1e1e; font-family:monospace;" id="homeTransferMemo">4SV DATSAN</b></div>
+              <small style="color:#64748b; display:block; margin-top:4px;"><i class="fa-solid fa-mobile-screen"></i> Quét mã bằng app ngân hàng bất kỳ (VietQR / Napas 247).</small>
+              <small style="color:#dc2626; display:block; margin-top:2px;">* Nhấn “Tôi đã chuyển khoản” để gửi yêu cầu (Trạng thái: Chờ xác nhận thanh toán).</small>
+            </div>
+          </div>
+
+          <!-- BOX THANH TOÁN TRỰC TIẾP TẠI SÂN -->
+          <div id="homeCourtBox" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:12px; font-size:12.5px; line-height:1.45; color:#334155;">
+            <div style="font-weight:600; color:#1e293b; margin-bottom:4px;"><i class="fa-solid fa-hand-holding-dollar" style="color:#8b1e1e;"></i> Thanh toán trực tiếp tại sân</div>
+            <p style="margin:0; font-size:12px; color:#475569;">Quý khách vui lòng thanh toán tiền mặt hoặc chuyển khoản tại quầy lễ tân khi đến nhận sân. Hệ thống ghi nhận đơn ở trạng thái <b>Chờ xác nhận</b> và thanh toán <b>Chưa thanh toán</b>.</p>
+          </div>
+
+          <!-- THÔNG BÁO GIỚI HẠN KỸ THUẬT LOCALSTORAGE -->
+          <div style="font-size:11px; color:#64748b; background:#f1f5f9; padding:6px 10px; border-radius:6px; margin-bottom:12px; line-height:1.4;">
+            <i class="fa-solid fa-circle-exclamation"></i> <i>Lưu ý kỹ thuật: Hệ thống lưu trên trình duyệt hiện tại. Đặt sân trên thiết bị khác nhau cần máy chủ backend dùng chung để đồng bộ thời gian thực.</i>
+          </div>
+        </div>
+
         <button type="submit" class="btn-book-main" id="btnConfirmBook">
-          <i class="bi bi-bag-check-fill"></i> Xác nhận đặt sân ngay
+          <i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản
         </button>
         <p class="booking-secure"><i class="bi bi-shield-check"></i> Thanh toán an toàn · Xác nhận tức thì</p>
       </form>
@@ -782,6 +830,40 @@ function openBook(venue, preset = {}) {
   const dateInput = document.getElementById('bkDate')
   dateInput.min = todayStr()
   dateInput.value = todayStr()
+
+  // Gợi ý mã chuyển khoản theo mã đơn kế tiếp
+  const nextId = window.SV?.nextBookingId ? window.SV.nextBookingId() : 'BK-NEW'
+  const memoEl = document.getElementById('homeTransferMemo')
+  if (memoEl) memoEl.textContent = `4SV ${nextId}`
+
+  // Xử lý chuyển đổi phương thức thanh toán
+  const payRadios = document.querySelectorAll('input[name="homePaymentMethod"]')
+  const homeBankBox = document.getElementById('homeBankBox')
+  const homeCourtBox = document.getElementById('homeCourtBox')
+  const btnConfirm = document.getElementById('btnConfirmBook')
+  const lblBank = document.getElementById('lblHomePayBank')
+  const lblCourt = document.getElementById('lblHomePayCourt')
+
+  payRadios.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const isBank = radio.value === 'bank_transfer'
+      if (homeBankBox) homeBankBox.style.display = isBank ? 'flex' : 'none'
+      if (homeCourtBox) homeCourtBox.style.display = isBank ? 'none' : 'block'
+      if (lblBank) {
+        lblBank.style.borderColor = isBank ? '#8b1e1e' : '#e2e8f0'
+        lblBank.style.background = isBank ? '#fff5f5' : '#f8fafc'
+      }
+      if (lblCourt) {
+        lblCourt.style.borderColor = !isBank ? '#8b1e1e' : '#e2e8f0'
+        lblCourt.style.background = !isBank ? '#fff5f5' : '#f8fafc'
+      }
+      if (btnConfirm) {
+        btnConfirm.innerHTML = isBank
+          ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản'
+          : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+      }
+    })
+  })
 
   // Handle Sport Picks click
   document.querySelectorAll('#bkSportList .sport-pick').forEach((btn) => {
@@ -812,20 +894,23 @@ function openBook(venue, preset = {}) {
       if (h + duration > venue.hours.close) continue
       const isPast = isPastSlot(date, h)
       const isTaken = isSlotTaken(venue.id, date, h, duration)
-      const disabled = isPast || isTaken
+      if (isPast || isTaken) continue // Ẩn hoàn toàn khung giờ đã hết sân hoặc quá giờ
+
+      hasAvailable = true
       const label = `${timeLabel(h)} - ${timeLabel(h + duration)}`
-
-      if (!disabled) hasAvailable = true
-
       const isSelected = bookState.selectedHour === h
       gridHtml += `
-        <button type="button" class="time-slot ${disabled ? 'taken' : ''} ${isSelected ? 'selected' : ''}" data-hour="${h}" ${disabled ? 'disabled' : ''}>
+        <button type="button" class="time-slot ${isSelected ? 'selected' : ''}" data-hour="${h}">
           ${label}
         </button>
       `
-      if (!disabled) {
-        selHtml += `<option value="${h}" ${isSelected ? 'selected' : ''}>${label}</option>`
-      }
+      selHtml += `<option value="${h}" ${isSelected ? 'selected' : ''}>${label}</option>`
+    }
+
+    // Nếu khung giờ đã chọn trước đó không còn khả dụng thì hủy chọn
+    if (bookState.selectedHour !== null && isSlotTaken(venue.id, date, bookState.selectedHour, duration)) {
+      bookState.selectedHour = null
+      sel.value = ''
     }
 
     if (!hasAvailable) {
@@ -836,7 +921,7 @@ function openBook(venue, preset = {}) {
       grid.innerHTML = gridHtml
       sel.innerHTML = selHtml
 
-      grid.querySelectorAll('.time-slot:not([disabled])').forEach((btn) => {
+      grid.querySelectorAll('.time-slot').forEach((btn) => {
         btn.addEventListener('click', () => {
           grid.querySelectorAll('.time-slot').forEach((b) => b.classList.remove('selected'))
           btn.classList.add('selected')
@@ -849,7 +934,7 @@ function openBook(venue, preset = {}) {
 
       // Auto-select first available if none selected
       if (bookState.selectedHour === null || !sel.querySelector(`option[value="${bookState.selectedHour}"]`)) {
-        const firstBtn = grid.querySelector('.time-slot:not([disabled])')
+        const firstBtn = grid.querySelector('.time-slot')
         if (firstBtn) {
           firstBtn.classList.add('selected')
           bookState.selectedHour = parseFloat(firstBtn.dataset.hour)
@@ -872,12 +957,18 @@ function openBook(venue, preset = {}) {
     const durEl = document.getElementById('payDuration')
     if (durEl) durEl.textContent = `${bookState.duration} giờ`
 
+    const finalPrice = usable ? (subtotal - voucher.discount) : subtotal
+
     const el = document.getElementById('bkTotal')
     if (usable) {
       el.innerHTML = `${(subtotal - voucher.discount).toLocaleString('vi-VN')}đ <small style="opacity:.75">(-${voucher.discount.toLocaleString('vi-VN')}đ)</small>`
     } else {
       el.textContent = subtotal.toLocaleString('vi-VN') + 'đ'
     }
+
+    const payAmt = document.getElementById('homePayAmount')
+    if (payAmt) payAmt.textContent = `${finalPrice.toLocaleString('vi-VN')}đ`
+
     refreshSlots()
   }
 
@@ -991,12 +1082,21 @@ function submitBooking(venue) {
     toast('Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)', 'error')
     return
   }
-  if (!timeOk) {
+  // BẮT BUỘC KIỂM TRA LẠI TÌNH TRẠNG SÂN TRƯỚC KHI ĐẶT (YÊU CẦU 1)
+  if (!timeOk || isSlotTaken(venue.id, date, startHour, duration)) {
     timeInput?.focus()
     shakeField('f-time')
-    toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
+    toast('Khung giờ này đã hết sân, vui lòng chọn khung giờ khác', 'error')
+    if (bookState.refresh) bookState.refresh()
     return
   }
+
+  // PHƯƠNG THỨC THANH TOÁN & TRẠNG THÁI (YÊU CẦU 2 & 3)
+  const payRadio = document.querySelector('input[name="homePaymentMethod"]:checked')
+  const paymentMethod = payRadio ? payRadio.value : 'bank_transfer'
+  const isBank = paymentMethod === 'bank_transfer'
+  // Phân biệt rõ trạng thái thanh toán: Chuyển khoản -> 'awaiting_payment' (Chờ xác nhận thanh toán), Tại sân -> 'unpaid'
+  const paymentStatus = isBank ? 'awaiting_payment' : 'unpaid'
 
   const btn = document.getElementById('btnConfirmBook')
   if (btn) {
@@ -1010,7 +1110,7 @@ function submitBooking(venue) {
       toast('Hệ thống dữ liệu chưa sẵn sàng. Vui lòng tải lại trang.', 'error')
       if (btn) {
         btn.disabled = false
-        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+        btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
       }
       return
     }
@@ -1029,14 +1129,16 @@ function submitBooking(venue) {
       userId: currentUser?.id || '',
       userName: name,
       customer: { name, phone, email: currentUser?.email || '' },
-      status: 'pending',
+      paymentMethod,
+      paymentStatus,
+      status: 'pending', // Trạng thái đặt sân: Chờ xác nhận
     })
 
     if (!result || !result.ok) {
       toast(result?.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
       if (btn) {
         btn.disabled = false
-        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+        btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
       }
       return
     }
@@ -1048,7 +1150,7 @@ function submitBooking(venue) {
         <div class="bk-success">
           <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
           <h3>Đặt sân thành công!</h3>
-          <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
+          <p>Mã đơn <b>${booking.id}</b> · Đơn đang ở trạng thái <b>Chờ xác nhận</b>.</p>
           <dl class="bk-summary">
             <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
             <div><dt>Ngày</dt><dd>${date}</dd></div>
@@ -1059,10 +1161,43 @@ function submitBooking(venue) {
                 ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
                    <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
                    <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
-                : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
+                : `<div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
             }
+            <div>
+              <dt>Phương thức thanh toán</dt>
+              <dd>
+                <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:6px; font-weight:600; font-size:12px; background:${isBank ? '#eff6ff' : '#f1f5f9'}; color:${isBank ? '#1d4ed8' : '#475569'};">
+                  <i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i>
+                  ${isBank ? 'Chuyển khoản ngân hàng (MB)' : 'Thanh toán trực tiếp tại sân'}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>Trạng thái thanh toán</dt>
+              <dd>
+                <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:6px; font-weight:600; font-size:12px; background:${isBank ? '#fffbeb' : '#f8fafc'}; color:${isBank ? '#b45309' : '#64748b'}; border:1px solid ${isBank ? '#fde68a' : '#cbd5e1'};">
+                  <i class="fa-solid ${isBank ? 'fa-clock' : 'fa-receipt'}"></i>
+                  ${isBank ? 'Chờ xác nhận thanh toán' : 'Chưa thanh toán (Tại sân)'}
+                </span>
+              </dd>
+            </div>
             <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
           </dl>
+
+          ${
+            isBank
+              ? `<div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 12px; font-size:12px; color:#92400e; margin:12px 0; text-align:left; line-height:1.45;">
+                   <i class="fa-solid fa-circle-info"></i> <b>Lưu ý quan trọng:</b> Đơn đặt sân đang ở trạng thái <b>Chờ xác nhận thanh toán</b>. Nhân viên 4SV sẽ đối soát biến động số dư tài khoản MBBank <b>207987</b> và kích hoạt đơn cho quý khách.
+                 </div>`
+              : `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:12px; color:#475569; margin:12px 0; text-align:left; line-height:1.45;">
+                   <i class="fa-solid fa-circle-info"></i> Quý khách vui lòng thanh toán trực tiếp tại sân khi nhận sân.
+                 </div>`
+          }
+
+          <div style="font-size:11px; color:#94a3b8; text-align:center; margin-bottom:12px;">
+            * Dữ liệu được lưu trong trình duyệt hiện tại (LocalStorage). Hệ thống cần máy chủ backend dùng chung để đồng bộ thời gian thực giữa nhiều thiết bị.
+          </div>
+
           <button type="button" class="btn-book btn-book-full" id="bkDone">Đóng</button>
         </div>
       `
@@ -1074,7 +1209,7 @@ function submitBooking(venue) {
     toast('Đã có lỗi xảy ra khi đặt sân: ' + (err.message || 'vui lòng thử lại'), 'error')
     if (btn) {
       btn.disabled = false
-      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+      btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
     }
   }
 }

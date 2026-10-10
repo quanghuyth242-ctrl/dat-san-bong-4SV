@@ -483,6 +483,12 @@ function renderBookingsHistory(user) {
     cancelled: { label: 'Đã hủy', icon: 'fa-ban' },
   }
 
+  const PAY_STATUS_MAP = {
+    awaiting_payment: { label: 'Chờ xác nhận thanh toán', icon: 'fa-clock', cls: 'awaiting' },
+    unpaid: { label: 'Chưa thanh toán (Tại sân)', icon: 'fa-receipt', cls: 'unpaid' },
+    paid: { label: 'Đã thanh toán', icon: 'fa-circle-check', cls: 'paid' },
+  }
+
   container.innerHTML = displayed
     .map((b) => {
       const courtName = b.fieldName || b.courtName || 'Sân bóng đá tiêu chuẩn'
@@ -491,6 +497,8 @@ function renderBookingsHistory(user) {
         : `${b.startHour || 17}:00 – ${b.endHour || 18}:30`
       const dateStr = formatDateVN(b.date)
       const st = STATUS_MAP[b.status] || STATUS_MAP.pending
+      const isBank = b.paymentMethod === 'bank_transfer'
+      const paySt = PAY_STATUS_MAP[b.paymentStatus] || (isBank ? PAY_STATUS_MAP.awaiting_payment : PAY_STATUS_MAP.unpaid)
 
       return `
         <article class="pf-booking-item" data-booking-id="${b.id}">
@@ -502,13 +510,19 @@ function renderBookingsHistory(user) {
             <div class="pf-bk-meta-row">
               <span class="pf-bk-meta-item"><i class="fa-solid fa-calendar-days"></i> ${dateStr}</span>
               <span class="pf-bk-meta-item"><i class="fa-regular fa-clock"></i> ${timeStr} (${b.duration || 1.5}h)</span>
+              <span class="pf-bk-meta-item"><i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i> ${isBank ? 'Chuyển khoản (MB)' : 'Thanh toán tại sân'}</span>
               ${b.voucherCode ? `<span class="pf-bk-meta-item" style="color:#16a34a"><i class="fa-solid fa-ticket"></i> Mã: ${b.voucherCode}</span>` : ''}
             </div>
           </div>
           <div class="pf-bk-right">
-            <span class="pf-status-badge is-${b.status || 'pending'}">
-              <i class="fa-solid ${st.icon}"></i> ${st.label}
-            </span>
+            <div class="pf-badges-group">
+              <span class="pf-status-badge is-${b.status || 'pending'}">
+                <i class="fa-solid ${st.icon}"></i> ${st.label}
+              </span>
+              <span class="pf-pay-badge is-${paySt.cls}">
+                <i class="fa-solid ${paySt.icon}"></i> ${paySt.label}
+              </span>
+            </div>
             <span class="pf-bk-price">${formatPriceVN(b.total)}</span>
             ${b.status === 'pending' ? `
               <button type="button" class="pf-btn-cancel-booking" data-cancel-id="${b.id}">
@@ -591,20 +605,73 @@ function bindProfileEvents() {
     if (user) renderBookingsHistory(user)
   })
 
-  // 4. Hủy đơn đặt sân (nếu pending)
-  $('#pfBookingsList')?.addEventListener('click', (e) => {
+  // 4. Hủy đơn đặt sân (mở modal xác nhận chuyên nghiệp, không dùng confirm trình duyệt)
+  let pendingCancelBookingId = null
+
+  document.addEventListener('click', (e) => {
     const cancelBtn = e.target.closest('[data-cancel-id]')
-    if (!cancelBtn) return
-    const bookingId = cancelBtn.dataset.cancelId
-    if (confirm(`Bạn có chắc chắn muốn hủy đơn đặt sân mã ${bookingId} không?`)) {
-      const res = window.SV?.setBookingStatus(bookingId, 'cancelled')
+    if (cancelBtn) {
+      e.preventDefault()
+      e.stopPropagation()
+      const bookingId = cancelBtn.dataset.cancelId
+      if (!bookingId) return
+      pendingCancelBookingId = bookingId
+      if ($('#cancelBookingTargetId')) $('#cancelBookingTargetId').textContent = bookingId
+      const modal = $('#pfCancelBookingModal')
+      if (modal) modal.hidden = false
+      return
+    }
+
+    if (e.target.closest('#btnDismissCancelModal')) {
+      pendingCancelBookingId = null
+      const modal = $('#pfCancelBookingModal')
+      if (modal) modal.hidden = true
+      return
+    }
+
+    if (e.target.closest('#btnExecuteCancelBooking')) {
+      const modal = $('#pfCancelBookingModal')
+      if (modal) modal.hidden = true
+      if (!pendingCancelBookingId) return
+      const bookingId = pendingCancelBookingId
+      pendingCancelBookingId = null
+
+      // 1. Thử qua SV.setBookingStatus
+      let res = window.SV?.setBookingStatus ? window.SV.setBookingStatus(bookingId, 'cancelled') : null
+
+      // 2. Đồng thời cập nhật trực tiếp vào localStorage '4sv_bookings' để đảm bảo 100% thành công
+      try {
+        const raw = localStorage.getItem('4sv_bookings')
+        if (raw) {
+          const list = JSON.parse(raw)
+          const idx = list.findIndex((b) => String(b.id) === String(bookingId))
+          if (idx !== -1) {
+            list[idx].status = 'cancelled'
+            list[idx].cancelledAt = new Date().toISOString()
+            localStorage.setItem('4sv_bookings', JSON.stringify(list))
+            res = { ok: true, booking: list[idx] }
+          }
+        }
+      } catch (err) {
+        console.warn('Lỗi ghi localStorage khi hủy đơn:', err)
+      }
+
       if (res && res.ok) {
         toast(`Đã hủy đơn ${bookingId} thành công`)
-        const user = window.SV?.currentUser()
-        if (user) renderBookingsHistory(user)
+        const user = window.SV?.currentUser ? window.SV.currentUser() : null
+        if (user) {
+          renderBookingsHistory(user)
+        }
       } else {
-        toast(res?.error || 'Không thể hủy đơn này!', 'error')
+        toast(res?.error || 'Không tìm thấy đơn hoặc không thể hủy đơn này!', 'error')
       }
+      return
+    }
+
+    const cancelModal = $('#pfCancelBookingModal')
+    if (cancelModal && !cancelModal.hidden && e.target === cancelModal) {
+      pendingCancelBookingId = null
+      cancelModal.hidden = true
     }
   })
 

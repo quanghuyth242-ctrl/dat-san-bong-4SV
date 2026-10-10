@@ -10,10 +10,16 @@ const LOGIN_URL = 'auth.html#login'
 const ROLE_LABEL = { player: 'Người chơi', owner: 'Chủ sân' }
 
 const BOOKING_STATUS = {
-  pending: { text: 'Chờ xử lý', cls: 'is-pending' },
+  pending: { text: 'Chờ xác nhận', cls: 'is-pending' },
   confirmed: { text: 'Đã xác nhận', cls: 'is-confirmed' },
   completed: { text: 'Đã hoàn thành', cls: 'is-completed' },
   cancelled: { text: 'Đã hủy', cls: 'is-cancelled' },
+}
+
+const PAYMENT_STATUS = {
+  awaiting_payment: { text: 'Chờ xác nhận thanh toán', icon: 'fa-clock', cls: 'is-awaiting' },
+  unpaid: { text: 'Chưa thanh toán (Tại sân)', icon: 'fa-receipt', cls: 'is-unpaid' },
+  paid: { text: 'Đã thanh toán', icon: 'fa-circle-check', cls: 'is-paid' },
 }
 
 /** Danh sách sân để lấy ảnh/địa chỉ hiển thị cho đơn đã đặt. */
@@ -125,6 +131,8 @@ function isUpcoming(b) {
 
 function bookingCard(b) {
   const st = BOOKING_STATUS[b.status] || BOOKING_STATUS.pending
+  const isBank = b.paymentMethod === 'bank_transfer'
+  const paySt = PAYMENT_STATUS[b.paymentStatus] || (isBank ? PAYMENT_STATUS.awaiting_payment : PAYMENT_STATUS.unpaid)
   const court = venueName(b)
   const addr = venueAddr(b)
   const startHour = Number(b.startHour) || 0
@@ -139,11 +147,17 @@ function bookingCard(b) {
       <div class="hist-main">
         <div class="hist-head">
           <h3 class="hist-name">${escapeHtml(court)}</h3>
-          <span class="hist-badge ${st.cls}">${st.text}</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <span class="hist-badge ${st.cls}">${st.text}</span>
+            <span class="hist-badge ${paySt.cls}" style="font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; background:${isBank ? '#fffbeb' : '#f8fafc'}; color:${isBank ? '#b45309' : '#64748b'}; border:1px solid ${isBank ? '#fde68a' : '#cbd5e1'};">
+              <i class="fa-solid ${paySt.icon}"></i> ${paySt.text}
+            </span>
+          </div>
         </div>
         <div class="hist-meta">
           <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}</span>
           <span><i class="fa-regular fa-clock"></i> ${timeLabel(startHour)} – ${timeLabel(endHour)}</span>
+          <span><i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i> ${isBank ? 'Chuyển khoản (MB)' : 'Tại sân'}</span>
           <span><i class="fa-solid fa-tag"></i> ${escapeHtml(b.type || 'Sân bóng')}</span>
           ${addr ? `<span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(addr)}</span>` : ''}
         </div>

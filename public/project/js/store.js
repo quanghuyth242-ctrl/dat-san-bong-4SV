@@ -51,6 +51,20 @@
   var PREFIX = { field: 'SAN', user: 'ND', booking: 'DD', review: 'DG', voucher: 'MAG' }
   var PAD = { field: 3, user: 3, booking: 3, review: 3, voucher: 3 }
 
+  /**
+   * Cấu hình tài khoản ngân hàng chính chủ nhận chuyển khoản của 4SV.com:
+   * Ngân hàng: MB (Ngân hàng TMCP Quân Đội - MBBank)
+   * Chủ tài khoản: LE THANH LONG
+   * Số tài khoản: 207987
+   * Mã QR thanh toán chính chủ: /project/images/qr-bank.png
+   */
+  var BANK_CONFIG = {
+    bankName: 'MB (Ngân hàng TMCP Quân Đội - MBBank)',
+    accountNumber: '207987',
+    accountHolder: 'LE THANH LONG',
+    qrImage: '/project/images/qr-bank.png',
+  }
+
   var FIELD_IMAGES = [
     'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
@@ -290,7 +304,12 @@
         name: String(customer.name || raw.userName || ''),
         phone: String(customer.phone || '').replace(/\D/g, ''),
         email: String(customer.email || '').trim().toLowerCase(),
+        note: String(customer.note || raw.note || ''),
       },
+      paymentMethod: raw.paymentMethod === 'bank_transfer' ? 'bank_transfer' : 'at_court',
+      paymentStatus:
+        raw.paymentStatus ||
+        (raw.paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid'),
       status: raw.status || 'pending',
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
@@ -549,12 +568,12 @@
   ]
 
   var DEFAULT_BOOKINGS = [
-    { id: 'DD001', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN001', fieldName: 'Sân Bóng Hồng Phúc', date: '2026-10-12', startTime: '17:30', endTime: '19:00', total: 450000, status: 'confirmed' },
-    { id: 'DD002', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN002', fieldName: 'Trung tâm thể thao 4SV Sport Complex', date: '2026-10-14', startTime: '19:00', endTime: '20:30', total: 600000, status: 'pending' },
-    { id: 'DD003', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN003', fieldName: 'Sân bóng Thành Công', date: '2026-09-28', startTime: '16:00', endTime: '17:30', total: 350000, status: 'completed' },
-    { id: 'DD004', userId: 'ND002', userName: 'Nguyễn Văn An', fieldId: 'SAN002', fieldName: 'Sân Bóng Cầu Giấy', date: '2026-10-06', startTime: '19:00', endTime: '20:30', total: 750000, status: 'confirmed' },
-    { id: 'DD005', userId: 'ND006', userName: 'Hoàng Thị Linh', fieldId: 'SAN005', fieldName: 'Sân Bóng Đá Hoàng Mai', date: '2026-10-07', startTime: '17:30', endTime: '19:00', total: 825000, status: 'pending' },
-    { id: 'DD006', userId: 'ND008', userName: 'Đặng Quốc Bảo', fieldId: 'SAN007', fieldName: 'Sân Bóng Đá Long Biên', date: '2026-10-07', startTime: '18:00', endTime: '19:30', total: 420000, status: 'completed' },
+    { id: 'DD001', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN001', fieldName: 'Sân Bóng Hồng Phúc', date: '2026-10-12', startTime: '17:30', endTime: '19:00', total: 450000, status: 'confirmed', paymentMethod: 'bank_transfer', paymentStatus: 'paid' },
+    { id: 'DD002', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN002', fieldName: 'Trung tâm thể thao 4SV Sport Complex', date: '2026-10-14', startTime: '19:00', endTime: '20:30', total: 600000, status: 'pending', paymentMethod: 'bank_transfer', paymentStatus: 'awaiting_payment' },
+    { id: 'DD003', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN003', fieldName: 'Sân bóng Thành Công', date: '2026-09-28', startTime: '16:00', endTime: '17:30', total: 350000, status: 'completed', paymentMethod: 'at_court', paymentStatus: 'paid' },
+    { id: 'DD004', userId: 'ND002', userName: 'Nguyễn Văn An', fieldId: 'SAN002', fieldName: 'Sân Bóng Cầu Giấy', date: '2026-10-06', startTime: '19:00', endTime: '20:30', total: 750000, status: 'confirmed', paymentMethod: 'at_court', paymentStatus: 'unpaid' },
+    { id: 'DD005', userId: 'ND006', userName: 'Hoàng Thị Linh', fieldId: 'SAN005', fieldName: 'Sân Bóng Đá Hoàng Mai', date: '2026-10-07', startTime: '17:30', endTime: '19:00', total: 825000, status: 'pending', paymentMethod: 'bank_transfer', paymentStatus: 'awaiting_payment' },
+    { id: 'DD006', userId: 'ND008', userName: 'Đặng Quốc Bảo', fieldId: 'SAN007', fieldName: 'Sân Bóng Đá Long Biên', date: '2026-10-07', startTime: '18:00', endTime: '19:30', total: 420000, status: 'completed', paymentMethod: 'bank_transfer', paymentStatus: 'paid' },
   ]
 
   var DEFAULT_REVIEWS = [
@@ -1114,7 +1133,7 @@
 
       var booking = normBooking(Object.assign({ id: nextId('booking', list) }, input), list.length)
       if (SV.isSlotTaken(booking.fieldId, booking.date, booking.startHour, booking.duration, booking.id)) {
-        return { ok: false, error: 'Khung giờ này vừa có người đặt, vui lòng chọn giờ khác' }
+        return { ok: false, error: 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác' }
       }
       list.push(booking)
       store('bookings', list)
@@ -1129,6 +1148,13 @@
     saveBookings: function (list) {
       return store('bookings', list)
     },
+    bankConfig: function () {
+      return Object.assign({}, BANK_CONFIG)
+    },
+    nextBookingId: function () {
+      var list = collection('bookings')
+      return nextId('booking', list)
+    },
     setBookingStatus: function (id, status) {
       var list = collection('bookings').slice()
       var idx = list.findIndex(function (b) {
@@ -1136,6 +1162,16 @@
       })
       if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' }
       list[idx].status = status
+      store('bookings', list)
+      return { ok: true, booking: list[idx] }
+    },
+    setPaymentStatus: function (id, paymentStatus) {
+      var list = collection('bookings').slice()
+      var idx = list.findIndex(function (b) {
+        return b.id === String(id)
+      })
+      if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' }
+      list[idx].paymentStatus = paymentStatus
       store('bookings', list)
       return { ok: true, booking: list[idx] }
     },

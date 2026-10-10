@@ -1268,43 +1268,75 @@ function initCourtDetail() {
     const slots = generateSlots(detailState.court, detailState.selectedSport);
     const date = detailState.selectedDate;
 
-    let availableCount = 0;
-    grid.innerHTML = slots
+    // Lọc chỉ giữ lại những khung giờ THẬT SỰ CÒN TRỐNG (khung giờ nào hết hoặc quá giờ thì ẨN ĐI hoàn toàn)
+    const availableSlots = slots.filter((slot) => {
+      const isPast = isPastSlot(date, slot.startHour);
+      const isTaken = SV.isSlotTaken(detailState.court.id, date, slot.startHour, slot.duration);
+      return !isPast && !isTaken;
+    });
+
+    // Nếu khung giờ đang chọn trước đó không còn khả dụng trên ngày này thì bỏ chọn
+    if (detailState.selectedSlot) {
+      const isStillAvailable = availableSlots.some(
+        (s) => s.startHour === detailState.selectedSlot.startHour
+      );
+      if (!isStillAvailable) {
+        detailState.selectedSlot = null;
+        updateSummary();
+      }
+    }
+
+    if (availableSlots.length === 0) {
+      grid.innerHTML = '';
+      if (emptyMsg) {
+        emptyMsg.style.display = 'block';
+        emptyMsg.innerHTML = '<i class="fa-solid fa-calendar-xmark" style="color:var(--primary); font-size:1.4rem; display:block; margin-bottom:6px;"></i> <b>Ngày này đã hết khung giờ trống</b><br/><span style="font-size:12px; color:var(--text-muted);">Tất cả khung giờ trong ngày đã có người đặt hoặc quá giờ. Vui lòng chọn ngày khác!</span>';
+      }
+      return;
+    }
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    grid.innerHTML = availableSlots
       .map((slot) => {
-        const isPast = isPastSlot(date, slot.startHour);
-        const isTaken = SV.isSlotTaken(detailState.court.id, date, slot.startHour, slot.duration);
         const isSelected =
           detailState.selectedSlot &&
           detailState.selectedSlot.startHour === slot.startHour;
-        const disabled = isPast || isTaken;
-        if (!disabled) availableCount++;
 
         return `
-          <button type="button" class="time-slot-btn ${disabled ? 'disabled' : ''} ${isSelected ? 'active' : ''}"
+          <button type="button" class="time-slot-btn ${isSelected ? 'active' : ''}"
                   data-start="${slot.startHour}"
                   data-duration="${slot.duration}"
                   data-price="${slot.price}"
-                  data-label="${slot.label}"
-                  ${disabled ? 'disabled' : ''}>
+                  data-label="${slot.label}">
             <strong>${slot.label}</strong>
-            <span>${isTaken ? 'Đã đặt' : isPast ? 'Quá giờ' : formatPrice(slot.price)}</span>
+            <span style="color:var(--primary); font-weight:600;">${formatPrice(slot.price)}</span>
           </button>
         `;
       })
       .join('');
-
-    if (emptyMsg) emptyMsg.style.display = availableCount === 0 ? 'block' : 'none';
   }
 
   $('#timeSlotsGrid')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.time-slot-btn');
-    if (!btn || btn.disabled || btn.classList.contains('disabled')) return;
+    if (!btn) return;
+
+    const startH = parseFloat(btn.dataset.start);
+    const dur = parseFloat(btn.dataset.duration);
+
+    // Kiểm tra lại tức thì trước khi chọn
+    if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, startH, dur)) {
+      showToast('Khung giờ đã hết', 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
+      renderTimeSlots();
+      return;
+    }
+
     $$('.time-slot-btn', $('#timeSlotsGrid')).forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
 
     detailState.selectedSlot = {
-      startHour: parseFloat(btn.dataset.start),
-      duration: parseFloat(btn.dataset.duration),
+      startHour: startH,
+      duration: dur,
       price: parseInt(btn.dataset.price, 10),
       label: btn.dataset.label,
     };
@@ -1361,12 +1393,21 @@ function initCourtDetail() {
   renderTimeSlots();
   updateSummary();
 
-  // 5. Submit Booking Form -> Open Confirmation Modal
+  // 5. Submit Booking Form -> Open Confirmation Modal with Payment Options
   $('#fagBookForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!detailState.selectedSlot) {
       showToast('Chưa chọn giờ', 'Vui lòng chọn một khung giờ thi đấu còn trống!');
       $('#timeSlotsGrid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Kiểm tra lại tình trạng sân trước khi mở hộp thoại xác nhận
+    if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, detailState.selectedSlot.startHour, detailState.selectedSlot.duration)) {
+      showToast('Khung giờ đã hết', 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
+      detailState.selectedSlot = null;
+      renderTimeSlots();
+      updateSummary();
       return;
     }
 
@@ -1377,6 +1418,62 @@ function initCourtDetail() {
     const finalTotal = Math.max(0, detailState.selectedSlot.price - detailState.discount);
     if ($('#cfTotal')) $('#cfTotal').textContent = formatPrice(finalTotal);
 
+    // Cập nhật thông tin ngân hàng & mã chuyển khoản tương ứng
+    const bank = SV.bankConfig ? SV.bankConfig() : {
+      bankName: 'MB (Ngân hàng TMCP Quân Đội - MBBank)',
+      accountNumber: '207987',
+      accountHolder: 'LE THANH LONG',
+      qrImage: '/project/images/qr-bank.png',
+    };
+    const nextBookingId = SV.nextBookingId ? SV.nextBookingId() : 'DD' + String(Date.now()).slice(-3);
+    const transferContent = `4SV ${nextBookingId}`;
+
+    if ($('#bankNameDisplay')) $('#bankNameDisplay').textContent = bank.bankName;
+    if ($('#bankHolderDisplay')) $('#bankHolderDisplay').textContent = bank.accountHolder;
+    if ($('#bankAccDisplay')) $('#bankAccDisplay').textContent = bank.accountNumber;
+    if ($('#bankAmountDisplay')) $('#bankAmountDisplay').textContent = formatPrice(finalTotal);
+    if ($('#bankTransferContent')) $('#bankTransferContent').textContent = transferContent;
+    if ($('#bankQrImg')) $('#bankQrImg').src = bank.qrImage || '/project/images/qr-bank.png';
+
+    // Nút sao chép STK & nội dung chuyển khoản
+    const btnCopyAcc = $('#btnCopyBankAcc');
+    if (btnCopyAcc) {
+      btnCopyAcc.onclick = (ev) => {
+        ev.preventDefault();
+        navigator.clipboard?.writeText(bank.accountNumber);
+        showToast('Đã sao chép', `Đã sao chép số tài khoản: ${bank.accountNumber}`);
+      };
+    }
+    const btnCopyContent = $('#btnCopyTransferContent');
+    if (btnCopyContent) {
+      btnCopyContent.onclick = (ev) => {
+        ev.preventDefault();
+        navigator.clipboard?.writeText(transferContent);
+        showToast('Đã sao chép', `Đã sao chép nội dung chuyển khoản: ${transferContent}`);
+      };
+    }
+
+    // Xử lý chuyển đổi phương thức thanh toán
+    const switchPaymentMethod = (method) => {
+      const isBank = method === 'bank_transfer';
+      if ($('#bankTransferBox')) $('#bankTransferBox').style.display = isBank ? 'grid' : 'none';
+      if ($('#atCourtBox')) $('#atCourtBox').style.display = isBank ? 'none' : 'block';
+      $$('.payment-opt-card').forEach((card) => {
+        const rad = card.querySelector('input[name="paymentMethod"]');
+        card.classList.toggle('active', rad && rad.value === method);
+      });
+      const btnText = $('#btnFinalBookText');
+      const btnIcon = $('#btnFinalBook i');
+      if (btnText) btnText.textContent = isBank ? 'Tôi đã chuyển khoản' : 'Xác nhận đặt sân';
+      if (btnIcon) btnIcon.className = isBank ? 'fa-solid fa-check-double' : 'fa-solid fa-calendar-check';
+    };
+
+    $$('input[name="paymentMethod"]').forEach((rad) => {
+      rad.onchange = () => switchPaymentMethod(rad.value);
+    });
+    switchPaymentMethod($('input[name="paymentMethod"]:checked')?.value || 'bank_transfer');
+
+    // Điền sẵn thông tin khách hàng nếu đã đăng nhập
     const user = SV.currentUser();
     if (user) {
       if ($('#cfName')) $('#cfName').value = user.name || '';
@@ -1391,7 +1488,7 @@ function initCourtDetail() {
     closeModal($('#confirmModal'));
   });
 
-  // 6. Confirm Modal Form Submit -> Save to Store
+  // 6. Confirm Modal Form Submit -> Kiểm tra lại tức thì & Lưu đơn
   $('#cfCustomerForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('#cfName')?.value.trim() || '';
@@ -1400,7 +1497,7 @@ function initCourtDetail() {
     const note = $('#cfNote')?.value.trim() || '';
 
     if (name.length < 2) {
-      showToast('Lỗi nhập liệu', 'Vui lòng nhập họ và tên của bạn');
+      showToast('Lỗi nhập liệu', 'Vui lòng nhập họ và tên của bạn (tối thiểu 2 ký tự)');
       $('#cfName')?.focus();
       return;
     }
@@ -1414,12 +1511,22 @@ function initCourtDetail() {
     const dur = detailState.selectedSlot.duration;
     const finalTotal = Math.max(0, detailState.selectedSlot.price - detailState.discount);
 
+    // BẮT BUỘC KIỂM TRA LẠI TÌNH TRẠNG SÂN NGAY TRƯỚC KHI LƯU ĐƠN
     if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, startH, dur)) {
-      showToast('Trùng lịch', 'Khung giờ này vừa có người đặt trước, vui lòng chọn giờ khác!');
+      showToast('Khung giờ đã hết', 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
       closeModal($('#confirmModal'));
+      detailState.selectedSlot = null;
       renderTimeSlots();
+      updateSummary();
       return;
     }
+
+    // Phương thức thanh toán được chọn
+    const paymentMethod = $('input[name="paymentMethod"]:checked')?.value || 'bank_transfer';
+    // Phân biệt rõ trạng thái thanh toán và trạng thái đặt sân:
+    // Chuyển khoản -> 'awaiting_payment' (Chờ xác nhận thanh toán)
+    // Thanh toán tại sân -> 'unpaid' (Chưa thanh toán)
+    const paymentStatus = paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid';
 
     const user = SV.currentUser();
     const res = SV.addBooking({
@@ -1439,21 +1546,52 @@ function initCourtDetail() {
         email,
         note,
       },
-      status: 'pending',
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      status: 'pending', // Trạng thái đặt sân: Chờ xác nhận
     });
 
     if (res && res.ok) {
       closeModal($('#confirmModal'));
 
+      const isBank = res.booking.paymentMethod === 'bank_transfer';
+
       if ($('#succBookingId')) $('#succBookingId').textContent = res.booking.id;
       if ($('#succDetailsBox')) {
         $('#succDetailsBox').innerHTML = `
-          <div class="succ-row"><span>Sân thể thao</span><strong>${esc(detailState.court.name)}</strong></div>
-          <div class="succ-row"><span>Môn thi đấu</span><strong>${esc(detailState.selectedSport)}</strong></div>
-          <div class="succ-row"><span>Ngày chơi</span><strong>${friendlyDateStr(detailState.selectedDate)}</strong></div>
-          <div class="succ-row"><span>Khung giờ</span><strong style="color:var(--primary);">${detailState.selectedSlot.label}</strong></div>
-          <div class="succ-row"><span>Người đặt</span><strong>${esc(name)} (${esc(phone)})</strong></div>
-          <div class="succ-row"><span>Tổng thanh toán</span><strong style="color:var(--primary); font-size:1.15rem;">${formatPrice(res.booking.total)}</strong></div>
+          <div class="succ-row"><span>Mã đơn đặt sân:</span><strong style="color:var(--primary); font-family:monospace; font-size:1.15rem;">${res.booking.id}</strong></div>
+          <div class="succ-row"><span>Sân thể thao:</span><strong>${esc(detailState.court.name)}</strong></div>
+          <div class="succ-row"><span>Môn thi đấu:</span><strong>${esc(detailState.selectedSport)}</strong></div>
+          <div class="succ-row"><span>Ngày chơi:</span><strong>${friendlyDateStr(detailState.selectedDate)}</strong></div>
+          <div class="succ-row"><span>Khung giờ:</span><strong style="color:var(--primary);">${detailState.selectedSlot.label}</strong></div>
+          <div class="succ-row"><span>Người đặt:</span><strong>${esc(name)} (${esc(phone)})</strong></div>
+          <div class="succ-row"><span>Tổng tiền thanh toán:</span><strong style="color:var(--primary); font-size:1.15rem;">${formatPrice(res.booking.total)}</strong></div>
+          <div class="succ-row">
+            <span>Phương thức thanh toán:</span>
+            <span class="succ-badge ${isBank ? 'pay-bank' : 'pay-court'}">
+              <i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i>
+              ${isBank ? 'Chuyển khoản ngân hàng (MB)' : 'Thanh toán trực tiếp tại sân'}
+            </span>
+          </div>
+          <div class="succ-row">
+            <span>Trạng thái thanh toán:</span>
+            <span class="succ-badge ${isBank ? 'pay-status-awaiting' : 'pay-status-unpaid'}">
+              <i class="fa-solid ${isBank ? 'fa-clock' : 'fa-receipt'}"></i>
+              ${isBank ? 'Chờ xác nhận thanh toán' : 'Chưa thanh toán (Tại sân)'}
+            </span>
+          </div>
+          <div class="succ-row">
+            <span>Trạng thái đặt sân:</span>
+            <span class="succ-badge booking-status-pending">
+              <i class="fa-solid fa-hourglass-half"></i> Chờ xác nhận
+            </span>
+          </div>
+          <div class="succ-note-box" style="margin-top:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; font-size:12.5px; text-align:left; color:#475569; line-height:1.45;">
+            <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:5px;"></i>
+            ${isBank
+              ? `Hệ thống đã ghi nhận thông báo chuyển khoản của bạn với trạng thái <b>Chờ xác nhận thanh toán</b>. Ban quản lý sẽ đối soát sao kê ngân hàng MB theo mã đơn <b>${res.booking.id}</b> và cập nhật sang <b>Đã thanh toán</b>.`
+              : `Đơn đặt sân đã được gửi tới ban quản lý. Vui lòng có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán trực tiếp số tiền <b>${formatPrice(res.booking.total)}</b>.`}
+          </div>
         `;
       }
       openModal($('#successModal'));
@@ -1463,7 +1601,7 @@ function initCourtDetail() {
       updateSummary();
       showToast('Đặt sân thành công!', `Mã đơn: ${res.booking.id} · Cảm ơn bạn!`);
     } else {
-      showToast('Không thành công', res?.error || 'Vui lòng kiểm tra lại');
+      showToast('Không thành công', res?.error || 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
     }
   });
 
