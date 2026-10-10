@@ -1,12 +1,12 @@
-
-/* 
+/* ==========================================================================
+   4SV.vn AUTH LOGIC - COMPLETE & DYNAMIC AUTHENTICATION SYSTEM
+   ========================================================================== */
 
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
 const OTP_DEMO = '123456'
-const RESEND_SECONDS = 60
-const REDIRECT_MS = 2000
+const REDIRECT_MS = 900
 
 const DEMO_USER = {
   name: 'Nguyễn Minh Tuấn',
@@ -17,35 +17,64 @@ const DEMO_USER = {
 }
 
 function toast(message, type = 'success') {
+  const existing = document.querySelector('.toast-4sv')
+  if (existing) existing.remove()
+
   const el = document.createElement('div')
   el.className = 'toast-4sv' + (type === 'error' ? ' toast-error' : '')
-  el.textContent = message
+  const icon = type === 'error'
+    ? '<i class="fa-solid fa-circle-exclamation"></i>'
+    : '<i class="fa-solid fa-circle-check"></i>'
+  el.innerHTML = `${icon}<span>${message}</span>`
   document.body.appendChild(el)
+
   requestAnimationFrame(() => el.classList.add('show'))
   setTimeout(() => {
     el.classList.remove('show')
-    setTimeout(() => el.remove(), 250)
-  }, 2600)
+    setTimeout(() => el.remove(), 320)
+  }, 2800)
 }
 
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim())
-const isPhone = (v) => /^0?\d{9,10}$/.test(v.replace(/[\s.-]/g, ''))
+const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(v || '').trim())
+const isPhone = (v) => /^0?\d{9,10}$/.test(String(v || '').replace(/[\s.-]/g, ''))
 const digits = (v) => String(v || '').replace(/\D/g, '')
 
 let mode = 'login'
 let otpContext = 'register'
 let otpTarget = ''
-let resendTimer = null
-let redirectTimer = null
 
-/* ---------- CHUYỂN MÀN HÌNH ---------- */
+/* ---------- NÚT LOADING SPINNER ---------- */
+function setButtonLoading(btn, isLoading, loadingText = 'Đang xử lý...') {
+  if (!btn) return
+  if (isLoading) {
+    btn.dataset.originalText = btn.innerHTML
+    btn.classList.add('is-loading')
+    btn.disabled = true
+    btn.innerHTML = `<span class="btn-spinner"></span> ${loadingText}`
+  } else {
+    btn.classList.remove('is-loading')
+    btn.disabled = false
+    if (btn.dataset.originalText) {
+      btn.innerHTML = btn.dataset.originalText
+    }
+  }
+}
+
+/* ---------- CHUYỂN MÀN HÌNH MƯỢT MÀ ---------- */
 function setMode(next, { updateHash = true } = {}) {
   mode = next
+
+  // Ẩn tất cả panel, hiển thị panel mục tiêu kèm hiệu ứng animation
   const panels = $$('[data-panel]')
   panels.forEach((panel) => {
-    panel.hidden = panel.dataset.panel !== next
+    const isTarget = panel.dataset.panel === next
+    panel.hidden = !isTarget
+    if (isTarget) {
+      panel.classList.remove('panel-entering')
+      void panel.offsetWidth // trigger reflow
+      panel.classList.add('panel-entering')
+    }
   })
-
 
   // Cập nhật Header Action CTA & Showcase Panel Text
   const headerNote = $('#headerSwitchNote')
@@ -53,7 +82,6 @@ function setMode(next, { updateHash = true } = {}) {
   const showcaseBadge = $('#showcaseBadge')
   const showcaseTitle = $('#showcaseTitle')
   const showcaseDesc = $('#showcaseDesc')
-
 
   if (next === 'register') {
     document.title = 'Đăng Ký Tài Khoản - 4SV.vn'
@@ -66,10 +94,10 @@ function setMode(next, { updateHash = true } = {}) {
       showcaseBadge.innerHTML = '<span>🚀 Khởi Tạo Hệ Thống Thể Thao All-In-One</span>'
     }
     if (showcaseTitle) {
-      showcaseTitle.innerHTML = 'Tạo tài khoản quản trị <span>chỉ trong 1 phút</span>'
+      showcaseTitle.innerHTML = 'Tạo tài khoản thành viên <span>chỉ trong 1 phút</span>'
     }
     if (showcaseDesc) {
-      showcaseDesc.textContent = 'Trải nghiệm đầy đủ ba bộ công cụ quản lý giải đấu, quản lý đội thể thao và vận hành cụm sân hoàn toàn miễn phí trên nền tảng 4SV.vn.'
+      showcaseDesc.textContent = 'Trải nghiệm trọn vẹn nền tảng đặt sân thể thao thông minh, lưu lịch sử đặt sân và nhận ưu đãi độc quyền 4SV.vn.'
     }
   } else if (next === 'login') {
     document.title = 'Đăng Nhập - 4SV.vn'
@@ -89,48 +117,59 @@ function setMode(next, { updateHash = true } = {}) {
     }
   } else if (next === 'profile') {
     document.title = 'Tài Khoản Của Tôi - 4SV.vn'
-    if (headerNote) headerNote.textContent = 'Xin chào'
+    if (headerNote) headerNote.textContent = 'Đang đăng nhập'
     if (headerCta) {
       headerCta.textContent = 'Về trang chủ'
       headerCta.href = '../index.html'
     }
     renderProfile()
+  } else if (next === 'forgot') {
+    document.title = 'Quên Mật Khẩu - 4SV.vn'
+    if (headerNote) headerNote.textContent = 'Nhớ mật khẩu?'
+    if (headerCta) {
+      headerCta.textContent = 'Đăng nhập ngay'
+      headerCta.href = '#login'
+    }
+  } else if (next === 'otp') {
+    document.title = 'Xác Thực OTP - 4SV.vn'
+  } else if (next === 'newpass') {
+    document.title = 'Mật Khẩu Mới - 4SV.vn'
   }
 
-  if (updateHash && ['login', 'register', 'forgot', 'profile'].includes(next)) {
-    history.replaceState(null, '', `#${next}`)
+  // Làm sạch query params (nếu người dùng vô tình bấm submit thường trước đó)
+  if (updateHash && ['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(next)) {
+    const cleanUrl = window.location.pathname + `#${next}`
+    window.history.replaceState(null, '', cleanUrl)
   }
 }
 
-
-/* ---------- PASSWORD STRENGTH (FAGLEAGUE REPLICA) ---------- */
+/* ---------- PASSWORD STRENGTH CHECKER ---------- */
 function calcStrength(pass) {
   if (!pass) return { score: 0, text: 'Nhập mật khẩu để kiểm tra độ mạnh', color: '#94a3b8' }
 
-
   let score = 0
   if (pass.length >= 6) score += 25
-  if (pass.length >= 10) score += 25
+  if (pass.length >= 8) score += 25
   if (/[0-9]/.test(pass)) score += 25
-  if (/[^A-Za-z0-9]/.test(pass)) score += 25
+  if (/[^A-Za-z0-9]/.test(pass) || /[A-Z]/.test(pass)) score += 25
 
   if (score <= 25) {
     return {
       score,
-      text: 'Mật khẩu Yếu (Nên dài trên 8 ký tự và bao gồm số)',
+      text: 'Mật khẩu Yếu (Nên có ít nhất 8 ký tự và gồm cả số)',
       color: '#ef4444'
     }
   } else if (score <= 75) {
     return {
       score,
-      text: 'Mật khẩu Trung Bình (Thêm ký tự đặc biệt để an toàn hơn)',
-      color: '#d97706'
+      text: 'Mật khẩu Trung Bình (Thêm ký tự đặc biệt hoặc chữ hoa)',
+      color: '#f59e0b'
     }
   } else {
     return {
       score: 100,
-      text: 'Mật khẩu Rất Mạnh! Bạn có thể yên tâm sử dụng',
-      color: '#059669'
+      text: 'Mật khẩu Rất Mạnh! An toàn tuyệt đối',
+      color: '#10b981'
     }
   }
 }
@@ -150,7 +189,7 @@ function bindPasswordStrength() {
   })
 }
 
-/* ---------- TOGGLE EYE PASSWORDS ---------- */
+/* ---------- TOGGLE HIỆN / ẨN MẬT KHẨU ---------- */
 function bindEyeToggles() {
   document.addEventListener('click', (e) => {
     const toggle = e.target.closest('[data-toggle-pass]')
@@ -166,7 +205,7 @@ function bindEyeToggles() {
   })
 }
 
-/* ---------- LOGIN TAB SWITCHER (Tài Khoản / QR) ---------- */
+/* ---------- CHUYỂN TAB ĐĂNG NHẬP (Tài Khoản / Mã QR) ---------- */
 function bindLoginTabs() {
   const tabs = $$('#loginAuthTabs .auth-tab-btn')
   const accTab = $('#accountTab')
@@ -178,66 +217,113 @@ function bindLoginTabs() {
       const which = tab.dataset.tab
       if (which === 'qr') {
         if (accTab) accTab.style.display = 'none'
-        if (qrTab) qrTab.style.display = 'block'
+        if (qrTab) {
+          qrTab.style.display = 'block'
+          qrTab.classList.remove('panel-entering')
+          void qrTab.offsetWidth
+          qrTab.classList.add('panel-entering')
+        }
       } else {
-        if (accTab) accTab.style.display = 'block'
+        if (accTab) {
+          accTab.style.display = 'block'
+          accTab.classList.remove('panel-entering')
+          void accTab.offsetWidth
+          accTab.classList.add('panel-entering')
+        }
         if (qrTab) qrTab.style.display = 'none'
       }
     })
   })
 }
 
-/* ---------- OTP INPUTS ---------- */
+/* ---------- XỬ LÝ NHẬP MÃ OTP THÔNG MINH ---------- */
 function bindOtp() {
   const boxes = $$('[data-otp] input')
   const form = $('#otpForm')
-  const error = $('[data-error-for="otp"]')
   const resend = $('#btnResendOtp')
+  const quickOtpBtn = $('#btnFillDemoOtp')
 
   boxes.forEach((box, i) => {
-    box.addEventListener('input', () => {
+    box.addEventListener('input', (e) => {
       box.value = digits(box.value).slice(-1)
-      if (box.value && i < boxes.length - 1) boxes[i + 1].focus()
+      if (box.value && i < boxes.length - 1) {
+        boxes[i + 1].focus()
+      }
       const code = boxes.map((b) => b.value).join('')
-      if (code.length === 6) form?.requestSubmit()
+      if (code.length === 6) {
+        form?.requestSubmit()
+      }
     })
+
     box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus()
+      if (e.key === 'Backspace' && !box.value && i > 0) {
+        boxes[i - 1].focus()
+      }
     })
+
+    // Hỗ trợ paste trọn bộ 6 số
+    box.addEventListener('paste', (e) => {
+      e.preventDefault()
+      const text = digits(e.clipboardData.getData('text')).slice(0, 6)
+      if (!text) return
+      text.split('').forEach((ch, idx) => {
+        if (boxes[idx]) boxes[idx].value = ch
+      })
+      if (text.length >= 6) {
+        form?.requestSubmit()
+      } else if (boxes[text.length]) {
+        boxes[text.length].focus()
+      }
+    })
+  })
+
+  // Nút điền nhanh mã OTP demo
+  quickOtpBtn?.addEventListener('click', () => {
+    '123456'.split('').forEach((ch, idx) => {
+      if (boxes[idx]) boxes[idx].value = ch
+    })
+    toast('Đã tự động điền mã OTP demo: 123456')
+    setTimeout(() => {
+      form?.requestSubmit()
+    }, 300)
   })
 
   resend?.addEventListener('click', () => {
     boxes.forEach((b) => (b.value = ''))
     boxes[0]?.focus()
-    toast(`Đã gửi lại mã xác thực tới ${otpTarget}`)
+    toast(`Đã gửi lại mã xác thực tới ${otpTarget || 'bạn'} (Mã demo: 123456)`)
   })
 }
 
-/* ---------- USERS STORE INTERFACE ---------- */
+/* ---------- TÌM TÀI KHOẢN TRONG STORE ---------- */
 function findUser(identity) {
-  const key = identity.trim().toLowerCase()
+  if (!identity) return null
+  const key = String(identity).trim().toLowerCase()
   const phone = digits(identity)
+  const users = window.SV?.users() || []
   return (
-    window.SV?.users().find(
+    users.find(
       (u) =>
         String(u.email || '').toLowerCase() === key ||
+        String(u.name || '').toLowerCase() === key ||
         (phone && digits(u.phone) === phone)
     ) || null
   )
 }
-
 
 function setError(id, msg) {
   const el = $(`[data-error-for="${id}"]`)
   if (el) el.textContent = msg || ''
   const input = document.getElementById(id)
   if (input) {
-    input.closest('.form-group')?.classList.toggle('has-error', !!msg)
+    const grp = input.closest('.form-group')
+    if (grp) {
+      grp.classList.toggle('has-error', Boolean(msg))
+    }
   }
-
 }
 
-/* ---------- PROFILE VIEW ---------- */
+/* ---------- TRANG PROFILE CÁ NHÂN ---------- */
 function renderProfile() {
   const user = window.SV?.currentUser()
   if (!user) {
@@ -249,16 +335,20 @@ function renderProfile() {
   const roleEl = $('#pfRole')
   const listEl = $('#pfBookingsList')
 
-  if (nameEl) nameEl.textContent = user.name || 'Tài khoản'
-  if (emailEl) emailEl.textContent = user.email || user.phone || ''
-  if (roleEl) roleEl.textContent = user.role === 'admin' ? 'Quản trị viên' : (user.role === 'owner' ? 'Chủ sân' : 'Người chơi')
+  if (nameEl) nameEl.textContent = user.name || 'Thành viên 4SV'
+  if (emailEl) emailEl.textContent = user.email || user.phone || 'Chưa cập nhật'
+  if (roleEl) {
+    roleEl.textContent = user.role === 'admin'
+      ? 'Quản trị viên'
+      : (user.role === 'owner' ? 'Chủ sân' : 'Người chơi')
+  }
 
   const bookings = window.SV?.bookings() || []
   const my = bookings.filter((b) => b.userId === user.id || b.userName === user.name)
 
   if (listEl) {
     if (!my.length) {
-      listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Chưa có lịch đặt sân nào.</p>'
+      listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; padding: 1rem 0; text-align: center;"><i class="fa-solid fa-calendar-xmark" style="font-size: 1.5rem; margin-bottom: 8px; display: block; opacity: 0.5;"></i>Bạn chưa có lịch đặt sân nào. Hãy quay lại trang chủ để đặt sân ngay!</p>'
     } else {
       listEl.innerHTML = my.slice(0, 5).map((b) => `
         <div class="history-item">
@@ -266,9 +356,9 @@ function renderProfile() {
             <strong>${b.courtName || 'Sân thể thao'}</strong>
             <span class="history-status is-${b.status || 'pending'}">${b.status === 'confirmed' ? 'Đã xác nhận' : 'Chờ xử lý'}</span>
           </div>
-          <div style="font-size: 0.85rem; color: var(--text-sub);">
-            <span><i class="fa-solid fa-calendar-days"></i> ${b.date || ''} (${b.startHour}:00 - ${b.endHour || b.startHour + 1}:00)</span> ·
-            <strong style="color: var(--fag-red);">${(b.total || 0).toLocaleString('vi-VN')}đ</strong>
+          <div style="font-size: 0.85rem; color: var(--text-sub); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+            <span><i class="fa-solid fa-calendar-days"></i> ${b.date || ''} (${b.startHour}:00 - ${b.endHour || b.startHour + 1}:00)</span>
+            <strong style="color: var(--fag-red); font-size: 0.95rem;">${(b.total || 0).toLocaleString('vi-VN')} đ</strong>
           </div>
         </div>
       `).join('')
@@ -277,16 +367,31 @@ function renderProfile() {
 
   $('#btnPfLogout')?.addEventListener('click', () => {
     window.SV?.signOut()
-    toast('Đã đăng xuất thành công')
+    toast('Đã đăng xuất tài khoản thành công')
     setTimeout(() => {
-      window.location.href = '../index.html'
-    }, 500)
+      setMode('login')
+    }, 400)
   })
 }
 
-/* ---------- FORMS SUBMISSION ---------- */
+/* ---------- XỬ LÝ SUBMIT CÁC FORM ---------- */
 function bindForms() {
-  // Login Form
+  // Nút dùng thử Demo
+  $('#btnQuickDemo')?.addEventListener('click', () => {
+    const idInput = $('#loginIdentity')
+    const passInput = $('#loginPass')
+    if (idInput && passInput) {
+      idInput.value = 'demo@4sv.vn'
+      passInput.value = '123456'
+      idInput.focus()
+      toast('Đã điền thông tin tài khoản Demo!')
+      setTimeout(() => {
+        $('#loginForm')?.requestSubmit()
+      }, 350)
+    }
+  })
+
+  // 1. ĐĂNG NHẬP
   $('#loginForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
     setError('loginIdentity', '')
@@ -294,40 +399,54 @@ function bindForms() {
 
     const identity = $('#loginIdentity')?.value?.trim() || ''
     const password = $('#loginPass')?.value || ''
+    const submitBtn = $('#loginForm .btn-submit')
 
     if (!identity) {
-      setError('loginIdentity', 'Vui lòng nhập email hoặc số điện thoại')
+      setError('loginIdentity', 'Vui lòng nhập email, số điện thoại hoặc họ tên')
+      $('#loginIdentity')?.focus()
       return
     }
     if (!password) {
       setError('loginPass', 'Vui lòng nhập mật khẩu')
+      $('#loginPass')?.focus()
       return
     }
 
-    const user = findUser(identity)
-    if (!user) {
-      setError('loginIdentity', 'Tài khoản chưa tồn tại, vui lòng đăng ký mới')
-      return
-    }
-    if (user.password !== password) {
-      setError('loginPass', 'Mật khẩu không chính xác, vui lòng thử lại')
-      return
-    }
-    if (user.status === 'locked') {
-      setError('loginIdentity', 'Tài khoản đã bị khoá, vui lòng liên hệ quản trị viên')
-      return
-    }
-
-    const remember = $('#loginRemember')?.checked
-    window.SV?.signIn(user, remember)
-    toast(`Xin chào, ${user.name}! Đăng nhập thành công.`)
+    setButtonLoading(submitBtn, true, 'Đang xác thực...')
 
     setTimeout(() => {
-      window.location.href = '../index.html'
-    }, 900)
+      const user = findUser(identity)
+      if (!user) {
+        setButtonLoading(submitBtn, false)
+        setError('loginIdentity', 'Tài khoản không tồn tại. Vui lòng kiểm tra lại hoặc Đăng ký mới!')
+        $('#loginIdentity')?.focus()
+        return
+      }
+
+      if (user.password !== password) {
+        setButtonLoading(submitBtn, false)
+        setError('loginPass', 'Mật khẩu không chính xác, vui lòng thử lại!')
+        $('#loginPass')?.focus()
+        return
+      }
+
+      if (user.status === 'locked') {
+        setButtonLoading(submitBtn, false)
+        setError('loginIdentity', 'Tài khoản này đã bị khóa. Vui lòng liên hệ ban quản trị!')
+        return
+      }
+
+      const remember = $('#loginRemember')?.checked
+      window.SV?.signIn(user, remember)
+      toast(`Đăng nhập thành công! Xin chào ${user.name}`)
+
+      setTimeout(() => {
+        window.location.href = '../index.html'
+      }, REDIRECT_MS)
+    }, 450)
   })
 
-  // Register Form
+  // 2. ĐĂNG KÝ
   $('#registerForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
     setError('regName', '')
@@ -339,152 +458,233 @@ function bindForms() {
     const email = $('#regEmail')?.value?.trim() || ''
     const phone = digits($('#regPhone')?.value || '')
     const pass = $('#regPass')?.value || ''
+    const submitBtn = $('#registerForm .btn-submit')
 
     if (!name || name.length < 2) {
-      setError('regName', 'Vui lòng nhập họ tên đầy đủ (tối thiểu 2 ký tự)')
+      setError('regName', 'Vui lòng nhập họ và tên đầy đủ (tối thiểu 2 ký tự)')
+      $('#regName')?.focus()
       return
     }
     if (!isEmail(email)) {
-      setError('regEmail', 'Email không đúng định dạng')
+      setError('regEmail', 'Email không đúng định dạng (ví dụ: ten@gmail.com)')
+      $('#regEmail')?.focus()
       return
     }
-    if (!phone || phone.length < 9) {
-      setError('regPhone', 'Số điện thoại phải có 9 - 10 chữ số')
+    if (!phone || phone.length < 9 || phone.length > 11) {
+      setError('regPhone', 'Số điện thoại phải từ 9 đến 11 số')
+      $('#regPhone')?.focus()
       return
     }
     if (!pass || pass.length < 6) {
       setError('regPass', 'Mật khẩu phải có ít nhất 6 ký tự')
+      $('#regPass')?.focus()
       return
     }
 
-    const taken = window.SV?.users().find(
-      (u) =>
-        String(u.email || '').toLowerCase() === email.toLowerCase() ||
-        (phone && digits(u.phone) === phone)
-    )
-    if (taken) {
-      setError('regEmail', 'Email hoặc số điện thoại này đã được đăng ký trước đó')
-      return
-    }
+    setButtonLoading(submitBtn, true, 'Đang tạo tài khoản...')
 
-    const result = window.SV?.addUser({
-      name,
-      email,
-      phone,
-      password: pass,
-      role: 'player',
-    })
+    setTimeout(() => {
+      const taken = window.SV?.users().find(
+        (u) =>
+          String(u.email || '').toLowerCase() === email.toLowerCase() ||
+          (phone && digits(u.phone) === phone)
+      )
+      if (taken) {
+        setButtonLoading(submitBtn, false)
+        setError('regEmail', 'Email hoặc số điện thoại này đã được đăng ký trước đó!')
+        $('#regEmail')?.focus()
+        return
+      }
 
-    if (!result?.ok) {
-      setError('regEmail', result?.error || 'Không tạo được tài khoản')
-      return
-    }
+      const result = window.SV?.addUser({
+        name,
+        email,
+        phone,
+        password: pass,
+        role: 'player',
+      })
 
-    otpTarget = email
-    $('#otpSubtitle').textContent = `Nhập mã 6 chữ số gửi đến ${email} (Mã demo: 123456)`
-    setMode('otp')
-    toast('Mã OTP đã được gửi (Mã demo: 123456)')
+      if (!result?.ok) {
+        setButtonLoading(submitBtn, false)
+        setError('regEmail', result?.error || 'Không thể tạo tài khoản, vui lòng thử lại!')
+        return
+      }
+
+      setButtonLoading(submitBtn, false)
+      otpContext = 'register'
+      otpTarget = email
+      $('#otpSubtitle').textContent = `Nhập mã xác thực gửi tới ${email} (Mã demo: 123456)`
+      setMode('otp')
+      toast('Mã OTP xác thực đã được gửi! (Mã demo: 123456)')
+    }, 450)
   })
 
-  // Forgot Form
+  // 3. QUÊN MẬT KHẨU
   $('#forgotForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
     setError('forgotIdentity', '')
     const id = $('#forgotIdentity')?.value?.trim() || ''
+    const submitBtn = $('#forgotForm .btn-submit')
+
     if (!id) {
       setError('forgotIdentity', 'Vui lòng nhập email hoặc số điện thoại')
+      $('#forgotIdentity')?.focus()
       return
     }
-    const user = findUser(id)
-    if (!user) {
-      setError('forgotIdentity', 'Không tìm thấy tài khoản với thông tin này')
-      return
-    }
-    otpTarget = user.email || user.phone
-    $('#otpSubtitle').textContent = `Nhập mã xác thực gửi tới ${otpTarget} (Mã demo: 123456)`
-    setMode('otp')
-    toast('Mã OTP đã gửi (demo: 123456)')
+
+    setButtonLoading(submitBtn, true, 'Đang kiểm tra...')
+
+    setTimeout(() => {
+      const user = findUser(id)
+      if (!user) {
+        setButtonLoading(submitBtn, false)
+        setError('forgotIdentity', 'Không tìm thấy tài khoản với thông tin này!')
+        return
+      }
+
+      setButtonLoading(submitBtn, false)
+      otpContext = 'forgot'
+      otpTarget = user.email || user.phone
+      $('#otpSubtitle').textContent = `Nhập mã xác thực gửi tới ${otpTarget} (Mã demo: 123456)`
+      setMode('otp')
+      toast('Mã OTP xác thực đã được gửi! (Mã demo: 123456)')
+    }, 400)
   })
 
-  // OTP Form
+  // 4. XÁC THỰC OTP
   $('#otpForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
     const boxes = $$('[data-otp] input')
     const code = boxes.map((b) => b.value).join('')
     const err = $('[data-error-for="otp"]')
-    if (code !== OTP_DEMO) {
-      if (err) err.textContent = 'Mã OTP không đúng, vui lòng thử lại (mã demo: 123456)'
+    const submitBtn = $('#otpForm .btn-submit')
+
+    if (code.length < 6) {
+      if (err) err.textContent = 'Vui lòng nhập đủ 6 chữ số mã OTP'
       return
     }
-    if (err) err.textContent = ''
-    toast('Xác thực OTP thành công!')
 
-    if (otpContext === 'register') {
-      const u = findUser(otpTarget)
-      if (u) window.SV?.signIn(u, true)
-      setTimeout(() => {
-        window.location.href = '../index.html'
-      }, 1000)
-    } else {
-      setMode('newpass')
-    }
+    setButtonLoading(submitBtn, true, 'Đang xác minh OTP...')
+
+    setTimeout(() => {
+      if (code !== OTP_DEMO) {
+        setButtonLoading(submitBtn, false)
+        if (err) err.textContent = 'Mã OTP không chính xác! Vui lòng nhập mã demo: 123456'
+        const otpGrp = $('.otp-inputs')
+        if (otpGrp) {
+          otpGrp.classList.add('has-shake')
+          setTimeout(() => otpGrp.classList.remove('has-shake'), 500)
+        }
+        return
+      }
+
+      setButtonLoading(submitBtn, false)
+      if (err) err.textContent = ''
+      toast('Xác thực OTP thành công!')
+
+      if (otpContext === 'register') {
+        const u = findUser(otpTarget)
+        if (u) window.SV?.signIn(u, true)
+        toast('Đăng ký thành công! Đang chuyển về Trang chủ...')
+        setTimeout(() => {
+          window.location.href = '../index.html'
+        }, REDIRECT_MS)
+      } else {
+        setMode('newpass')
+      }
+    }, 400)
   })
 
-  // New Pass Form
+  // 5. MẬT KHẨU MỚI
   $('#newPassForm')?.addEventListener('submit', (e) => {
     e.preventDefault()
     setError('newPassInput', '')
     setError('newPassConfirm', '')
     const p1 = $('#newPassInput')?.value || ''
     const p2 = $('#newPassConfirm')?.value || ''
+    const submitBtn = $('#newPassForm .btn-submit')
+
     if (p1.length < 6) {
-      setError('newPassInput', 'Mật khẩu phải có ít nhất 6 ký tự')
+      setError('newPassInput', 'Mật khẩu mới phải có ít nhất 6 ký tự')
+      $('#newPassInput')?.focus()
       return
     }
     if (p1 !== p2) {
-      setError('newPassConfirm', 'Mật khẩu xác nhận không khớp')
+      setError('newPassConfirm', 'Mật khẩu xác nhận không trùng khớp!')
+      $('#newPassConfirm')?.focus()
       return
     }
-    const u = findUser(otpTarget)
-    if (u) window.SV?.updateUser(u.id, { password: p1 })
-    toast('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
-    setMode('login')
+
+    setButtonLoading(submitBtn, true, 'Đang lưu mật khẩu...')
+
+    setTimeout(() => {
+      const u = findUser(otpTarget)
+      if (u) {
+        window.SV?.updateUser(u.id, { password: p1 })
+      }
+      setButtonLoading(submitBtn, false)
+      toast('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
+      setMode('login')
+    }, 450)
   })
 
   // Social OAuth buttons
   $$('[data-oauth]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      toast(`Đăng nhập bằng ${btn.dataset.oauth.toUpperCase()} đang được kết nối`)
+      const provider = btn.dataset.oauth === 'facebook' ? 'Facebook' : 'Google'
+      toast(`Đang kết nối đăng nhập qua ${provider}...`)
+      // Chờ nhẹ rồi mô phỏng đăng nhập nhanh bằng demo user
+      setTimeout(() => {
+        const demo = findUser(DEMO_USER.email) || DEMO_USER
+        window.SV?.signIn(demo, true)
+        toast(`Đăng nhập qua ${provider} thành công! Xin chào ${demo.name}`)
+        setTimeout(() => {
+          window.location.href = '../index.html'
+        }, REDIRECT_MS)
+      }, 700)
     })
   })
 }
 
-/* ---------- ROUTING HASH ---------- */
+/* ---------- ROUTING & LIÊN KẾT TRANG ---------- */
 function initRouting() {
   window.addEventListener('hashchange', () => {
-    const hash = location.hash.slice(1)
+    const hash = window.location.hash.replace('#', '').trim()
     if (['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(hash)) {
       setMode(hash, { updateHash: false })
     }
   })
 
-  const initial = location.hash.slice(1)
-  if (initial && ['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(initial)) {
-    setMode(initial, { updateHash: false })
+  // Đón nhận click link nội bộ (#register, #login, v.v.)
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]')
+    if (!a) return
+    const target = a.getAttribute('href').replace('#', '').trim()
+    if (['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(target)) {
+      e.preventDefault()
+      setMode(target)
+    }
+  })
+
+  const hash = window.location.hash.replace('#', '').trim()
+  if (hash && ['login', 'register', 'forgot', 'otp', 'newpass', 'profile'].includes(hash)) {
+    setMode(hash, { updateHash: false })
   } else {
-    // Nếu đã đăng nhập, vào profile; nếu chưa thì vào login
+    // Nếu đã đăng nhập thì mở profile, nếu chưa thì mở login
     const cur = window.SV?.currentUser()
     setMode(cur ? 'profile' : 'login', { updateHash: false })
   }
-
-
 }
 
-/* ---------- INIT ---------- */
+/* ---------- KHỞI TẠO HỆ THỐNG ---------- */
 document.addEventListener('DOMContentLoaded', () => {
-  // Đảm bảo demo user có trong store
-  const demo = findUser(DEMO_USER.email)
-  if (!demo) window.SV?.addUser({ ...DEMO_USER })
+  // Đảm bảo demo user có sẵn trong store để test
+  if (window.SV) {
+    const demo = findUser(DEMO_USER.email)
+    if (!demo) {
+      window.SV.addUser({ ...DEMO_USER })
+    }
+  }
 
   bindLoginTabs()
   bindEyeToggles()
