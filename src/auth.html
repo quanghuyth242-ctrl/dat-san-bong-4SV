@@ -464,33 +464,314 @@
             </form>
           </div>
 
-          <!-- PANEL PROFILE (TÀI KHOẢN CỦA TÔI) -->
+          <!-- PANEL PROFILE (TÀI KHOẢN CỦA TÔI - 4SV.COM) -->
           <div data-panel="profile" hidden>
-            <div class="profile-card">
-              <div class="profile-head">
-                <img class="profile-avatar" id="pfAvatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' fill='%23B81E20' viewBox='0 0 24 24'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Avatar" />
-                <div>
-                  <h3 class="profile-title" id="pfName">Tài khoản</h3>
-                  <p style="font-size: 0.85rem; color: var(--text-muted);" id="pfEmail">email@4sv.vn</p>
-                  <span class="profile-badge" id="pfRole">Người chơi</span>
+            <div class="profile-dashboard">
+              <!-- HERO CARD -->
+              <div class="pf-hero-card">
+                <div class="pf-hero-main">
+                  <div class="pf-avatar-wrapper">
+                    <img class="pf-avatar-img" id="pfAvatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80" alt="Avatar" />
+                    <button type="button" class="pf-avatar-badge-btn" id="btnTriggerAvatarModal" title="Đổi ảnh đại diện">
+                      <i class="fa-solid fa-camera"></i>
+                    </button>
+                  </div>
+                  <div class="pf-hero-info">
+                    <div class="pf-hero-name-row">
+                      <h2 class="pf-hero-name" id="pfHeroName">Nguyễn Minh Tuấn</h2>
+                      <span class="pf-chip is-active" id="pfHeroStatus">
+                        <i class="fa-solid fa-circle-check"></i> Đang hoạt động
+                      </span>
+                    </div>
+                    <p class="pf-hero-sub">
+                      <span id="pfHeroUsernameTag">@tuannguyen</span> · <span id="pfHeroIdTag">Mã ND: ND001</span>
+                    </p>
+                    <div class="pf-hero-badges-row">
+                      <span class="pf-tag" id="pfHeroRole">
+                        <i class="fa-solid fa-shield-halved"></i> Thành viên 4SV
+                      </span>
+                      <span class="pf-tag muted" id="pfHeroJoined">
+                        <i class="fa-regular fa-calendar-check"></i> Tham gia: 05/01/2026
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pf-hero-actions">
+                  <a href="../index.html" class="pf-btn pf-btn-outline" title="Trở về trang chủ">
+                    <i class="fa-solid fa-house"></i> <span>Trang chủ</span>
+                  </a>
+                  <button type="button" class="pf-btn pf-btn-danger" id="btnPfLogout" title="Đăng xuất khỏi tài khoản">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Đăng xuất</span>
+                  </button>
                 </div>
               </div>
 
-              <div style="display: flex; gap: 8px; margin-bottom: 1.5rem;">
-                <button type="button" class="sso-btn" id="btnPfLogout" style="color: var(--fag-red); font-weight: 700;">
-                  <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất
+              <!-- DASHBOARD TABS -->
+              <div class="pf-tabs-nav" id="pfTabsNav" role="tablist">
+                <button type="button" class="pf-tab-btn active" data-ptab="overview" role="tab" aria-selected="true">
+                  <i class="fa-solid fa-id-card"></i> Thông tin cá nhân &amp; Tài khoản
                 </button>
-                <a href="../index.html" class="sso-btn">
-                  <i class="fa-solid fa-house"></i> Về trang chủ
-                </a>
+                <button type="button" class="pf-tab-btn" data-ptab="history" role="tab" aria-selected="false">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đặt sân (<span id="pfBookingCountBadge">0</span>)
+                </button>
+                <button type="button" class="pf-tab-btn" data-ptab="edit" role="tab" aria-selected="false">
+                  <i class="fa-solid fa-user-pen"></i> Chỉnh sửa thông tin
+                </button>
+                <button type="button" class="pf-tab-btn" data-ptab="password" role="tab" aria-selected="false">
+                  <i class="fa-solid fa-key"></i> Đổi mật khẩu
+                </button>
               </div>
 
+              <!-- TAB 1: THÔNG TIN CÁ NHÂN & TÀI KHOẢN -->
+              <div class="pf-tab-content active" id="ptabOverview">
+                <div class="pf-grid-two">
+                  <!-- CARD 1: THÔNG TIN CÁ NHÂN -->
+                  <div class="pf-info-card">
+                    <div class="pf-card-head">
+                      <h3><i class="fa-solid fa-user-shield" style="color: var(--fag-red);"></i> 1. Thông Tin Cá Nhân</h3>
+                      <button type="button" class="pf-card-link-action" id="btnQuickEditProfile">
+                        <i class="fa-solid fa-pen-to-square"></i> Chỉnh sửa
+                      </button>
+                    </div>
+                    <div class="pf-fields-list">
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-signature"></i> Họ và tên</span>
+                        <strong class="pf-val" id="ovName">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-at"></i> Tên đăng nhập</span>
+                        <strong class="pf-val" id="ovUsername">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-envelope"></i> Email liên hệ</span>
+                        <strong class="pf-val" id="ovEmail">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-phone"></i> Số điện thoại</span>
+                        <strong class="pf-val" id="ovPhone">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-cake-candles"></i> Ngày sinh</span>
+                        <strong class="pf-val" id="ovDob">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-venus-mars"></i> Giới tính</span>
+                        <strong class="pf-val" id="ovGender">—</strong>
+                      </div>
+                    </div>
+                  </div>
 
-              <div class="profile-section-title">
-                <i class="fa-solid fa-clock-rotate-left" style="color: var(--fag-red);"></i> Lịch sử đặt sân của bạn
+                  <!-- CARD 2: THÔNG TIN TÀI KHOẢN -->
+                  <div class="pf-info-card">
+                    <div class="pf-card-head">
+                      <h3><i class="fa-solid fa-server" style="color: var(--fag-red);"></i> 2. Thông Tin Tài Khoản</h3>
+                    </div>
+                    <div class="pf-fields-list">
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-hashtag"></i> Mã người dùng</span>
+                        <strong class="pf-val highlight-code" id="ovUserId">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-calendar-plus"></i> Ngày đăng ký</span>
+                        <strong class="pf-val" id="ovCreatedAt">—</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-shield-halved"></i> Trạng thái tài khoản</span>
+                        <span class="pf-chip is-active" id="ovStatus">Đang hoạt động</span>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-user-tag"></i> Vai trò thành viên</span>
+                        <strong class="pf-val" id="ovRole">Người chơi (Thành viên 4SV)</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-futbol"></i> Tổng số lượt đặt sân</span>
+                        <strong class="pf-val" id="ovTotalBookings">0 đơn</strong>
+                      </div>
+                      <div class="pf-field-row">
+                        <span class="pf-lbl"><i class="fa-solid fa-shield-cat"></i> Bảo mật tài khoản</span>
+                        <strong class="pf-val" style="color: #16a34a;"><i class="fa-solid fa-lock"></i> Đã kích hoạt bảo vệ</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div id="pfBookingsList">
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Chưa có lịch đặt sân nào.</p>
+
+              <!-- TAB 2: LỊCH SỬ ĐẶT SÂN -->
+              <div class="pf-tab-content" id="ptabHistory" hidden>
+                <div class="pf-history-wrapper">
+                  <!-- BỘ LỌC TRẠNG THÁI -->
+                  <div class="pf-filter-bar">
+                    <div class="pf-filter-chips" id="bookingFilterChips">
+                      <button type="button" class="pf-chip-btn active" data-filter="all">Tất cả (<span id="countAll">0</span>)</button>
+                      <button type="button" class="pf-chip-btn" data-filter="pending">Chờ xác nhận (<span id="countPending">0</span>)</button>
+                      <button type="button" class="pf-chip-btn" data-filter="confirmed">Đã xác nhận (<span id="countConfirmed">0</span>)</button>
+                      <button type="button" class="pf-chip-btn" data-filter="completed">Đã hoàn thành (<span id="countCompleted">0</span>)</button>
+                      <button type="button" class="pf-chip-btn" data-filter="cancelled">Đã hủy (<span id="countCancelled">0</span>)</button>
+                    </div>
+                    <a href="../project/pages/danh-sach-san.html" class="pf-btn-new-book">
+                      <i class="fa-solid fa-plus"></i> Đặt sân mới
+                    </a>
+                  </div>
+
+                  <!-- DANH SÁCH LỊCH SỬ ĐẶT SÂN -->
+                  <div class="pf-bookings-container" id="pfBookingsList">
+                    <!-- Được render tự động qua JavaScript từ SV.bookings() -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB 3: CHỈNH SỬA THÔNG TIN -->
+              <div class="pf-tab-content" id="ptabEdit" hidden>
+                <div class="pf-form-card">
+                  <div class="pf-card-head">
+                    <div>
+                      <h3><i class="fa-solid fa-user-pen" style="color: var(--fag-red);"></i> Chỉnh Sửa Thông Tin Cá Nhân</h3>
+                      <p class="pf-sub">Cập nhật hồ sơ để nhận thông báo đặt sân và hỗ trợ nhanh chóng nhất</p>
+                    </div>
+                  </div>
+
+                  <form id="editProfileForm" class="pf-form" novalidate>
+                    <!-- CHỌN ẢNH ĐẠI DIỆN -->
+                    <div class="form-group">
+                      <label class="pf-form-lbl"><i class="fa-solid fa-image"></i> Ảnh đại diện của bạn</label>
+                      <div class="pf-avatar-picker-row">
+                        <img class="pf-edit-avatar-preview" id="editAvatarPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80" alt="Avatar preview" />
+                        <div class="pf-avatar-preset-list" id="avatarPresets">
+                          <!-- Các mẫu avatar thể thao có sẵn để click chọn nhanh -->
+                        </div>
+                      </div>
+                      <div class="input-addon-group" style="margin-top: 10px;">
+                        <span class="input-icon-left"><i class="fa-solid fa-link"></i></span>
+                        <input type="url" id="editAvatarUrl" class="input-control" placeholder="Hoặc nhập liên kết (URL) ảnh đại diện tùy ý..." />
+                      </div>
+                    </div>
+
+                    <div class="pf-form-grid-2">
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editName"><i class="fa-solid fa-user"></i> Họ và tên <span style="color:red">*</span></label>
+                        <input type="text" id="editName" class="input-control" placeholder="VD: Nguyễn Minh Tuấn" required />
+                        <span class="auth-form-error" data-error-for="editName"></span>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editUsername"><i class="fa-solid fa-at"></i> Tên đăng nhập <span style="color:red">*</span></label>
+                        <input type="text" id="editUsername" class="input-control" placeholder="VD: tuannguyen" required />
+                        <span class="auth-form-error" data-error-for="editUsername"></span>
+                      </div>
+                    </div>
+
+                    <div class="pf-form-grid-2">
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editEmail"><i class="fa-solid fa-envelope"></i> Email liên hệ <span style="color:red">*</span></label>
+                        <input type="email" id="editEmail" class="input-control" placeholder="VD: tuan@4sv.vn" required />
+                        <span class="auth-form-error" data-error-for="editEmail"></span>
+                      </div>
+
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editPhone"><i class="fa-solid fa-phone"></i> Số điện thoại <span style="color:red">*</span></label>
+                        <input type="tel" id="editPhone" class="input-control" placeholder="VD: 0912345678" required />
+                        <span class="auth-form-error" data-error-for="editPhone"></span>
+                      </div>
+                    </div>
+
+                    <div class="pf-form-grid-2">
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editDob"><i class="fa-solid fa-calendar-days"></i> Ngày sinh</label>
+                        <input type="date" id="editDob" class="input-control" />
+                      </div>
+
+                      <div class="form-group">
+                        <label class="pf-form-lbl" for="editGender"><i class="fa-solid fa-venus-mars"></i> Giới tính</label>
+                        <select id="editGender" class="input-control">
+                          <option value="Nam">Nam</option>
+                          <option value="Nữ">Nữ</option>
+                          <option value="Khác">Khác</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="pf-form-actions">
+                      <button type="submit" class="btn-submit" id="btnSaveProfile" style="margin-top: 0; max-width: 240px;">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                      </button>
+                      <button type="button" class="pf-btn pf-btn-outline" id="btnCancelEdit">
+                        Hủy bỏ
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <!-- TAB 4: ĐỔI MẬT KHẨU -->
+              <div class="pf-tab-content" id="ptabPassword" hidden>
+                <div class="pf-form-card" style="max-width: 580px; margin: 0 auto;">
+                  <div class="pf-card-head">
+                    <div>
+                      <h3><i class="fa-solid fa-shield-halved" style="color: var(--fag-red);"></i> Đổi Mật Khẩu Tài Khoản</h3>
+                      <p class="pf-sub">Mật khẩu mới phải có tối thiểu 6 ký tự để bảo vệ tài khoản</p>
+                    </div>
+                  </div>
+
+                  <form id="changePassForm" class="pf-form" novalidate>
+                    <div class="form-group">
+                      <label class="pf-form-lbl" for="pfCurrPass"><i class="fa-solid fa-lock"></i> Mật khẩu hiện tại <span style="color:red">*</span></label>
+                      <div class="input-addon-group">
+                        <span class="input-icon-left"><i class="fa-solid fa-key"></i></span>
+                        <input type="password" id="pfCurrPass" class="input-control" placeholder="Nhập mật khẩu hiện tại" required />
+                        <span class="input-icon-right" data-toggle-pass="pfCurrPass" role="button" aria-label="Hiện/ẩn mật khẩu"><i class="fa-solid fa-eye"></i></span>
+                      </div>
+                      <span class="auth-form-error" data-error-for="pfCurrPass"></span>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="pf-form-lbl" for="pfNewPass"><i class="fa-solid fa-shield-keyhole"></i> Mật khẩu mới <span style="color:red">*</span></label>
+                      <div class="input-addon-group">
+                        <span class="input-icon-left"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="pfNewPass" class="input-control" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" required />
+                        <span class="input-icon-right" data-toggle-pass="pfNewPass" role="button" aria-label="Hiện/ẩn mật khẩu"><i class="fa-solid fa-eye"></i></span>
+                      </div>
+                      <div class="strength-bar-wrapper">
+                        <div class="strength-bar-fill" id="pfStrengthBar"></div>
+                      </div>
+                      <div class="strength-label" id="pfStrengthLabel">Nhập mật khẩu để kiểm tra độ mạnh</div>
+                      <span class="auth-form-error" data-error-for="pfNewPass"></span>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="pf-form-lbl" for="pfConfirmPass"><i class="fa-solid fa-check-double"></i> Xác nhận mật khẩu mới <span style="color:red">*</span></label>
+                      <div class="input-addon-group">
+                        <span class="input-icon-left"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="pfConfirmPass" class="input-control" placeholder="Nhập lại mật khẩu mới" required />
+                        <span class="input-icon-right" data-toggle-pass="pfConfirmPass" role="button" aria-label="Hiện/ẩn mật khẩu"><i class="fa-solid fa-eye"></i></span>
+                      </div>
+                      <span class="auth-form-error" data-error-for="pfConfirmPass"></span>
+                    </div>
+
+                    <div class="pf-form-actions">
+                      <button type="submit" class="btn-submit" id="btnUpdatePass" style="margin-top: 0; max-width: 240px;">
+                        <i class="fa-solid fa-check"></i> Cập Nhật Mật Khẩu
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL XÁC NHẬN ĐĂNG XUẤT -->
+          <div class="pf-modal-overlay" id="pfLogoutModal" hidden>
+            <div class="pf-modal-box">
+              <div class="pf-modal-icon-warn">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              </div>
+              <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 10px;">Xác Nhận Đăng Xuất</h3>
+              <p style="font-size: 0.92rem; color: var(--text-sub); margin-top: 6px;">
+                Bạn có chắc chắn muốn đăng xuất khỏi tài khoản 4SV.com trên thiết bị này không?
+              </p>
+              <div class="pf-modal-btns">
+                <button type="button" class="pf-btn pf-btn-outline" id="btnCancelLogoutModal">Ở lại</button>
+                <button type="button" class="pf-btn pf-btn-danger" id="btnConfirmLogoutModal">Đăng xuất ngay</button>
               </div>
             </div>
           </div>

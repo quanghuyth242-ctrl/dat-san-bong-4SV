@@ -32,7 +32,7 @@ function authPageUrl() {
  * Chưa đăng nhập: hiện nút Đăng nhập / Đăng ký.
  * Đã đăng nhập: ẩn 2 nút đó, thay bằng menu tài khoản.
  */
-export function syncAuthNav({ accountUrl = '/src/tai-khoan.html' } = {}) {
+export function syncAuthNav({ accountUrl = '/src/auth.html#profile' } = {}) {
   const user = getUser()
   const loggedIn = Boolean(user)
   const authUrl = authPageUrl()

@@ -238,10 +238,13 @@
   function normUser(raw, idx) {
     raw = raw || {}
     var created = raw.createdAt || todayStr()
+    var email = String(raw.email || '').trim().toLowerCase()
+    var username = String(raw.username || (email ? email.split('@')[0] : (raw.phone || 'user' + ((idx || 0) + 1))))
     return {
       id: normalizeId(raw.id, 'user') || PREFIX.user + pad((idx || 0) + 1, PAD.user),
       name: String(raw.name || 'Người dùng'),
-      email: String(raw.email || '').trim().toLowerCase(),
+      username: username,
+      email: email,
       phone: String(raw.phone || '').replace(/\D/g, ''),
       password: String(raw.password || ''),
       role: raw.role === 'admin' ? 'admin' : 'player',
@@ -249,6 +252,9 @@
       // thái nằm trong bản ghi dùng chung chứ không phải cờ riêng của admin.
       status: raw.status === 'locked' ? 'locked' : 'active',
       createdAt: created,
+      dob: String(raw.dob || '2000-01-01'),
+      gender: String(raw.gender || 'Nam'),
+      avatar: String(raw.avatar || ''),
     }
   }
 
@@ -532,20 +538,20 @@
   // Số điện thoại phải là duy nhất: tài khoản demo đã giữ 0912345678 nên
   // các tài khoản mẫu còn lại dùng dải số khác để đăng nhập không bị nhập nhằng.
   var DEFAULT_USERS = [
-    { id: 'ND001', name: 'Nguyễn Minh Tuấn', email: 'demo@4sv.vn', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05' },
-    { id: 'ND002', name: 'Nguyễn Văn An', email: 'nguyenvanan@gmail.com', phone: '0901234567', status: 'active', createdAt: '2026-02-11' },
-    { id: 'ND003', name: 'Trần Thị Bình', email: 'tranthibinh@gmail.com', phone: '0912345679', status: 'active', createdAt: '2026-03-02' },
-    { id: 'ND004', name: 'Lê Hoàng Cường', email: 'lehoangcuong@gmail.com', phone: '0923456789', status: 'active', createdAt: '2026-03-19' },
-    { id: 'ND005', name: 'Phạm Minh Đức', email: 'phamminhduc@gmail.com', phone: '0934567890', status: 'locked', createdAt: '2026-04-07' },
-    { id: 'ND006', name: 'Hoàng Thị Linh', email: 'hoangthilin@gmail.com', phone: '0945678901', status: 'active', createdAt: '2026-05-23' },
-    { id: 'ND007', name: 'Võ Thanh Hải', email: 'vothanhhai@gmail.com', phone: '0956789012', status: 'active', createdAt: '2026-06-14' },
-    { id: 'ND008', name: 'Đặng Quốc Bảo', email: 'dangquocbao@gmail.com', phone: '0967890123', status: 'active', createdAt: '2026-07-30' },
+    { id: 'ND001', name: 'Nguyễn Minh Tuấn', username: 'tuannguyen', email: 'demo@4sv.vn', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05', dob: '1998-05-18', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80' },
+    { id: 'ND002', name: 'Nguyễn Văn An', username: 'vanan92', email: 'nguyenvanan@gmail.com', phone: '0901234567', role: 'player', status: 'active', createdAt: '2026-02-11', dob: '1995-10-20', gender: 'Nam', avatar: '' },
+    { id: 'ND003', name: 'Trần Thị Bình', username: 'binhtran', email: 'tranthibinh@gmail.com', phone: '0912345679', role: 'player', status: 'active', createdAt: '2026-03-02', dob: '1999-03-12', gender: 'Nữ', avatar: '' },
+    { id: 'ND004', name: 'Lê Hoàng Cường', username: 'cuongle', email: 'lehoangcuong@gmail.com', phone: '0923456789', role: 'player', status: 'active', createdAt: '2026-03-19', dob: '1997-08-25', gender: 'Nam', avatar: '' },
+    { id: 'ND005', name: 'Phạm Minh Đức', username: 'ducpham', email: 'phamminhduc@gmail.com', phone: '0934567890', role: 'player', status: 'locked', createdAt: '2026-04-07', dob: '1996-12-05', gender: 'Nam', avatar: '' },
+    { id: 'ND006', name: 'Hoàng Thị Linh', username: 'linhhoang', email: 'hoangthilin@gmail.com', phone: '0945678901', role: 'player', status: 'active', createdAt: '2026-05-23', dob: '2001-07-14', gender: 'Nữ', avatar: '' },
+    { id: 'ND007', name: 'Võ Thanh Hải', username: 'haivo', email: 'vothanhhai@gmail.com', phone: '0956789012', role: 'player', status: 'active', createdAt: '2026-06-14', dob: '1994-11-09', gender: 'Nam', avatar: '' },
+    { id: 'ND008', name: 'Đặng Quốc Bảo', username: 'baodang', email: 'dangquocbao@gmail.com', phone: '0967890123', role: 'player', status: 'active', createdAt: '2026-07-30', dob: '2000-02-17', gender: 'Nam', avatar: '' },
   ]
 
   var DEFAULT_BOOKINGS = [
-    { id: 'DD001', userId: 'ND002', userName: 'Nguyễn Văn An', fieldId: 'SAN001', fieldName: 'Sân Bóng Đá Thành Công', date: '2026-10-05', startTime: '17:00', endTime: '18:30', total: 450000, status: 'confirmed' },
-    { id: 'DD002', userId: 'ND003', userName: 'Trần Thị Bình', fieldId: 'SAN003', fieldName: 'Sân Bóng Đá Minh Khai', date: '2026-10-05', startTime: '18:00', endTime: '19:30', total: 525000, status: 'pending' },
-    { id: 'DD003', userId: 'ND004', userName: 'Lê Hoàng Cường', fieldId: 'SAN004', fieldName: 'Sân Bóng Tây Hồ 11 Người', date: '2026-10-06', startTime: '06:00', endTime: '08:00', total: 1800000, status: 'pending' },
+    { id: 'DD001', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN001', fieldName: 'Sân Bóng Hồng Phúc', date: '2026-10-12', startTime: '17:30', endTime: '19:00', total: 450000, status: 'confirmed' },
+    { id: 'DD002', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN002', fieldName: 'Trung tâm thể thao 4SV Sport Complex', date: '2026-10-14', startTime: '19:00', endTime: '20:30', total: 600000, status: 'pending' },
+    { id: 'DD003', userId: 'ND001', userName: 'Nguyễn Minh Tuấn', fieldId: 'SAN003', fieldName: 'Sân bóng Thành Công', date: '2026-09-28', startTime: '16:00', endTime: '17:30', total: 350000, status: 'completed' },
     { id: 'DD004', userId: 'ND002', userName: 'Nguyễn Văn An', fieldId: 'SAN002', fieldName: 'Sân Bóng Cầu Giấy', date: '2026-10-06', startTime: '19:00', endTime: '20:30', total: 750000, status: 'confirmed' },
     { id: 'DD005', userId: 'ND006', userName: 'Hoàng Thị Linh', fieldId: 'SAN005', fieldName: 'Sân Bóng Đá Hoàng Mai', date: '2026-10-07', startTime: '17:30', endTime: '19:00', total: 825000, status: 'pending' },
     { id: 'DD006', userId: 'ND008', userName: 'Đặng Quốc Bảo', fieldId: 'SAN007', fieldName: 'Sân Bóng Đá Long Biên', date: '2026-10-07', startTime: '18:00', endTime: '19:30', total: 420000, status: 'completed' },
@@ -965,6 +971,13 @@
       if (idx === -1) return { ok: false, error: 'Không tìm thấy người dùng' }
       list[idx] = normUser(Object.assign({}, list[idx], patch), idx)
       store('users', list)
+
+      // Cập nhật phiên đăng nhập nếu đây là người dùng hiện tại
+      var cur = SV.session()
+      if (cur && (cur.id === key || (cur.email && cur.email.toLowerCase() === list[idx].email.toLowerCase()))) {
+        var remember = !!readJSON(AUTH_KEYS.remember, null)
+        SV.signIn(list[idx], remember)
+      }
       return { ok: true, user: list[idx] }
     },
     /** Khoá/mở khoá: trang đăng nhập đọc cùng trạng thái nên bị chặn ngay. */
@@ -982,10 +995,14 @@
       var payload = {
         id: user.id || '',
         name: user.name || user.email || 'Thành viên 4SV',
+        username: user.username || (user.email ? user.email.split('@')[0] : 'user'),
         email: user.email || '',
         phone: user.phone || '',
         role: user.role || 'player',
         avatar: user.avatar || '',
+        dob: user.dob || '2000-01-01',
+        gender: user.gender || 'Nam',
+        createdAt: user.createdAt || todayStr(),
         at: Date.now()
       }
 
@@ -1049,11 +1066,15 @@
       return {
         id: s.id || 'ND000',
         name: s.name || s.email || 'Tài khoản',
+        username: s.username || (s.email ? s.email.split('@')[0] : 'user'),
         email: s.email || '',
         phone: s.phone || '',
         role: s.role || 'player',
         status: 'active',
-        avatar: s.avatar || ''
+        avatar: s.avatar || '',
+        dob: s.dob || '2000-01-01',
+        gender: s.gender || 'Nam',
+        createdAt: s.createdAt || todayStr(),
       }
     },
 

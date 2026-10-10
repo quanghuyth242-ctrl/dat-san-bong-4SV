@@ -485,13 +485,13 @@ function renderVenues(list, filters) {
       return `
       <div class="col-md-6 col-lg-4 field-col">
         <article class="field-card">
-          <div class="field-thumb">
+          <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" class="field-thumb" style="display:block;text-decoration:none;">
             <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
             <span class="field-badge">${esc(v.badge || '1 môn thể thao')}</span>
-          </div>
+          </a>
           <div class="field-body">
             <h3 class="field-name">
-              <a href="#fields" class="text-decoration-none text-reset" data-book="${esc(v.id)}">
+              <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" class="text-decoration-none text-reset">
                 ${esc(v.name)}
               </a>
             </h3>
@@ -508,9 +508,9 @@ function renderVenues(list, filters) {
                   <i class="bi bi-star-fill"></i> ${v.rating || '4.9'} · ${v.reviewCount || 150} đánh giá
                 </div>
               </div>
-              <button type="button" class="btn btn-primary-grad" data-book="${esc(v.id)}">
+              <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}&book=1" class="btn btn-primary-grad">
                 Đặt sân
-              </button>
+              </a>
             </div>
           </div>
         </article>
@@ -518,14 +518,6 @@ function renderVenues(list, filters) {
       `
     })
     .join('')
-
-  grid.querySelectorAll('[data-book]').forEach((a) => {
-    a.addEventListener('click', (e) => {
-      e.preventDefault()
-      const venue = VENUES.find((x) => String(x.id) === a.dataset.book)
-      if (venue) openBook(venue)
-    })
-  })
 }
 
 function renderNearby(list) {
@@ -542,12 +534,14 @@ function renderNearby(list) {
     .map(
       (v) => `
     <li>
-      <img class="nearby-thumb" src="${esc(v.img)}" alt="">
-      <div>
-        <div class="nearby-name">${esc(v.name)}</div>
-        <div class="nearby-addr">${esc(v.addr)}</div>
-      </div>
-      <span class="nearby-price">${formatPriceShort(v.price)}</span>
+      <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;width:100%;">
+        <img class="nearby-thumb" src="${esc(v.img)}" alt="">
+        <div style="flex:1;">
+          <div class="nearby-name">${esc(v.name)}</div>
+          <div class="nearby-addr">${esc(v.addr)}</div>
+        </div>
+        <span class="nearby-price">${formatPriceShort(v.price)}</span>
+      </a>
     </li>
   `
     )
@@ -1566,9 +1560,11 @@ function initAuthNav() {
   logout?.addEventListener('click', (e) => {
     e.preventDefault()
     e.stopPropagation()
-    SV.signOut()
-    closeMenu()
-    render()
+    if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản 4SV.com?')) {
+      SV.signOut()
+      closeMenu()
+      render()
+    }
   })
 
   // Tab khác đăng nhập/đăng xuất, hoặc admin khoá chính tài khoản này.

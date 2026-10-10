@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chi tiết sân bóng & Đặt sân - 4SV.vn</title>
+    <meta
+      name="description"
+      content="Chi tiết sân bóng đá, bảng giá giờ đá, vị trí bản đồ và đặt sân thể thao trực tuyến theo chuẩn FAG League trên 4SV.vn"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="../css/san-bong.css" />
+  </head>
+  <body class="detail-page-body">
+    <!-- ============ HEADER 4SV.COM ============ -->
+    <header class="site-header">
+      <div class="container nav-inner">
+        <a class="nav-brand" href="../../index.html">
+          4<span>SV</span>.com<small>Đặt sân bóng</small>
+        </a>
+
+        <ul class="nav-links">
+          <li>
+            <a href="../../index.html"><i class="fa-solid fa-house"></i> Trang chủ</a>
+          </li>
+          <li>
+            <a href="danh-sach-san.html" class="active"><i class="fa-solid fa-futbol"></i> Danh sách sân</a>
+          </li>
+          <li>
+            <a href="danh-sach-san.html" id="navBook"><i class="fa-solid fa-calendar-check"></i> Đặt sân</a>
+          </li>
+          <li>
+            <a href="dashboard.html"><i class="fa-solid fa-gear"></i> Quản trị</a>
+          </li>
+        </ul>
+
+        <div class="nav-actions" style="display: flex; gap: 8px; align-items: center;">
+          <a href="danh-sach-san.html" class="btn-header primary">
+            <i class="fa-solid fa-magnifying-glass"></i> Tìm sân
+          </a>
+          <a href="../../src/auth.html#login" class="btn-header secondary" data-auth="login">
+            <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+          </a>
+          <!-- Hiển thị khi đã đăng nhập -->
+          <span class="nav-user-inline" data-auth="user" hidden>
+            <a href="../../src/auth.html#profile" class="nav-user-profile-link" title="Xem tài khoản của tôi">
+              <img id="listUserAvatar" class="nav-user-avatar-mini" src="" alt="Avatar" style="display:none;" />
+              <span class="nav-user-dot"></span>
+              <span id="listUserName">Tài khoản</span>
+            </a>
+            <button type="button" class="btn-header secondary" id="listUserLogout">Đăng xuất</button>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============ BREADCRUMB ============ -->
+    <div class="detail-breadcrumb-wrap">
+      <div class="container">
+        <nav class="detail-breadcrumb" aria-label="Đường dẫn điều hướng">
+          <a href="../../index.html"><i class="fa-solid fa-house"></i> Trang chủ</a>
+          <i class="fa-solid fa-chevron-right sep"></i>
+          <a href="danh-sach-san.html">Tìm sân</a>
+          <i class="fa-solid fa-chevron-right sep"></i>
+          <span class="current" id="bcCourtName">Chi tiết sân bóng</span>
+        </nav>
+      </div>
+    </div>
+
+    <!-- ============ MAIN CONTENT (FAG LEAGUE LAYOUT) ============ -->
+    <main class="container detail-layout" id="courtDetailApp">
+      <!-- CỘT TRÁI: ẢNH LỚN + THÔNG TIN SÂN + CÁC TAB -->
+      <section class="detail-main">
+        <!-- KHU VỰC ẢNH SÂN NỔI BẬT (GALLERY) -->
+        <div class="court-gallery-card">
+          <div class="gallery-wrapper">
+            <img id="galleryMainImg" src="" alt="Ảnh sân bóng" />
+            <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="Xem ảnh trước">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="gallery-nav next" id="galleryNext" aria-label="Xem ảnh kế tiếp">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="gallery-counter" id="galleryCounter">
+              <i class="fa-solid fa-camera"></i> <span>1 / 4</span>
+            </div>
+            <div class="gallery-badge" id="galleryBadge">
+              <i class="fa-solid fa-futbol"></i> Sân 7 người
+            </div>
+          </div>
+          <!-- DẢI ẢNH THU NHỎ -->
+          <div class="gallery-thumbs" id="galleryThumbs"></div>
+        </div>
+
+        <!-- THÔNG TIN TỔNG QUAN VỀ SÂN -->
+        <article class="court-info-card">
+          <div class="court-title-head">
+            <div>
+              <h1 class="court-title" id="courtTitle">Sân bóng đá</h1>
+              <div class="court-rating-row">
+                <div class="rating-stars" id="courtStars">
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star"></i>
+                  <i class="fa-solid fa-star-half-stroke"></i>
+                  <strong id="courtRatingText">4.9</strong>
+                  <span id="courtReviewCount">(186 đánh giá)</span>
+                </div>
+                <span class="badge-status-chip is-open" id="courtStatusChip">
+                  <i class="fa-solid fa-circle-check"></i> Đang mở cửa
+                </span>
+                <span class="badge-sport-chip" id="courtSportChip">
+                  <i class="fa-solid fa-award"></i> Chuẩn thi đấu
+                </span>
+              </div>
+            </div>
+            <div class="court-actions-right">
+              <button type="button" class="btn-icon-action" id="btnShareCourt" title="Chia sẻ thông tin sân">
+                <i class="fa-solid fa-share-nodes"></i> <span>Chia sẻ</span>
+              </button>
+              <button type="button" class="btn-icon-action" id="btnFavCourt" title="Lưu sân yêu thích">
+                <i class="fa-regular fa-heart"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="court-meta-list">
+            <div class="meta-item-box">
+              <i class="fa-solid fa-location-dot"></i>
+              <div>
+                <span class="meta-label">Địa chỉ</span>
+                <strong id="courtAddress">Đang tải địa chỉ...</strong>
+              </div>
+            </div>
+            <div class="meta-item-box">
+              <i class="fa-solid fa-route"></i>
+              <div>
+                <span class="meta-label">Vị trí</span>
+                <strong id="courtDistance">Cách trung tâm ~2.5 km</strong>
+              </div>
+            </div>
+            <div class="meta-item-box">
+              <i class="fa-solid fa-layer-group"></i>
+              <div>
+                <span class="meta-label">Quy mô</span>
+                <strong id="courtCourtsCount">4 sân mini cỏ nhân tạo</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- HỆ THỐNG TAB FAG LEAGUE -->
+          <div class="detail-tabs-bar" role="tablist">
+            <button
+              type="button"
+              class="tab-btn active"
+              data-tab="price"
+              role="tab"
+              aria-selected="true"
+            >
+              <i class="fa-solid fa-table-list"></i> Bảng giá
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              data-tab="location"
+              role="tab"
+              aria-selected="false"
+            >
+              <i class="fa-solid fa-map-location-dot"></i> Vị trí
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              data-tab="info"
+              role="tab"
+              aria-selected="false"
+            >
+              <i class="fa-solid fa-circle-info"></i> Thông tin
+            </button>
+          </div>
+
+          <!-- TAB 1: BẢNG GIÁ (MÔ PHỎNG SÁT ẢNH 2 FAG LEAGUE) -->
+          <div class="tab-pane active" id="tabPrice" role="tabpanel">
+            <div class="table-intro">
+              <p>Bảng giá thuê sân theo từng ca thi đấu và môn thể thao (đã gồm hệ thống chiếu sáng LED ban đêm):</p>
+            </div>
+            <div class="table-responsive-fag">
+              <table class="price-table-fag">
+                <thead>
+                  <tr>
+                    <th>Môn thể thao</th>
+                    <th>Khung giờ</th>
+                    <th class="price-th">Giá / giờ</th>
+                  </tr>
+                </thead>
+                <tbody id="priceTableBody">
+                  <!-- Được render tự động từ dữ liệu sân -->
+                </tbody>
+              </table>
+            </div>
+            <div class="price-table-notes">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Giá trên áp dụng cho ngày trong tuần. Cuối tuần (Thứ 7 &amp; Chủ Nhật) áp dụng biểu phí khung giờ cao điểm. Nước uống miễn phí được phục vụ tại sân.</span>
+            </div>
+          </div>
+
+          <!-- TAB 2: VỊ TRÍ & BẢN ĐỒ -->
+          <div class="tab-pane" id="tabLocation" role="tabpanel" hidden>
+            <div class="location-guide-box">
+              <h4><i class="fa-solid fa-diamond-turn-right"></i> Hướng dẫn chỉ đường</h4>
+              <p id="courtLocationGuide">Sân nằm tại vị trí giao thông thuận tiện, mặt tiền rộng có bãi đỗ xe ô tô 30 chỗ và khu vực gửi xe máy có bảo vệ trông giữ 24/7.</p>
+              <div class="location-cta-row">
+                <a href="#" target="_blank" rel="noopener" class="btn-open-gmaps" id="btnGmaps">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở trên Google Maps
+                </a>
+              </div>
+            </div>
+            <div class="map-card-wrapper">
+              <div id="courtMap" class="leaflet-court-map"></div>
+            </div>
+          </div>
+
+          <!-- TAB 3: THÔNG TIN CHI TIẾT SÂN -->
+          <div class="tab-pane" id="tabInfo" role="tabpanel" hidden>
+            <div class="info-block">
+              <h4><i class="fa-solid fa-align-left"></i> Giới thiệu sân</h4>
+              <p class="court-desc-text" id="courtDesc">Đang tải thông tin sân...</p>
+            </div>
+
+            <div class="info-block">
+              <h4><i class="fa-solid fa-screwdriver-wrench"></i> Thông số mặt sân &amp; trang bị</h4>
+              <ul class="court-specs-list">
+                <li><i class="fa-solid fa-check"></i> <strong>Loại cỏ:</strong> Cỏ nhân tạo kim cương tiêu chuẩn FIFA Pro, lớp đệm hạt cao su thân thiện môi trường.</li>
+                <li><i class="fa-solid fa-check"></i> <strong>Đèn chiếu sáng:</strong> Hệ thống 16 cụm đèn LED thể thao 400W chống chói chuyên dụng ban đêm.</li>
+                <li><i class="fa-solid fa-check"></i> <strong>Lưới chắn bóng:</strong> Cao 10m bao quanh toàn bộ sân, an toàn và chống bay bóng.</li>
+              </ul>
+            </div>
+
+            <div class="info-block">
+              <h4><i class="fa-solid fa-bell-concierge"></i> Tiện ích có sẵn</h4>
+              <div class="amenities-grid">
+                <div class="amenity-item"><i class="fa-solid fa-square-parking"></i> <span>Bãi đỗ ô tô &amp; xe máy miễn phí</span></div>
+                <div class="amenity-item"><i class="fa-solid fa-shower"></i> <span>Phòng thay đồ &amp; tắm nóng lạnh</span></div>
+                <div class="amenity-item"><i class="fa-solid fa-bottle-water"></i> <span>Căng tin &amp; nước giải khát lạnh</span></div>
+                <div class="amenity-item"><i class="fa-solid fa-wifi"></i> <span>Wifi cáp quang tốc độ cao</span></div>
+                <div class="amenity-item"><i class="fa-solid fa-shirt"></i> <span>Cho thuê áo bib &amp; bóng thi đấu</span></div>
+                <div class="amenity-item"><i class="fa-solid fa-kit-medical"></i> <span>Tủ y tế sơ cứu chấn thương thể thao</span></div>
+              </div>
+            </div>
+
+            <div class="info-block">
+              <h4><i class="fa-solid fa-clipboard-list"></i> Quy định đặt sân &amp; nhận sân</h4>
+              <ul class="court-rules-list">
+                <li>Vui lòng sử dụng giày đế TF (đinh dăm) hoặc IC (đế bằng), không sử dụng đinh sắt móng nhọn trên mặt cỏ nhân tạo.</li>
+                <li>Có mặt trước giờ thi đấu 10 phút để làm thủ tục nhận bóng, sân và áo bib thi đấu.</li>
+                <li>Miễn phí hủy lịch hoặc đổi ngày/giờ trước 24 giờ so với giờ đá ban đầu.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- CỘT PHẢI: KHUNG ĐẶT SÂN STICKY FAG LEAGUE -->
+      <aside class="detail-sidebar">
+        <div class="booking-card-fag">
+          <div class="bk-card-head">
+            <h3><i class="fa-solid fa-calendar-check"></i> Đặt sân</h3>
+            <p>Chọn môn, ngày và khung giờ để giữ sân ngay trong 30 giây</p>
+          </div>
+
+          <form id="fagBookForm" novalidate>
+            <!-- BƯỚC 1: CHỌN MÔN THỂ THAO -->
+            <div class="bk-step-box">
+              <label class="bk-step-title"><span class="step-num">1</span> Chọn môn thể thao</label>
+              <div class="sport-select-pills" id="sportPills">
+                <button type="button" class="sport-pill active" data-sport="Bóng đá">
+                  <i class="fa-solid fa-futbol"></i> Bóng đá
+                </button>
+                <button type="button" class="sport-pill" data-sport="Cầu lông">
+                  <i class="fa-solid fa-table-tennis-paddle-ball"></i> Cầu lông
+                </button>
+                <button type="button" class="sport-pill" data-sport="Pickleball">
+                  <i class="fa-solid fa-baseball"></i> Pickleball
+                </button>
+              </div>
+            </div>
+
+            <!-- BƯỚC 2: CHỌN NGÀY CHƠI -->
+            <div class="bk-step-box">
+              <label class="bk-step-title" for="bkDateInput"><span class="step-num">2</span> Chọn ngày chơi</label>
+              <div class="date-input-wrap">
+                <i class="fa-solid fa-calendar-days date-icon"></i>
+                <input type="date" id="bkDateInput" class="fag-input-date" required />
+              </div>
+              <div class="date-quick-chips">
+                <button type="button" class="date-chip" data-day="0">Hôm nay</button>
+                <button type="button" class="date-chip" data-day="1">Ngày mai</button>
+                <button type="button" class="date-chip" data-day="weekend">Cuối tuần</button>
+              </div>
+              <div class="date-display-friendly" id="friendlyDateText">Thứ Bảy, 10/10/2026</div>
+            </div>
+
+            <!-- BƯỚC 3: CHỌN KHUNG GIỜ -->
+            <div class="bk-step-box">
+              <div class="slot-step-header">
+                <label class="bk-step-title"><span class="step-num">3</span> Chọn khung giờ</label>
+                <span class="slot-legend"><span class="dot-free"></span> Còn trống</span>
+              </div>
+              <div class="time-slots-grid" id="timeSlotsGrid">
+                <!-- Được render tự động theo ngày & lịch đã đặt -->
+              </div>
+              <div class="slot-empty-msg" id="slotEmptyMsg" style="display: none;">
+                <i class="fa-solid fa-calendar-xmark"></i> Ngày này đã kín lịch. Vui lòng chọn ngày khác!
+              </div>
+            </div>
+
+            <!-- BƯỚC 4: THÔNG TIN ĐẶT SÂN & TẠM TÍNH -->
+            <div class="bk-step-box bk-summary-box">
+              <div class="bk-step-title" style="margin-bottom: 8px;"><span class="step-num">4</span> Thông tin đặt sân</div>
+              <div class="summary-line">
+                <span>Sân:</span>
+                <strong id="sumCourtName">—</strong>
+              </div>
+              <div class="summary-line">
+                <span>Ngày chơi:</span>
+                <strong id="sumPlayDate">—</strong>
+              </div>
+              <div class="summary-line">
+                <span>Khung giờ:</span>
+                <strong id="sumTimeSlot" class="highlight-slot">—</strong>
+              </div>
+              <div class="summary-line">
+                <span>Môn thể thao:</span>
+                <strong id="sumSport">—</strong>
+              </div>
+
+              <!-- Ô NHẬP MÃ GIẢM GIÁ -->
+              <div class="voucher-input-group">
+                <input type="text" id="bkVoucherCode" placeholder="Mã giảm giá (VD: WELCOME4SV)" autocomplete="off" />
+                <button type="button" id="btnApplyVoucher">Áp dụng</button>
+              </div>
+              <div class="voucher-status-msg" id="voucherMsg"></div>
+
+              <div class="summary-total-row">
+                <div class="lbl">Tổng tiền tạm tính:</div>
+                <div class="total-price" id="sumTotalPrice">0 đ</div>
+              </div>
+            </div>
+
+            <!-- BƯỚC 5: NÚT ĐẶT SÂN NGAY -->
+            <div class="bk-action-wrap">
+              <button type="submit" class="btn-fag-cta" id="btnSubmitBooking">
+                <i class="fa-solid fa-bolt"></i> ĐẶT SÂN NGAY
+              </button>
+              <p class="bk-guarantee-note">
+                <i class="fa-solid fa-shield-halved"></i> Giữ chỗ tức thì · Không cần gọi điện thoại · Hỗ trợ đổi giờ
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <!-- KHỐI THÔNG TIN LIÊN HỆ THEO MẪU FAG LEAGUE -->
+        <div class="court-contact-card">
+          <h4><i class="fa-solid fa-headset"></i> Hỗ trợ đặt sân &amp; Ghép đội</h4>
+          <p>Cần hỗ trợ gấp, thuê huấn luyện viên hoặc tìm đối giao lưu bóng đá?</p>
+          <div class="contact-links-list">
+            <a href="tel:0913217102" class="contact-link-item hotline">
+              <i class="fa-solid fa-phone-volume"></i>
+              <div>
+                <span>Hotline đặt sân 24/7</span>
+                <strong>091 321 7102</strong>
+              </div>
+            </a>
+            <a href="https://zalo.me" target="_blank" rel="noopener" class="contact-link-item zalo">
+              <i class="fa-solid fa-comments"></i>
+              <div>
+                <span>Tư vấn qua Zalo</span>
+                <strong>Nhắn tin hỗ trợ ngay</strong>
+              </div>
+            </a>
+          </div>
+          <div class="contact-time-note">
+            <i class="fa-regular fa-clock"></i> Tiếp nhận phản hồi từ 06:00 đến 23:00 hàng ngày
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="fb">4<span>SV</span>.com</div>
+        <p>© <span id="year"></span> 4SV.vn - Nền tảng kết nối và đặt sân thể thao trực tuyến All-In-One.</p>
+      </div>
+    </footer>
+
+    <!-- ============ MODAL XÁC NHẬN ĐẶT SÂN ============ -->
+    <div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-label="Xác nhận đặt sân">
+      <div class="modal modal-confirm-fag">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-clipboard-check" style="color: var(--primary);"></i> Xác nhận đặt sân</h3>
+          <button type="button" class="modal-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-summary-card">
+            <div class="c-row"><span>Sân thể thao:</span><strong id="cfCourt">Sân bóng</strong></div>
+            <div class="c-row"><span>Ngày thi đấu:</span><strong id="cfDate">10/10/2026</strong></div>
+            <div class="c-row"><span>Khung giờ:</span><strong id="cfTime">17:00 - 18:30</strong></div>
+            <div class="c-row"><span>Môn thể thao:</span><strong id="cfSport">Bóng đá</strong></div>
+            <div class="c-row c-total"><span>Tổng thanh toán:</span><strong id="cfTotal" style="color: var(--primary); font-size: 1.15rem;">0 đ</strong></div>
+          </div>
+
+          <form id="cfCustomerForm" class="customer-info-form">
+            <div class="form-title-sub"><i class="fa-solid fa-user"></i> Thông tin liên hệ của bạn</div>
+            <div class="f-group">
+              <label for="cfName">Họ và tên người đặt <span style="color:red">*</span></label>
+              <input type="text" id="cfName" placeholder="Nguyễn Văn A" required />
+            </div>
+            <div class="f-group-row">
+              <div class="f-group">
+                <label for="cfPhone">Số điện thoại nhận tin <span style="color:red">*</span></label>
+                <input type="tel" id="cfPhone" placeholder="0912345678" required />
+              </div>
+              <div class="f-group">
+                <label for="cfEmail">Email xác nhận</label>
+                <input type="email" id="cfEmail" placeholder="email@gmail.com" />
+              </div>
+            </div>
+            <div class="f-group">
+              <label for="cfNote">Ghi chú thêm (tùy chọn)</label>
+              <input type="text" id="cfNote" placeholder="VD: Chuẩn bị 1 bộ áo bib cam và 1 quả bóng số 5" />
+            </div>
+
+            <div class="confirm-btn-actions">
+              <button type="button" class="btn-cancel-modal" id="btnCancelConfirm">Quay lại</button>
+              <button type="submit" class="btn-confirm-final" id="btnFinalBook">
+                <i class="fa-solid fa-check"></i> Xác nhận giữ sân
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MODAL ĐẶT SÂN THÀNH CÔNG ============ -->
+    <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-label="Đặt sân thành công">
+      <div class="modal modal-success-fag">
+        <div class="modal-body text-center" style="padding: 36px 24px;">
+          <div class="success-check-icon">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <h2 style="font-size: 1.5rem; font-weight: 800; margin-top: 12px; color: var(--text);">Đặt sân thành công!</h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 6px;">
+            Mã đặt sân: <strong id="succBookingId" style="color: var(--primary); font-size: 1.1rem;">DD001</strong>
+          </p>
+
+          <div class="succ-details-box" id="succDetailsBox">
+            <!-- Tóm tắt chi tiết đơn đặt -->
+          </div>
+
+          <div class="succ-actions-row">
+            <a href="danh-sach-san.html" class="btn-succ-link secondary">
+              <i class="fa-solid fa-list"></i> Xem các sân khác
+            </a>
+            <a href="../../src/auth.html#profile" class="btn-succ-link primary">
+              <i class="fa-solid fa-receipt"></i> Xem lịch sử đặt sân
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <i class="fa-solid fa-circle-check"></i>
+      <div>
+        <div class="t-title" id="toastTitle">Thành công</div>
+        <div class="t-sub" id="toastSub"></div>
+      </div>
+      <button type="button" class="t-close" id="toastClose" aria-label="Đóng thông báo">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../../vendor/leaflet/leaflet.js"></script>
+    <script src="../js/store.js"></script>
+    <script src="../js/san-bong.js"></script>
+  </body>
+</html>
