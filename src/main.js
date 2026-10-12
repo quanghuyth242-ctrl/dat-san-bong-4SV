@@ -145,12 +145,16 @@ function isSlotTaken(venueId, date, startHour, duration) {
 }
 
 function buildTimeOptions(venue, date, duration) {
-  const out = []
+  const out = ['<option value="">-- Chọn khung giờ --</option>']
   for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
     if (h + duration > venue.hours.close) continue
     if (isPastSlot(date, h)) continue
-    if (isSlotTaken(venue.id, date, h, duration)) continue
-    out.push(`<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`)
+    if (isSlotTaken(venue.id, date, h, duration)) {
+      // Vẫn hiển thị khung đã đặt để người dùng thấy, nhưng không cho chọn
+      out.push(`<option value="${h}" disabled>${timeLabel(h)} – ${timeLabel(h + duration)} (Đã đặt)</option>`)
+    } else {
+      out.push(`<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`)
+    }
   }
   return out.join('')
 }
@@ -409,8 +413,11 @@ function openBook(venue, preset = {}) {
       sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
       return
     }
-    const html = buildTimeOptions(venue, date, bookState.duration)
-    sel.innerHTML = html || '<option value="">-- Đã kín lịch --</option>'
+    sel.innerHTML = buildTimeOptions(venue, date, bookState.duration)
+    const freeCount = [...sel.options].filter((o) => o.value !== '' && !o.disabled).length
+    if (!freeCount) {
+      sel.innerHTML = '<option value="">-- Đã kín lịch --</option>'
+    }
   }
 
   const updateTotal = () => {
@@ -485,12 +492,14 @@ function submitBooking(venue) {
 
   const dateOk = !!date && date >= todayStr()
   let timeOk = Number.isFinite(startHour) && dateOk
+  let timeTaken = false
   if (timeOk) {
     timeOk =
       startHour >= venue.hours.open &&
       startHour + duration <= venue.hours.close &&
       !isPastSlot(date, startHour) &&
       !isSlotTaken(venue.id, date, startHour, duration)
+    if (!timeOk) timeTaken = isSlotTaken(venue.id, date, startHour, duration)
   }
   const nameOk = name.length >= 2
   const phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone)
@@ -501,6 +510,9 @@ function submitBooking(venue) {
   set('phone', phoneOk)
 
   if (!dateOk || !timeOk || !nameOk || !phoneOk) {
+    if (timeTaken) {
+      toast('Khung giờ này đã có người đặt. Vui lòng chọn khung giờ khác.', 'error')
+    }
     document.getElementById('bookForm')?.querySelector('.bk-field.invalid')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
     return
   }
