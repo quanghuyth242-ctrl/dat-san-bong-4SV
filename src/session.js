@@ -1,3 +1,5 @@
+import { readUsers } from './storage.js'
+
 const SESSION_KEY = '4sv_auth_session'
 const REMEMBER_KEY = '4sv_auth_remember'
 
@@ -14,6 +16,14 @@ export function getUser() {
   const user = readRaw(REMEMBER_KEY) || readRaw(SESSION_KEY)
   if (!user || typeof user !== 'object') return null
   if (!user.email && !user.name) return null
+  // Admin khóa tài khoản ở chung danh sách 4sv_users thì phiên đang mở cũng hết hiệu lực.
+  const email = String(user.email || '').toLowerCase()
+  if (email) {
+    const record = readUsers().find(
+      (u) => String(u.email || '').toLowerCase() === email,
+    )
+    if (record?.status === 'locked') return null
+  }
   return {
     email: user.email || '',
     name: user.name || user.email || '',

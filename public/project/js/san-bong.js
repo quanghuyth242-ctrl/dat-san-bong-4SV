@@ -132,7 +132,8 @@ function parseTypeNumber(typeStr) {
 
 function loadSanDataFromAdmin() {
   try {
-    const stored = localStorage.getItem('admin_fields');
+    // Khóa dùng chung với trang quản trị và trang chủ: 4sv_fields trước, admin_fields dự phòng.
+    const stored = localStorage.getItem('4sv_fields') || localStorage.getItem('admin_fields');
     if (!stored) return null;
     const fields = JSON.parse(stored);
     if (!Array.isArray(fields) || fields.length === 0) return null;

@@ -73,6 +73,7 @@ function normalizePublicBooking(b) {
   return {
     id: b.id,
     userName: b.customer?.name || 'Khách vô danh',
+    userEmail: b.customer?.email || b.userEmail || '',
     fieldId: String(b.courtId ?? ''),
     fieldName: b.courtName || 'Sân không xác định',
     date: b.date,
@@ -85,9 +86,133 @@ function normalizePublicBooking(b) {
   };
 }
 
+/**
+ * Khóa dùng chung với trang chủ (src/storage.js): đọc theo thứ tự ưu tiên,
+ * ghi luôn về khóa mới và migrate + xóa khóa cũ khi trang quản trị chạy.
+ */
+const SHARED_KEYS = {
+  fields: ['4sv_fields', 'admin_fields'],
+  users: ['4sv_users', '4sv_auth_users', 'admin_users'],
+};
+const SHARED_WRITE_KEYS = {
+  fields: '4sv_fields',
+  users: '4sv_users',
+};
+const SHARED_ID_KEYS = {
+  fields: (f) => String(f.id || ''),
+  users: (u) => String(u.email || '').toLowerCase(),
+};
+
 const DataManager = {
   _getKey(key) {
     return 'admin_' + key;
+  },
+
+  /**
+   * Gộp danh sách dùng chung từ các khóa theo thứ tự ưu tiên (khóa mới thắng),
+   * rồi ghi về khóa mới và xóa khóa cũ để các trang không còn lệch nhau.
+   * Trả về undefined khi chưa khóa nào có dữ liệu (để load() ghi dữ liệu mẫu).
+   */
+  _loadShared(key) {
+    const chain = SHARED_KEYS[key];
+    const idOf = SHARED_ID_KEYS[key];
+    const seen = new Map();
+    const orphans = [];
+    let canonicalSeen = false;
+    let legacySeen = false;
+
+    chain.forEach((storageKey, idx) => {
+      let raw = null;
+      try {
+        raw = localStorage.getItem(storageKey);
+      } catch (e) {
+        console.warn('Lỗi đọc dữ liệu:', e);
+      }
+      if (raw === null) return;
+      let list = null;
+      try {
+        const value = JSON.parse(raw);
+        if (Array.isArray(value)) list = value;
+      } catch (e) {
+        console.warn('Lỗi đọc dữ liệu:', e);
+      }
+      if (!list) return;
+      if (idx === 0) canonicalSeen = true;
+      else legacySeen = true;
+      for (const item of list) {
+        const id = idOf(item);
+        if (!id) orphans.push(item);
+        else if (!seen.has(id)) seen.set(id, item);
+      }
+    });
+
+    if (!canonicalSeen && !legacySeen) return undefined;
+
+    const merged = [...seen.values(), ...orphans];
+    if (!canonicalSeen || legacySeen) {
+      this.save(key, merged);
+      for (const storageKey of chain.slice(1)) localStorage.removeItem(storageKey);
+    }
+    return merged;
+  },
+
+  /** Bổ sung trường còn thiếu để trang quản trị hiển thị được cả user/sân của trang chủ. */
+  _normalize(key, list) {
+    if (key === 'users') return this._normalizeUsers(list);
+    if (key === 'fields') return this._normalizeFields(list);
+    return list;
+  },
+
+  _normalizeUsers(users) {
+    const counts = this._bookingCountsByEmail();
+    const usedIds = new Set(users.map((u) => String(u.id || '')).filter(Boolean));
+    let seq = 1;
+    const nextId = () => {
+      let id;
+      do {
+        id = 'ND' + String(seq++).padStart(3, '0');
+      } while (usedIds.has(id));
+      usedIds.add(id);
+      return id;
+    };
+    return users.map((u) => {
+      const email = String(u.email || '').toLowerCase();
+      const realCount = (email && counts.get(email)) || 0;
+      return {
+        ...u,
+        id: u.id || nextId(),
+        name: u.name || u.email || 'Chưa rõ',
+        email: u.email || '',
+        phone: String(u.phone || ''),
+        // Số đơn thật (từ khách đặt qua trang chủ) luôn thắng số lưu sẵn,
+        // số lưu chỉ dùng cho user mẫu của admin không có đơn thật.
+        bookings: realCount > 0 ? realCount : Number.isFinite(u.bookings) ? u.bookings : 0,
+        status: u.status === 'locked' ? 'locked' : 'active',
+      };
+    });
+  },
+
+  _normalizeFields(fields) {
+    return fields.map((f, idx) => ({
+      ...f,
+      id: f.id || 'SAN' + String(idx + 1).padStart(3, '0'),
+      name: f.name || 'Sân không tên',
+      address: f.address || '',
+      type: f.type || 'Sân 5',
+      price: Number(f.price) || 0,
+      status: f.status === 'inactive' ? 'inactive' : 'active',
+    }));
+  },
+
+  /** Số đơn thật của mỗi email từ đơn khách đặt qua trang chủ/danh sách sân. */
+  _bookingCountsByEmail() {
+    const counts = new Map();
+    for (const b of this._loadPublicBookings()) {
+      const email = String(b.userEmail || '').toLowerCase();
+      if (!email) continue;
+      counts.set(email, (counts.get(email) || 0) + 1);
+    }
+    return counts;
   },
 
   /** Đọc đơn từ mốc cộng với các đơn đặt thật do khách gửi từ trang chủ. */
@@ -121,6 +246,12 @@ const DataManager = {
   },
 
   load(key, defaultData) {
+    if (SHARED_KEYS[key]) {
+      const shared = this._loadShared(key);
+      if (shared !== undefined) return this._normalize(key, shared);
+      this.save(key, defaultData);
+      return this._normalize(key, JSON.parse(JSON.stringify(defaultData)));
+    }
     try {
       const stored = localStorage.getItem(this._getKey(key));
       if (stored) return JSON.parse(stored);
@@ -133,7 +264,8 @@ const DataManager = {
 
   save(key, data) {
     try {
-      localStorage.setItem(this._getKey(key), JSON.stringify(data));
+      const storageKey = SHARED_WRITE_KEYS[key] || this._getKey(key);
+      localStorage.setItem(storageKey, JSON.stringify(data));
     } catch (e) {
       console.warn('Lỗi lưu dữ liệu:', e);
     }

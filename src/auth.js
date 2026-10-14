@@ -13,6 +13,7 @@ const DEMO_USER = {
   phone: '0912345678',
   password: '123456',
   role: 'player',
+  status: 'active',
 }
 
 function toast(message) {
@@ -449,6 +450,13 @@ function initForms() {
     const identity = $('#loginIdentity').value.trim()
     const password = $('#loginPassword').value
     const user = findUser(identity)
+    if (user && user.status === 'locked') {
+      setFieldState(
+        $('#loginIdentity'),
+        'Tài khoản này đã bị khóa, vui lòng liên hệ quản trị viên',
+      )
+      return
+    }
     if (user && user.password !== password) {
       setFieldState($('#loginPassword'), 'Mật khẩu không đúng, vui lòng thử lại')
       return
@@ -485,6 +493,7 @@ function initForms() {
       phone: digits($('#regPhone').value),
       password: $('#regPassword').value,
       role: $('input[name="role"]:checked').value,
+      status: 'active',
       createdAt: new Date().toISOString(),
     }
     users.push(newUser)
@@ -537,7 +546,12 @@ function init() {
   const year = $('#year')
   if (year) year.textContent = String(new Date().getFullYear())
 
-  if (!getUsers().length) saveUsers([{ ...DEMO_USER }])
+  // Danh sách user giờ dùng chung với trang quản trị (4sv_users) nên có thể
+  // đã chứa user mẫu của admin; chỉ bổ sung user demo nếu email chưa có.
+  const users = getUsers()
+  if (!users.some((u) => String(u.email || '').toLowerCase() === DEMO_USER.email)) {
+    saveUsers([...users, { ...DEMO_USER }])
+  }
 
   if (getUser()) {
     window.location.replace('/')
