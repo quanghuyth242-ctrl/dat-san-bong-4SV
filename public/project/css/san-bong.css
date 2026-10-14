@@ -1043,6 +1043,38 @@ select {
   font-weight: 700;
 }
 
+/* Nút dẫn tới trang thanh toán + cụm nút của màn đặt sân thành công. */
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.btn-pay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green);
+  color: var(--white);
+  padding: 12px 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-pay:hover { filter: brightness(1.06); }
+
+.success-actions .btn-again {
+  margin-top: 0;
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+}
+
 /* ============ TOAST ============ */
 .toast {
   position: fixed;

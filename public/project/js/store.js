@@ -278,6 +278,11 @@
         email: String(customer.email || '').trim().toLowerCase(),
       },
       status: raw.status || 'pending',
+      // Trạng thái thanh toán: trang thanh toán ghi vào, các trang khác chỉ đọc.
+      paid: raw.paid === true || raw.paymentStatus === 'paid',
+      paymentStatus: raw.paymentStatus === 'paid' ? 'paid' : raw.paymentStatus === 'at_venue' ? 'at_venue' : 'unpaid',
+      paymentMethod: String(raw.paymentMethod || ''),
+      paidAt: String(raw.paidAt || ''),
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
     }

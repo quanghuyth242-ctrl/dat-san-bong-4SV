@@ -511,7 +511,7 @@ function showSuccess() {
     <div class="success-wrap">
       <div class="success-icon"><i class="fa-solid fa-check"></i></div>
       <h3>Đặt sân thành công!</h3>
-      <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.</p>
+      <p>Mã đơn <b>${booking.id}</b> · Đang mở trang thanh toán...</p>
       <div class="success-summary">
         <div><span>Sân</span><b>${court.name}</b></div>
         <div><span>Ngày</span><b>${date}</b></div>
@@ -530,11 +530,23 @@ function showSuccess() {
         <div><span>Số điện thoại</span><b>${$('#phoneInput').value.trim()}</b></div>
         <div><span>Email</span><b>${$('#emailInput').value.trim()}</b></div>
       </div>
-      <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-plus"></i> Đặt sân khác</button>
+      <div class="success-actions">
+        <a class="btn-pay" id="payNowBtn" href="../../src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</a>
+        <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-plus"></i> Đặt sân khác</button>
+      </div>
     </div>
   `;
 
+  // Đặt thành công -> chuyển sang trang thanh toán sau vài giây, khách vẫn
+  // có thể bấm nút để đi ngay hoặc ở lại đặt sân khác.
+  const payTimer = setTimeout(() => {
+    window.location.href = `../../src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`;
+  }, 1500);
+
+  document.getElementById('payNowBtn').addEventListener('click', () => clearTimeout(payTimer));
+
   $('#bookAgainBtn').addEventListener('click', () => {
+    clearTimeout(payTimer);
     openBook(court);
   });
 

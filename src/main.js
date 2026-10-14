@@ -351,6 +351,8 @@ function assistantHandlers() {
     },
     onBook: (venue, intent) => {
       openBook(venue, { date: intent.date, hour: intent.hour, duration: intent.duration })
+      // openBook() reset cờ, đánh dấu lại: form này mở từ khung chat.
+      bookFromChat = true
     },
   }
 }
@@ -361,6 +363,18 @@ function applyStashedIntent() {
   if (!intent) return
   applyIntentToFilters(intent)
   applyFilters({ scroll: true })
+  // Trợ lý ở trang tài khoản đã chọn sẵn sân -> mở luôn form đặt sân cho sân đó.
+  if (intent.venueId) {
+    const venue = VENUES.find((v) => String(v.id) === String(intent.venueId))
+    if (venue) {
+      setTimeout(() => {
+        openBook(venue, { date: intent.date, hour: intent.hour, duration: intent.duration })
+        // Form này mở theo yêu cầu từ khung chat ở trang khác.
+        bookFromChat = true
+      }, 250)
+      return
+    }
+  }
   toast('Đã điền yêu cầu của bạn vào ô tìm kiếm')
 }
 
@@ -595,6 +609,12 @@ function handleSearch(e) {
 
 const bookState = { venue: null, duration: 1, refresh: null }
 
+/** Form đặt sân do trợ lý mở: người dùng đóng mà chưa đặt xong thì mở lại khung chat. */
+let bookFromChat = false
+
+/** Tham chiếu trợ lý đặt sân để mở/đóng khung chat từ các handler của trang. */
+let assistant = null
+
 function shakeField(fieldId) {
   const el = document.getElementById(fieldId)
   if (!el) return
@@ -610,6 +630,8 @@ function shakeField(fieldId) {
 function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
+  // Mở từ thẻ sân bình thường thì không mở lại khung chat khi đóng form.
+  bookFromChat = false
 
   const user = window.SV?.currentUser ? window.SV.currentUser() : null
   const defaultName = user ? (user.name || '') : ''
@@ -762,6 +784,12 @@ function closeModal(id) {
   if (!m) return
   m.classList.remove('open')
   document.body.style.overflow = ''
+  // Đóng form đặt sân mở từ trợ lý mà chưa đặt được -> mở lại khung chat để
+  // người dùng đổi sân/khung giờ mà không phải tìm lại từ đầu.
+  if (id === 'bookModal' && bookFromChat) {
+    bookFromChat = false
+    assistant?.say?.('Form đặt sân đã đóng. Bạn muốn chọn <b>sân khác</b> hay <b>khung giờ khác</b> không? Cứ nhắn mình nhé!')
+  }
 }
 
 function submitBooking(venue) {
@@ -864,13 +892,16 @@ function submitBooking(venue) {
     }
 
     const booking = result.booking
+    // Đặt xong thì không mở lại khung chat nữa; khách chọn hoặc tự động sang trang thanh toán.
+    bookFromChat = false
+    const payUrl = `src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
     const body = document.getElementById('bookBody')
     if (body) {
       body.innerHTML = `
         <div class="bk-success">
           <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
           <h3>Đặt sân thành công!</h3>
-          <p>Mã đơn <b>${booking.id}</b> · Chúng tôi sẽ liên hệ xác nhận sớm nhất.</p>
+          <p>Mã đơn <b>${booking.id}</b> · Đang mở trang thanh toán...</p>
           <dl class="bk-summary">
             <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
             <div><dt>Ngày</dt><dd>${date}</dd></div>
@@ -885,10 +916,25 @@ function submitBooking(venue) {
             }
             <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
           </dl>
-          <button type="button" class="btn-book btn-book-full" id="bkDone">Đóng</button>
+          <div class="bk-success-actions">
+            <button type="button" class="btn-book btn-book-full" id="bkPayNow"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</button>
+            <button type="button" class="btn-book btn-book-full btn-book-ghost" id="bkLater">Để thanh toán sau</button>
+          </div>
         </div>
       `
-      document.getElementById('bkDone')?.addEventListener('click', () => closeModal('bookModal'))
+      // Đặt thành công -> hiện trang thanh toán; hai nút dưới cho phép tự quyết.
+      const timer = setTimeout(() => {
+        window.location.href = payUrl
+      }, 1500)
+      document.getElementById('bkPayNow')?.addEventListener('click', () => {
+        clearTimeout(timer)
+        window.location.href = payUrl
+      })
+      document.getElementById('bkLater')?.addEventListener('click', () => {
+        clearTimeout(timer)
+        closeModal('bookModal')
+        toast('Đơn đã được giữ. Bạn có thể thanh toán sau trong trang Tài khoản.')
+      })
     }
     toast(`Đặt sân thành công · ${booking.id}`)
   } catch (err) {
@@ -1290,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthNav()
 
   // Trợ lý đặt sân: hiểu yêu cầu tiếng Việt, lọc sân và mở form đặt sân.
-  mountAssistant(assistantHandlers())
+  assistant = mountAssistant(assistantHandlers())
   applyStashedIntent()
 })
 
