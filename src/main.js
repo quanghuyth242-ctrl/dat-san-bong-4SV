@@ -607,7 +607,33 @@ function handleSearch(e) {
 
 // ================================ MODAL ĐẶT SÂN ================================
 
-const bookState = { venue: null, duration: 1, refresh: null }
+const bookState = { venue: null, duration: 1, refresh: null, services: {} }
+
+// Dịch vụ đi kèm khi đặt sân (giá tính cho mỗi buổi)
+const SERVICES = [
+  { id: 'nuoc-suoi', name: 'Nước suối', price: 10000, unit: 'chai', icon: 'fa-bottle-water' },
+  { id: 'nuoc-tang-luc', name: 'Nước tăng lực', price: 15000, unit: 'chai', icon: 'fa-bolt' },
+  { id: 'thue-bong', name: 'Thuê bóng thi đấu', price: 50000, unit: 'quả', icon: 'fa-futbol' },
+  { id: 'ao-bib', name: 'Áo bib', price: 20000, unit: 'bộ', icon: 'fa-shirt' },
+  { id: 'trong-tai', name: 'Trọng tài', price: 200000, unit: 'trận', icon: 'fa-user-tie', max: 1 },
+  { id: 'var', name: 'VAR (trợ lý video)', price: 300000, unit: 'trận', icon: 'fa-video', max: 1 },
+]
+
+function getService(id) {
+  return SERVICES.find((s) => s.id === id) || null
+}
+
+/** Danh sách dịch vụ đã chọn (qty > 0) kèm giá mỗi buổi. */
+function selectedServices() {
+  return SERVICES.map((s) => ({ ...s, qty: bookState.services?.[s.id] || 0 })).filter(
+    (s) => s.qty > 0
+  )
+}
+
+/** Tổng tiền dịch vụ cho 1 buổi. */
+function serviceCostPerSession() {
+  return selectedServices().reduce((sum, s) => sum + s.price * s.qty, 0)
+}
 
 /** Form đặt sân do trợ lý mở: người dùng đóng mà chưa đặt xong thì mở lại khung chat. */
 let bookFromChat = false
@@ -630,6 +656,7 @@ function shakeField(fieldId) {
 function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
+  bookState.services = {}
   // Mở từ thẻ sân bình thường thì không mở lại khung chat khi đóng form.
   bookFromChat = false
 
@@ -678,6 +705,30 @@ function openBook(venue, preset = {}) {
             <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" value="${esc(defaultPhone)}" required />
             <span class="bk-err">Số điện thoại không hợp lệ (VD: 0912345678).</span>
           </div>
+          <div class="bk-field full" id="f-services">
+            <label>Dịch vụ đi kèm <span class="bk-hint">(tuỳ chọn · ✓ chọn 1 · +/− chọn số lượng)</span></label>
+            <div class="service-list" id="serviceList">
+              ${SERVICES.map(
+                (s) => `
+                <div class="service-item" data-id="${s.id}">
+                  <i class="fa-solid ${s.icon} svc-icon"></i>
+                  <div class="svc-info">
+                    <div class="svc-name">${s.name}</div>
+                    <div class="svc-price">${s.price.toLocaleString('vi-VN')}đ / ${s.unit}</div>
+                  </div>
+                  <div class="s-qty">
+                    ${
+                      s.max === 1
+                        ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="false" aria-label="Chọn ${s.name}"><i class="fa-solid fa-check"></i></button>`
+                        : `<button type="button" class="qty-btn" data-act="dec" data-id="${s.id}" aria-label="Giảm">−</button>
+                    <span class="qty-val" id="qty-${s.id}">0</span>
+                    <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" aria-label="Tăng">+</button>`
+                    }
+                  </div>
+                </div>`
+              ).join('')}
+            </div>
+          </div>
           <div class="bk-field" id="f-voucher">
             <label for="bkVoucher">Mã giảm giá (nếu có)</label>
             <input type="text" id="bkVoucher" placeholder="VD: WELCOME4SV" autocomplete="off" />
@@ -711,21 +762,53 @@ function openBook(venue, preset = {}) {
   const updateTotal = () => {
     bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
     const current = bookState.venue || venue
-    const subtotal = Math.round(current.price * bookState.duration)
-    const code = document.getElementById('bkVoucher').value.trim().toUpperCase()
+    const courtSub = Math.round((Number(current.price) || 0) * bookState.duration)
+    const servicePer = serviceCostPerSession()
+    const subtotal = courtSub + servicePer
+
+    const code = (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase()
     const voucher = code && window.SV?.previewVoucher ? window.SV.previewVoucher(code, subtotal) : null
     const usable = !!(voucher && voucher.ok)
 
     document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
 
+    const total = usable ? subtotal - voucher.discount : subtotal
+    const parts = []
+    if (servicePer > 0) parts.push(`sân ${courtSub.toLocaleString('vi-VN')}đ + DV ${servicePer.toLocaleString('vi-VN')}đ`)
+    if (usable) parts.push(`-${voucher.discount.toLocaleString('vi-VN')}đ`)
+
     const el = document.getElementById('bkTotal')
-    if (usable) {
-      el.innerHTML = `${(subtotal - voucher.discount).toLocaleString('vi-VN')}đ <small style="opacity:.75">(-${voucher.discount.toLocaleString('vi-VN')}đ)</small>`
-    } else {
-      el.textContent = subtotal.toLocaleString('vi-VN') + 'đ'
-    }
+    el.innerHTML = parts.length
+      ? `${total.toLocaleString('vi-VN')}đ <small style="opacity:.75">(${parts.join(' · ')})</small>`
+      : `${total.toLocaleString('vi-VN')}đ`
     refresh()
   }
+
+  // Dịch vụ đi kèm: ± số lượng, hoặc ✓ toggle cho loại max 1 (trọng tài/VAR)
+  document.getElementById('serviceList')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.qty-btn, .qty-check')
+    if (!btn) return
+    const id = btn.dataset.id
+    const act = btn.dataset.act
+    const cur = bookState.services[id] || 0
+    const max = getService(id)?.max ?? 99
+    const delta = act === 'inc' ? 1 : act === 'dec' ? -1 : 0
+    const next = Math.max(
+      0,
+      Math.min(max, act === 'toggle' ? (cur > 0 ? 0 : 1) : cur + delta)
+    )
+    if (next === 0) delete bookState.services[id]
+    else bookState.services[id] = next
+    const valEl = document.getElementById('qty-' + id)
+    if (valEl) valEl.textContent = next
+    const item = btn.closest('.service-item')
+    item?.classList.toggle('active', next > 0)
+    if (btn.classList.contains('qty-check')) {
+      btn.setAttribute('aria-pressed', String(next > 0))
+    }
+    item?.querySelector('.qty-btn[data-act="inc"]')?.toggleAttribute('disabled', next >= max)
+    updateTotal()
+  })
 
   bookState.refresh = updateTotal
 
@@ -867,14 +950,29 @@ function submitBooking(venue) {
 
     const currentUser = window.SV?.currentUser ? window.SV.currentUser() : null
 
+    // Tiền sân + dịch vụ đi kèm: store.js tự trừ voucher trên tổng này.
+    const servicePer = serviceCostPerSession()
+    const services = selectedServices().map((s) => ({
+      id: s.id,
+      name: s.name,
+      price: s.price,
+      unit: s.unit,
+      qty: s.qty,
+    }))
+    const courtTotal = Math.round((Number(venue.price) || 0) * duration)
+
     const result = bookFn({
       courtId: courtKey(venue.id),
       courtName: venue.name,
+      type: venue.type || '',
       date,
       startHour,
       endHour: startHour + duration,
       duration,
-      total: venue.price * duration,
+      courtTotal,
+      serviceTotal: servicePer,
+      services,
+      total: courtTotal + servicePer,
       voucherCode: (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase(),
       userId: currentUser?.id || '',
       userName: name,
@@ -895,6 +993,10 @@ function submitBooking(venue) {
     // Đặt xong thì không mở lại khung chat nữa; khách chọn hoặc tự động sang trang thanh toán.
     bookFromChat = false
     const payUrl = `src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
+    const serviceLine = services.length
+      ? `<div><dt>Dịch vụ</dt><dd>${services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</dd></div>
+         <div><dt>Tiền dịch vụ</dt><dd>${servicePer.toLocaleString('vi-VN')}đ</dd></div>`
+      : ''
     const body = document.getElementById('bookBody')
     if (body) {
       body.innerHTML = `
@@ -904,9 +1006,12 @@ function submitBooking(venue) {
           <p>Mã đơn <b>${booking.id}</b> · Đang mở trang thanh toán...</p>
           <dl class="bk-summary">
             <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
+            ${venue.type ? `<div><dt>Loại sân</dt><dd>${esc(typeLabel(venue.type))}</dd></div>` : ''}
             <div><dt>Ngày</dt><dd>${date}</dd></div>
             <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
             <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
+            ${serviceLine}
+            <div><dt>Tiền sân</dt><dd>${(booking.courtTotal ?? (booking.subtotal || 0) - servicePer).toLocaleString('vi-VN')}đ</dd></div>
             ${
               booking.discount > 0
                 ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>

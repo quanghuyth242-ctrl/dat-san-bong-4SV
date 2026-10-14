@@ -185,7 +185,7 @@ function formatCurrency(value) {
 function getStatusBadge(status, type) {
   const map = {
     field: {
-      active: { text: 'Đang hoạt động', cls: 'badge-success' },
+      active: { text: ' Hoạt động', cls: 'badge-success' },
       inactive: { text: 'Tạm ngưng', cls: 'badge-danger' }
     },
     booking: {
@@ -558,6 +558,7 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${Array.isArray(b.services) && b.services.length ? `<div class="detail-row"><div class="detail-label">Dịch vụ:</div><div class="detail-value">${b.services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</div></div>` : ''}
       ${
         b.discount > 0
           ? `<div class="detail-row"><div class="detail-label">Tạm tính:</div><div class="detail-value">${formatCurrency(b.subtotal || b.total + b.discount)}</div></div>
@@ -710,7 +711,7 @@ function initSettings() {
   const colorValueSpan = document.getElementById('colorValue');
   const darkModeToggle = document.getElementById('settingDarkMode');
   const logoInput = document.getElementById('settingLogo');
-  const logoPreview = document.getElementById('logoPreview');
+  const logoP = document.getElementById('logoP');
 
   const adminUsernameInput = document.getElementById('settingAdminUsername');
   const adminPasswordInput = document.getElementById('settingAdminPassword');
@@ -724,8 +725,8 @@ function initSettings() {
   if (adminUsernameInput) adminUsernameInput.value = settings.adminUsername || 'admin';
   if (adminPasswordInput) adminPasswordInput.value = '';
 
-  if (settings.logo && logoPreview) {
-    logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
+  if (settings.logo && logoP) {
+    logoP.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
   }
   primaryColorInput?.addEventListener('input', (e) => {
     if (colorValueSpan) colorValueSpan.textContent = e.target.value;
@@ -736,8 +737,8 @@ function initSettings() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (logoPreview) {
-        logoPreview.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
+      if (logoP) {
+        logoP.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
       }
     };
     reader.readAsDataURL(file);
@@ -766,7 +767,7 @@ async function saveSettings() {
     }
     settings.adminPassword = await hashPassword(newPassword);
   }
-  const logoImg = document.querySelector('#logoPreview img');
+  const logoImg = document.querySelector('#logoP img');
   if (logoImg) {
     settings.logo = logoImg.src;
   }

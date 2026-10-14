@@ -191,7 +191,28 @@ html.dark .nav-user-head strong { color: #f9fafb; }
 .btn-book:disabled { opacity: .7; cursor: not-allowed; pointer-events: none; }
 .btn-book:active { transform: scale(0.98); }
 .bk-total { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--green-primary); background: var(--green-light); border-radius: 10px; padding: 9px 12px; }
+.bk-total small { display: block; font-size: .7rem; font-weight: 600; color: var(--grey-600); margin-top: 2px; }
+.bk-field.full { grid-column: 1 / -1; }
+.bk-hint { font-weight: 500; color: var(--grey-400); font-size: .68rem; }
 .btn-book-full { margin-top: 18px; }
+
+/* Dịch vụ đi kèm khi đặt sân */
+.service-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.service-item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--grey-200); border-radius: 10px; padding: 9px 10px; background: #fff; transition: border-color .15s, background .15s; }
+.service-item.active { border-color: var(--green-primary); background: var(--green-light); }
+.service-item .svc-icon { color: var(--green-primary); font-size: 16px; width: 18px; text-align: center; }
+.service-item .svc-info { flex: 1; min-width: 0; }
+.service-item .svc-name { font-size: .8rem; font-weight: 700; color: var(--grey-900); }
+.service-item .svc-price { font-size: .72rem; color: var(--grey-600); }
+.service-item .s-qty { display: flex; align-items: center; gap: 6px; }
+.qty-btn { width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--grey-200); background: #fff; color: var(--green-dark); font-size: 16px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+.qty-btn:hover { border-color: var(--green-primary); background: var(--green-light); }
+.qty-btn:disabled { opacity: .35; cursor: not-allowed; }
+.qty-btn:disabled:hover { border-color: var(--grey-200); background: #fff; }
+.qty-check { width: 30px; height: 30px; border-radius: 9px; border: 1.5px solid var(--grey-200); background: #fff; color: transparent; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+.qty-check:hover { border-color: var(--green-primary); }
+.qty-check[aria-pressed='true'] { border-color: var(--green-primary); background: var(--green-primary); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.qty-val { min-width: 18px; text-align: center; font-weight: 700; font-size: .86rem; }
 .bk-success { text-align: center; padding: 8px 0; }
 .bk-success-icon { width: 58px; height: 58px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 14px; }
 .bk-success h3 { font-family: var(--font-display); font-size: 1.1rem; color: var(--grey-900); margin-bottom: 6px; }
@@ -270,6 +291,8 @@ html.dark .nav-user-head strong { color: #f9fafb; }
 .reviewer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .reviewer-name { font-weight: 700; font-size: .86rem; color: var(--grey-900); }
 .reviewer-sport { font-size: .74rem; color: var(--grey-400); }
+
+/* FOOTER */
 .site-footer { background: #0f172a; color: #fff; padding: 52px 0 24px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr .7fr .7fr 1fr; gap: 28px; }
 .footer-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; margin-bottom: 10px; }
@@ -297,8 +320,8 @@ html.dark .nav-user-head strong { color: #f9fafb; }
 .toast-4sv.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast-4sv.toast-error { background: #dc2626; box-shadow: 0 10px 30px rgba(220,38,38,.45); }
 @media (max-width: 1024px) { .featured-grid { grid-template-columns: repeat(2, 1fr); } .promo-grid { grid-template-columns: 1fr; } .map-grid { grid-template-columns: 1fr; } .reviews-grid { grid-template-columns: 1fr 1fr; } .footer-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 768px) { .nav-toggle { display: inline-flex; } .nav-menu { position: absolute; top: 60px; left: 0; right: 0; background: #fff; border-top: 1px solid var(--grey-100); border-bottom: 1px solid var(--grey-100); box-shadow: var(--shadow-md); flex-direction: column; align-items: stretch; gap: 0; padding: 12px 16px 16px; display: none; margin-left: 0; } .nav-menu.open { display: flex; } .nav-links { flex-direction: column; align-items: stretch; } .nav-links .nav-link { padding: 10px 4px; } .dropdown-menu { position: static; box-shadow: none; border: 1px solid var(--grey-100); margin: 4px 0 6px 12px; } .nav-actions { flex-direction: column; align-items: stretch; padding-top: 12px; border-top: 1px solid var(--grey-100); margin-top: 6px; } .nav-actions .btn-cta { justify-content: center; } .search-grid { grid-template-columns: 1fr; } .province-grid { grid-template-columns: repeat(2, 1fr); } .steps-grid { grid-template-columns: 1fr; } .step-arrow { display: none; } .reviews-grid { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: 1fr; } .hero { min-height: 440px; } .map-embed { height: 300px; } }
-@media (max-width: 480px) { .province-grid { grid-template-columns: 1fr; } .hero-stats { gap: 18px; } .search-box { padding: 16px; } }
+@media (max-width: 768px) { .nav-toggle { display: inline-flex; } .nav-menu { position: absolute; top: 60px; left: 0; right: 0; background: #fff; border-top: 1px solid var(--grey-100); border-bottom: 1px solid var(--grey-100); box-shadow: var(--shadow-md); flex-direction: column; align-items: stretch; gap: 0; padding: 12px 16px 16px; display: none; margin-left: 0; } .nav-menu.open { display: flex; } .nav-links { flex-direction: column; align-items: stretch; } .nav-links .nav-link { padding: 10px 4px; } .dropdown-menu { position: static; box-shadow: none; border: 1px solid var(--grey-100); margin: 4px 0 6px 12px; } .nav-actions { flex-direction: column; align-items: stretch; padding-top: 12px; border-top: 1px solid var(--grey-100); margin-top: 6px; } .nav-actions .btn-cta { justify-content: center; } .nav-user-btn { width: 100%; justify-content: center; max-width: none; } .nav-user-menu { width: 100%; } .search-grid { grid-template-columns: 1fr; } .province-grid { grid-template-columns: repeat(2, 1fr); } .steps-grid { grid-template-columns: 1fr; } .step-arrow { display: none; } .reviews-grid { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: 1fr; } .hero { min-height: 440px; } .map-embed { height: 300px; } }
+@media (max-width: 480px) { .province-grid { grid-template-columns: 1fr; } .hero-stats { gap: 18px; } .search-box { padding: 16px; } .service-list { grid-template-columns: 1fr; } }
 
 /* TRỢ LÝ ĐẶT SÂN (AI ASSISTANT) */
 .ai-fab { position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--green-primary); color: #fff; font-size: 1.3rem; cursor: pointer; box-shadow: 0 10px 30px rgba(22,163,74,.4); z-index: 9998; transition: transform .2s, opacity .2s, background .2s; }

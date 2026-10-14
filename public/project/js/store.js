@@ -278,6 +278,24 @@
         email: String(customer.email || '').trim().toLowerCase(),
       },
       status: raw.status || 'pending',
+      // Dịch vụ đi kèm + đơn đặt lặp (main): giữ nguyên để trang quản trị hiển thị đủ.
+      type: String(raw.type || ''),
+      courtTotal: toPrice(raw.courtTotal),
+      serviceTotal: toPrice(raw.serviceTotal),
+      services: Array.isArray(raw.services)
+        ? raw.services.map(function (s) {
+            s = s || {}
+            return {
+              id: String(s.id || ''),
+              name: String(s.name || ''),
+              price: toPrice(s.price),
+              unit: String(s.unit || ''),
+              qty: Math.max(1, parseInt(s.qty, 10) || 1),
+            }
+          })
+        : [],
+      repeat: String(raw.repeat || 'none'),
+      repeatCount: Math.max(1, parseInt(raw.repeatCount, 10) || 1),
       // Trạng thái thanh toán: trang thanh toán ghi vào, các trang khác chỉ đọc.
       paid: raw.paid === true || raw.paymentStatus === 'paid',
       paymentStatus: raw.paymentStatus === 'paid' ? 'paid' : raw.paymentStatus === 'at_venue' ? 'at_venue' : 'unpaid',
