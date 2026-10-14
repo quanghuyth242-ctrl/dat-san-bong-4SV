@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Quản lý thu tiền & đối soát thanh toán đơn đặt sân - 4SV.vn">
+  <title>Quản lý thu tiền - 4SV.vn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .payment-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: var(--space-5, 20px);
+      margin-bottom: var(--space-6, 24px);
+    }
+    .payment-stat-card {
+      background: var(--white, #fff);
+      border-radius: var(--radius-lg, 12px);
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      border: 1px solid var(--gray-200, #e2e8f0);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .payment-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .payment-stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .stat-card-paid::before { background: #16a34a; }
+    .stat-card-pending::before { background: #f59e0b; }
+    .stat-card-unpaid::before { background: #3b82f6; }
+    .stat-card-order-pending::before { background: #8b5cf6; }
+
+    .payment-stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--gray-500, #64748b);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .payment-stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .stat-card-paid .payment-stat-icon { background: #dcfce7; color: #16a34a; }
+    .stat-card-pending .payment-stat-icon { background: #fef3c7; color: #d97706; }
+    .stat-card-unpaid .payment-stat-icon { background: #dbeafe; color: #2563eb; }
+    .stat-card-order-pending .payment-stat-icon { background: #f3e8ff; color: #7c3aed; }
+
+    .payment-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gray-900, #0f172a);
+      line-height: 1.2;
+    }
+    .payment-stat-sub {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toolbar-payments {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .toolbar-payments-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .text-danger { color: #dc2626 !important; }
+    .text-success { color: #16a34a !important; }
+    .text-muted { color: #64748b !important; }
+  </style>
+</head>
+<body data-page="thu-tien">
+
+  <div class="admin-layout">
+    <div class="sidebar-overlay"></div>
+
+    <aside class="sidebar">
+      <a href="../../index.html" class="sidebar-brand" style="text-decoration: none; color: inherit;">
+        <div class="brand-icon">⚽</div>
+        <div class="brand-text">4SV.vn</div>
+      </a>
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item">
+            <a href="dashboard.html" class="nav-link">
+              <span class="nav-icon">📊</span>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="san-bong.html" class="nav-link">
+              <span class="nav-icon">🏟️</span>
+              <span>Quản lý sân</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="don-dat.html" class="nav-link">
+              <span class="nav-icon">📋</span>
+              <span>Quản lý đơn đặt</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="nguoi-dung.html" class="nav-link">
+              <span class="nav-icon">👥</span>
+              <span>Quản lý người dùng</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="thu-tien.html" class="nav-link active">
+              <span class="nav-icon">💵</span>
+              <span>Thu tiền</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="hoan-tien.html" class="nav-link">
+              <span class="nav-icon">↩️</span>
+              <span>Hoàn tiền</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="danh-gia.html" class="nav-link">
+              <span class="nav-icon">⭐</span>
+              <span>Đánh giá & Bình luận</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="ma-giam-gia.html" class="nav-link">
+              <span class="nav-icon">🎟️</span>
+              <span>Mã giảm giá</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <div class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="btn-menu-toggle" aria-label="Toggle menu">☰</button>
+          <h1 class="page-title">💵 Quản lý thu tiền</h1>
+        </div>
+        <div class="header-right">
+          <a href="../../index.html" class="btn btn-outline" style="height: 32px; padding: 0 12px; font-size: 13px; text-decoration: none;">🏠 Trang chủ web</a>
+          <div class="admin-info">
+            <span>Admin</span>
+            <div class="admin-avatar">A</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+
+        <!-- Stat cards -->
+        <div class="payment-stats-grid">
+          <div class="payment-stat-card stat-card-paid">
+            <div class="payment-stat-header">
+              <span>Doanh thu thực thu</span>
+              <div class="payment-stat-icon">💰</div>
+            </div>
+            <div class="payment-stat-value" id="statThuTienPaidRev">0đ</div>
+            <div class="payment-stat-sub text-success">
+              <span class="badge badge-success" id="statThuTienPaidCount">0 đơn</span>
+              <span>Đã thanh toán thành công</span>
+            </div>
+          </div>
+
+          <div class="payment-stat-card stat-card-pending">
+            <div class="payment-stat-header">
+              <span>Chờ đối soát chuyển khoản</span>
+              <div class="payment-stat-icon">⏳</div>
+            </div>
+            <div class="payment-stat-value" id="statThuTienPendingRev">0đ</div>
+            <div class="payment-stat-sub" style="color: #d97706;">
+              <span class="badge badge-warning" id="statThuTienPendingCount">0 đơn cần duyệt</span>
+            </div>
+          </div>
+
+          <div class="payment-stat-card stat-card-unpaid">
+            <div class="payment-stat-header">
+              <span>Chưa thanh toán (Tại sân)</span>
+              <div class="payment-stat-icon">🏟️</div>
+            </div>
+            <div class="payment-stat-value" id="statThuTienUnpaidRev">0đ</div>
+            <div class="payment-stat-sub text-muted">
+              <span class="badge badge-secondary" id="statThuTienUnpaidCount">0 đơn tại sân</span>
+            </div>
+          </div>
+
+          <div class="payment-stat-card stat-card-order-pending">
+            <div class="payment-stat-header">
+              <span>Đơn chờ xử lý (Pending)</span>
+              <div class="payment-stat-icon">📋</div>
+            </div>
+            <div class="payment-stat-value" id="statThuTienPendingBookingCount">0</div>
+            <div class="payment-stat-sub" style="color: #7c3aed;">
+              <span>Tự động xác nhận khi thu tiền</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar-payments">
+          <div class="toolbar-payments-left">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchThuTien" placeholder="Tìm mã đơn, tên khách, SĐT, sân...">
+            </div>
+
+            <select class="form-select" id="filterThuTienMethod">
+              <option value="">Tất cả hình thức</option>
+              <option value="bank_transfer">Chuyển khoản MBBank QR</option>
+              <option value="at_court">Thanh toán tại sân / Tiền mặt</option>
+            </select>
+
+            <select class="form-select" id="filterThuTienStatus">
+              <option value="">Tất cả trạng thái thu tiền</option>
+              <option value="awaiting_payment">Chờ duyệt chuyển khoản</option>
+              <option value="unpaid">Chưa thanh toán (Tại sân)</option>
+              <option value="paid">Đã thanh toán (Thực thu)</option>
+            </select>
+          </div>
+
+          <div>
+            <button class="btn btn-outline" id="btnRefreshThuTien">🔄 Làm mới dữ liệu</button>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--gray-200);">
+            <h2 class="card-title" style="font-size: 16px; font-weight: 600; margin: 0;">
+              📋 Danh sách hóa đơn & Thu tiền đặt sân
+            </h2>
+            <span style="font-size: 13px; color: var(--gray-500);">
+              Tìm thấy <strong id="thuTienTotalRecords">0</strong> giao dịch
+            </span>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Sân & Lịch đá</th>
+                    <th>Tổng tiền</th>
+                    <th>Hình thức</th>
+                    <th>Trạng thái TT</th>
+                    <th>Trạng thái đơn</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="thuTienTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Thu Tiền / Xác nhận thanh toán -->
+  <div class="modal-overlay" id="collectModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">💵 Xác nhận thu tiền đặt sân</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #f8fafc; border-radius: 8px; padding: 14px; margin-bottom: 16px; border: 1px solid #e2e8f0; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span class="text-muted">Mã đơn đặt:</span>
+            <strong id="collectBookingId">—</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span class="text-muted">Khách hàng:</span>
+            <span id="collectCustomerName">—</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span class="text-muted">Sân & Thời gian:</span>
+            <span id="collectCourtInfo" style="text-align: right; max-width: 60%;">—</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+            <span class="text-muted">Số tiền cần thu:</span>
+            <strong class="text-success" style="font-size: 16px;" id="collectTotalAmount">0đ</strong>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;">
+            Phương thức thanh toán <span style="color: #ef4444;">*</span>
+          </label>
+          <select id="collectMethodSelect" class="form-select" style="width: 100%;">
+            <option value="bank_transfer">Chuyển khoản MBBank QR</option>
+            <option value="at_court">Tiền mặt tại sân</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;">
+            Số tiền thực thu (VNĐ) <span style="color: #ef4444;">*</span>
+          </label>
+          <input type="number" id="collectAmountInput" class="form-control" style="width: 100%; height: 38px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          <small class="text-muted" style="display: block; margin-top: 4px;">Mặc định thu 100% giá trị đơn đặt sân.</small>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;">
+            Ghi chú thu tiền (Mã GD / Người thu)
+          </label>
+          <textarea id="collectNoteInput" class="form-control" rows="2" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit;" placeholder="Ví dụ: Đã nhận tiền mặt tại quầy lễ tân / Khách đã chuyển MBBank"></textarea>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #166534; line-height: 1.5;">
+          ✓ <strong>Tự động xác nhận đơn:</strong> Khi ghi nhận thu tiền thành công, trạng thái thanh toán sẽ đổi sang <em>Đã thanh toán</em> và đơn hàng sẽ được chuyển thành <em>Đã xác nhận</em>.
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-outline modal-close">Hủy bỏ</button>
+        <button class="btn btn-success" id="btnSubmitCollect">✓ Xác nhận thu tiền</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Chi Tiết Giao Dịch -->
+  <div class="modal-overlay" id="paymentDetailModal">
+    <div class="modal" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Chi tiết giao dịch thu tiền</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="paymentDetailBody">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/store.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

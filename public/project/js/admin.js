@@ -1,8 +1,3 @@
-/**
- * Băm mật khẩu SHA-256 để lưu vào localStorage.
- * Lưu ý: đây chỉ là rào cản ở phía trình duyệt,
- * không thay thế việc xác thực phía máy chủ.
- */
 async function hashPassword(password) {
   const data = new TextEncoder().encode('4sv-admin-pw:' + password);
   const digest = await crypto.subtle.digest('SHA-256', data);
@@ -11,12 +6,6 @@ async function hashPassword(password) {
     .join('');
 }
 
-/**
- * Mọi dữ liệu của trang quản trị nằm trong store dùng chung (public/project/js/store.js)
- * để trang chủ, trang danh sách sân và trang đăng nhập thấy cùng một dữ liệu:
- * sửa sân ở đây thì trang chủ hiện ngay, đăng ký ở trang chủ thì xuất hiện ở đây,
- * đổi trạng thái đơn ở đây thì trang chủ cũng đổi theo.
- */
 const DataManager = {
   getFields() { return SV.fields(); },
   saveFields(data) { SV.saveFields(data); },
@@ -41,9 +30,6 @@ const DataManager = {
   },
 };
 
-// ==========================================
-// ANIMATION HELPERS
-// ==========================================
 function animateCounter(element, start, end, duration = 750, formatFn = null) {
   if (!element) return;
   const startNum = Number(start) || 0;
@@ -85,7 +71,6 @@ function animateCounter(element, start, end, duration = 750, formatFn = null) {
   requestAnimationFrame(step);
 }
 
-// Global button click ripple effect
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn');
   if (!btn) return;
@@ -340,7 +325,6 @@ function initFields() {
   refreshFields();
 }
 
-/** Vẽ lại danh sách sân từ dữ liệu mới nhất, giữ nguyên từ khoá đang tìm. */
 function refreshFields() {
   fieldsData = DataManager.getFields();
   const keyword = (document.getElementById('searchField')?.value || '').toLowerCase();
@@ -430,8 +414,7 @@ function saveField() {
   const id = document.getElementById('fieldId').value;
   const openHour = parseFloat(document.getElementById('fieldOpen').value);
   const closeHour = parseFloat(document.getElementById('fieldClose').value);
-  // Giữ nguyên các trường không nằm trong form (ví dụ ảnh mặc định đã gán) để
-  // sửa một chữ không làm mất dữ liệu cũ.
+
   const current = id ? fieldsData.find(f => f.id === id) : {};
   const img = document.getElementById('fieldImg').value.trim();
   const fieldData = {
@@ -497,7 +480,6 @@ function bindBookingListeners() {
   document.getElementById('filterBookingStatus')?.addEventListener('change', filterBookings);
 }
 
-/** Vẽ lại danh sách từ dữ liệu mới nhất, giữ nguyên bộ lọc đang dùng. */
 function filterBookings() {
   bookingsData = DataManager.getBookings();
   const keyword = (document.getElementById('searchBooking')?.value || '').toLowerCase();
@@ -619,8 +601,6 @@ function updateBookingStatus(id, newStatus, message, toastType = 'success') {
   const idx = bookingsData.findIndex(b => b.id === id);
   if (idx === -1) return;
 
-  // Ghi qua store để trang chủ và trang danh sách sân thấy trạng thái mới ngay,
-  // và khung giờ bị hủy thì mở lại cho người khác đặt.
   const result = SV.setBookingStatus(id, newStatus);
   if (!result.ok) {
     showToast(result.error || 'Không đổi được trạng thái đơn', 'danger');
@@ -639,7 +619,6 @@ function initUsers() {
   document.getElementById('searchUser')?.addEventListener('input', filterUsers);
 }
 
-/** Vẽ lại từ dữ liệu mới nhất, giữ nguyên từ khoá đang tìm. */
 function filterUsers() {
   usersData = DataManager.getUsers();
   const keyword = (document.getElementById('searchUser')?.value || '').toLowerCase();
@@ -716,7 +695,7 @@ function toggleUserStatus(id) {
   const action = newStatus === 'locked' ? 'Khóa' : 'Mở khóa';
 
   showConfirm(`${action} người dùng`, `Bạn có chắc muốn ${action.toLowerCase()} "${user.name}"?`, () => {
-    // Ghi qua store để trang đăng nhập chặn/mở tài khoản ngay ở lần đăng nhập kế tiếp.
+
     const result = SV.setUserStatus(user.id, newStatus);
     if (!result.ok) {
       showToast(result.error || 'Không đổi được trạng thái', 'danger');
@@ -728,224 +707,557 @@ function toggleUserStatus(id) {
   });
 }
 
-function initSettings() {
-  const settings = DataManager.getSettings();
+// ==========================================
+// 1. QUẢN LÝ THU TIỀN & HOÀN TIỀN (CORE LOGIC)
+// ==========================================
 
-  const siteNameInput = document.getElementById('settingSiteName');
-  const primaryColorInput = document.getElementById('settingPrimaryColor');
-  const colorValueSpan = document.getElementById('colorValue');
-  const darkModeToggle = document.getElementById('settingDarkMode');
-  const logoInput = document.getElementById('settingLogo');
-  const logoPreview = document.getElementById('logoPreview');
+let thuTienData = [];
+let hoanTienData = [];
+let paymentsData = [];
+let currentCollectBookingId = null;
+let currentRefundBookingId = null;
 
-  const adminUsernameInput = document.getElementById('settingAdminUsername');
-  const adminPasswordInput = document.getElementById('settingAdminPassword');
-
-  if (siteNameInput) siteNameInput.value = settings.siteName;
-  if (primaryColorInput) {
-    primaryColorInput.value = settings.primaryColor;
-    if (colorValueSpan) colorValueSpan.textContent = settings.primaryColor;
-  }
-  if (darkModeToggle) darkModeToggle.checked = settings.darkMode;
-  if (adminUsernameInput) adminUsernameInput.value = settings.adminUsername || 'admin';
-  if (adminPasswordInput) adminPasswordInput.value = '';
-
-  if (settings.logo && logoPreview) {
-    logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
-  }
-  primaryColorInput?.addEventListener('input', (e) => {
-    if (colorValueSpan) colorValueSpan.textContent = e.target.value;
-  });
-  logoInput?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      if (logoPreview) {
-        logoPreview.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-  document.getElementById('settingsForm')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    saveSettings();
-  });
-}
-
-async function saveSettings() {
-  const settings = DataManager.getSettings();
-
-  settings.siteName = document.getElementById('settingSiteName')?.value.trim() || settings.siteName;
-  settings.primaryColor = document.getElementById('settingPrimaryColor')?.value || settings.primaryColor;
-  settings.darkMode = document.getElementById('settingDarkMode')?.checked || false;
-  const newUsername = document.getElementById('settingAdminUsername')?.value.trim();
-  const newPassword = document.getElementById('settingAdminPassword')?.value.trim();
-  if (newUsername) {
-    settings.adminUsername = newUsername;
-  }
-  if (newPassword) {
-    if (newPassword.length < 6) {
-      showToast('Mật khẩu phải có ít nhất 6 ký tự.', 'danger');
-      return;
-    }
-    settings.adminPassword = await hashPassword(newPassword);
-  }
-  const logoImg = document.querySelector('#logoPreview img');
-  if (logoImg) {
-    settings.logo = logoImg.src;
-  }
-
-  DataManager.saveSettings(settings);
-  applySettings();
-  showToast('Đã lưu cài đặt giao diện!');
-}
-
-function initProcessing() {
-  renderPendingBookings();
-  renderLockedUsers();
-  renderInactiveFields();
-}
-
-function renderPendingBookings() {
-  const bookings = DataManager.getBookings();
-  const pending = bookings.filter(b => b.status === 'pending');
-
-  animateCounter(document.getElementById('pendingCount'), 0, pending.length, 600);
-
-  const tbody = document.getElementById('pendingBookingsBody');
-  if (!tbody) return;
-
-  if (pending.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-text">Không có đơn chờ xử lý</div></div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = pending.map(b => `
-    <tr>
-      <td><strong>${b.id}</strong></td>
-      <td>${b.userName}</td>
-      <td>${b.fieldName}</td>
-      <td>${b.date}</td>
-      <td>${b.startTime} - ${b.endTime}</td>
-      <td>${formatCurrency(b.total)}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn btn-sm btn-success" onclick="processConfirmBooking('${b.id}')" title="Xác nhận">✓ Xác nhận</button>
-          <button class="btn btn-sm btn-danger" onclick="processCancelBooking('${b.id}')" title="Hủy">✕ Hủy</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderLockedUsers() {
-  const users = DataManager.getUsers();
-  const locked = users.filter(u => u.status === 'locked');
-
-  animateCounter(document.getElementById('lockedCount'), 0, locked.length, 600);
-
-  const tbody = document.getElementById('lockedUsersBody');
-  if (!tbody) return;
-
-  if (locked.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-text">Không có người dùng bị khóa</div></div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = locked.map(u => `
-    <tr>
-      <td><strong>${u.id}</strong></td>
-      <td>${u.name}</td>
-      <td>${u.email}</td>
-      <td>${u.phone}</td>
-      <td>
-        <button class="btn btn-sm btn-success" onclick="processUnlockUser('${u.id}')">🔓 Mở khóa</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function renderInactiveFields() {
-  const fields = DataManager.getFields();
-  const inactive = fields.filter(f => f.status === 'inactive');
-
-  animateCounter(document.getElementById('inactiveFieldCount'), 0, inactive.length, 600);
-
-  const tbody = document.getElementById('inactiveFieldsBody');
-  if (!tbody) return;
-
-  if (inactive.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-text">Không có sân tạm ngưng</div></div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = inactive.map(f => `
-    <tr>
-      <td><strong>${f.id}</strong></td>
-      <td>${f.name}</td>
-      <td>${f.address}</td>
-      <td>${f.type}</td>
-      <td>
-        <button class="btn btn-sm btn-success" onclick="processActivateField('${f.id}')">✓ Kích hoạt</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function processConfirmBooking(id) {
-  const bookings = DataManager.getBookings();
-  const idx = bookings.findIndex(b => b.id === id);
-  if (idx === -1) return;
-
-  bookings[idx].status = 'confirmed';
-  DataManager.saveBookings(bookings);
-  renderPendingBookings();
-  showToast('Đã xác nhận đơn đặt sân!');
-}
-
-function processCancelBooking(id) {
+/**
+ * Hàm cốt lõi: Ghi nhận thu tiền cho đơn đặt sân
+ * - Chuyển đơn từ "Chờ xử lý" (pending) hoặc Chưa thanh toán (unpaid/awaiting_payment) -> Đã thanh toán (paid)
+ * - Tự động xác nhận đơn (confirmed) nếu đang chờ xử lý
+ * - Cập nhật phương thức thanh toán, số tiền đã thu, ngày giờ thu, ghi chú đối soát
+ * - Đồng bộ và lưu vào LocalStorage/State
+ * @param {string} id Mã đơn đặt sân (VD: 'DD001')
+ * @param {object} options Các trường tùy chọn: paymentMethod, amount, note, paidAt
+ * @returns {object} { ok: boolean, booking: object, error?: string }
+ */
+function processCollectMoney(id, options = {}) {
   const bookings = DataManager.getBookings();
   const b = bookings.find(x => x.id === id);
+  if (!b) return { ok: false, error: 'Không tìm thấy đơn đặt sân!' };
+
+  const paymentMethod = options.paymentMethod || b.paymentMethod || 'at_court';
+  const amount = Number(options.amount) || Number(b.total) || 0;
+  const note = options.note || '';
+  const paidAt = options.paidAt || new Date().toLocaleString('vi-VN');
+
+  const patch = {
+    paymentStatus: 'paid',
+    paymentMethod: paymentMethod,
+    paidAmount: amount,
+    paymentNote: note,
+    paidAt: paidAt
+  };
+
+  if (b.status === 'pending') {
+    patch.status = 'confirmed';
+  }
+
+  if (typeof SV.updateBooking === 'function') {
+    SV.updateBooking(id, patch);
+  } else {
+    SV.setPaymentStatus(id, 'paid', patch);
+    if (patch.status) SV.setBookingStatus(id, patch.status);
+  }
+
+  return { ok: true, booking: DataManager.getBookings().find(x => x.id === id) };
+}
+
+/**
+ * Hàm cốt lõi: Xử lý hoàn tiền cho đơn đặt sân
+ * - Xử lý các đơn bị hủy (status: 'cancelled') hoặc đơn khách yêu cầu hủy/hoàn tiền
+ * - Cập nhật trạng thái hoàn tiền: paymentStatus: 'refunded', status: 'cancelled'
+ * - Ghi nhận số tiền hoàn, lý do hoàn, ngày hoàn, ghi chú đối soát
+ * - Đồng bộ LocalStorage và tự động giải phóng khung giờ sân cho khách khác đặt
+ * @param {string} id Mã đơn đặt sân
+ * @param {object} options Các trường tùy chọn: amount, reason, note, refundedAt
+ * @returns {object} { ok: boolean, booking: object, error?: string }
+ */
+function processRefundMoney(id, options = {}) {
+  const bookings = DataManager.getBookings();
+  const b = bookings.find(x => x.id === id);
+  if (!b) return { ok: false, error: 'Không tìm thấy đơn đặt sân!' };
+
+  const amount = Number(options.amount) || Number(b.paidAmount || b.total) || 0;
+  const reason = options.reason || 'Khách yêu cầu hủy đơn hợp lệ (báo trước quy định)';
+  const note = options.note || '';
+  const refundedAt = options.refundedAt || new Date().toLocaleString('vi-VN');
+
+  const patch = {
+    paymentStatus: 'refunded',
+    status: 'cancelled',
+    refundAmount: amount,
+    refundReason: reason,
+    refundNote: note,
+    refundedAt: refundedAt
+  };
+
+  if (typeof SV.updateBooking === 'function') {
+    SV.updateBooking(id, patch);
+  } else {
+    SV.setPaymentStatus(id, 'refunded', patch);
+    SV.setBookingStatus(id, 'cancelled');
+  }
+
+  return { ok: true, booking: DataManager.getBookings().find(x => x.id === id) };
+}
+
+// Gắn ra window để các file giao diện hoặc script ngoài có thể dễ dàng gọi
+window.processCollectMoney = processCollectMoney;
+window.processRefundMoney = processRefundMoney;
+
+// ==========================================
+// 2. GIAO DIỆN QUẢN LÝ THU TIỀN (THU-TIEN.HTML)
+// ==========================================
+
+function initThuTien() {
+  thuTienData = DataManager.getBookings();
+  renderThuTienStats();
+  filterThuTien();
+
+  document.getElementById('searchThuTien')?.addEventListener('input', filterThuTien);
+  document.getElementById('filterThuTienMethod')?.addEventListener('change', filterThuTien);
+  document.getElementById('filterThuTienStatus')?.addEventListener('change', filterThuTien);
+  document.getElementById('btnRefreshThuTien')?.addEventListener('click', () => {
+    thuTienData = DataManager.getBookings();
+    renderThuTienStats();
+    filterThuTien();
+    showToast('Đã làm mới danh sách thu tiền!');
+  });
+
+  document.getElementById('btnSubmitCollect')?.addEventListener('click', submitCollectMoneyAction);
+}
+
+function renderThuTienStats() {
+  const all = DataManager.getBookings();
+
+  const paidBookings = all.filter(b => b.paymentStatus === 'paid');
+  const paidRev = paidBookings.reduce((sum, b) => sum + (Number(b.paidAmount || b.total) || 0), 0);
+
+  const pendingBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
+  const pendingRev = pendingBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid');
+  const unpaidRev = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const pendingOrderCount = all.filter(b => b.status === 'pending').length;
+
+  const elPaidRev = document.getElementById('statThuTienPaidRev');
+  const elPaidCnt = document.getElementById('statThuTienPaidCount');
+  if (elPaidRev) elPaidRev.textContent = formatCurrency(paidRev);
+  if (elPaidCnt) elPaidCnt.textContent = `${paidBookings.length} đơn`;
+
+  const elPendingRev = document.getElementById('statThuTienPendingRev');
+  const elPendingCnt = document.getElementById('statThuTienPendingCount');
+  if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingRev);
+  if (elPendingCnt) elPendingCnt.textContent = `${pendingBookings.length} đơn cần duyệt`;
+
+  const elUnpaidRev = document.getElementById('statThuTienUnpaidRev');
+  const elUnpaidCnt = document.getElementById('statThuTienUnpaidCount');
+  if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRev);
+  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn tại sân`;
+
+  const elOrderPending = document.getElementById('statThuTienPendingBookingCount');
+  if (elOrderPending) elOrderPending.textContent = `${pendingOrderCount} đơn`;
+}
+
+function filterThuTien() {
+  thuTienData = DataManager.getBookings();
+  const keyword = (document.getElementById('searchThuTien')?.value || '').toLowerCase().trim();
+  const methodFilter = document.getElementById('filterThuTienMethod')?.value;
+  const statusFilter = document.getElementById('filterThuTienStatus')?.value;
+
+  let filtered = thuTienData.slice();
+
+  if (!statusFilter) {
+    filtered = filtered.filter(b => b.paymentStatus !== 'refunded');
+  }
+
+  if (keyword) {
+    filtered = filtered.filter(b =>
+      String(b.id || '').toLowerCase().includes(keyword) ||
+      String(b.userName || '').toLowerCase().includes(keyword) ||
+      String(b.customer?.phone || '').includes(keyword) ||
+      String(b.fieldName || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  if (methodFilter) {
+    filtered = filtered.filter(b => b.paymentMethod === methodFilter);
+  }
+
+  if (statusFilter) {
+    filtered = filtered.filter(b => b.paymentStatus === statusFilter);
+  }
+
+  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
+
+  const totalEl = document.getElementById('thuTienTotalRecords');
+  if (totalEl) totalEl.textContent = filtered.length;
+
+  renderThuTienTable(filtered);
+}
+
+function renderThuTienTable(data) {
+  const tbody = document.getElementById('thuTienTableBody');
+  if (!tbody) return;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">💵</div><div class="empty-text">Không tìm thấy giao dịch thu tiền nào</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(b => {
+    let actions = `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetail('${b.id}')" title="Xem chi tiết giao dịch">👁️</button>`;
+
+    if (b.paymentStatus === 'awaiting_payment') {
+      actions += ` <button class="btn btn-sm btn-success" onclick="confirmCollectMoneyAction('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
+    } else if (b.paymentStatus === 'unpaid' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
+      actions += ` <button class="btn btn-sm btn-primary" onclick="openCollectModal('${b.id}')" title="Thu tiền đơn đặt sân">💵 Thu tiền</button>`;
+    } else if (b.paymentStatus === 'paid') {
+      actions += ` <button class="btn btn-sm btn-outline" style="color: #16a34a; border-color: #86efac;" onclick="viewPaymentDetail('${b.id}')" title="Xem phiếu thu">✓ Đã thu</button>`;
+    }
+
+    const phoneStr = b.customer?.phone ? `<br><small style="color:#64748b;">📞 ${b.customer.phone}</small>` : '';
+
+    return `
+      <tr>
+        <td><strong>${b.id}</strong></td>
+        <td>
+          <div style="font-weight: 600;">${b.userName}</div>
+          ${phoneStr}
+        </td>
+        <td>
+          <div style="font-weight: 500;">${b.fieldName}</div>
+          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #1e293b;">${formatCurrency(b.total)}</div>
+          ${b.discount > 0 ? `<small style="color: #16a34a;">Giảm ${formatCurrency(b.discount)}</small>` : ''}
+        </td>
+        <td>${getStatusBadge(b.paymentMethod || 'at_court', 'paymentMethod')}</td>
+        <td>${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</td>
+        <td>${getStatusBadge(b.status, 'booking')}</td>
+        <td><div class="action-btns">${actions}</div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openCollectModal(id) {
+  const b = DataManager.getBookings().find(x => x.id === id);
   if (!b) return;
 
-  showConfirm('Hủy đơn đặt', `Bạn có chắc muốn hủy đơn "${b.id}"?`, () => {
-    const idx = bookings.findIndex(x => x.id === id);
-    bookings[idx].status = 'cancelled';
-    DataManager.saveBookings(bookings);
-    renderPendingBookings();
-    showToast('Đã hủy đơn đặt sân!', 'danger');
+  currentCollectBookingId = id;
+  const idEl = document.getElementById('collectBookingId');
+  if (idEl) idEl.textContent = b.id;
+
+  const nameEl = document.getElementById('collectCustomerName');
+  if (nameEl) nameEl.textContent = b.userName + (b.customer?.phone ? ` (${b.customer.phone})` : '');
+
+  const courtEl = document.getElementById('collectCourtInfo');
+  if (courtEl) courtEl.textContent = `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
+
+  const totalEl = document.getElementById('collectTotalAmount');
+  if (totalEl) totalEl.textContent = formatCurrency(b.total);
+
+  const methodSelect = document.getElementById('collectMethodSelect');
+  if (methodSelect) methodSelect.value = b.paymentMethod || 'at_court';
+
+  const amountInput = document.getElementById('collectAmountInput');
+  if (amountInput) amountInput.value = b.total;
+
+  const noteInput = document.getElementById('collectNoteInput');
+  if (noteInput) noteInput.value = '';
+
+  openModal('collectModal');
+}
+
+function submitCollectMoneyAction() {
+  if (!currentCollectBookingId) return;
+  const id = currentCollectBookingId;
+  const b = DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
+
+  const method = document.getElementById('collectMethodSelect')?.value || 'at_court';
+  const amount = Number(document.getElementById('collectAmountInput')?.value) || b.total;
+  const note = document.getElementById('collectNoteInput')?.value.trim() || '';
+
+  const res = processCollectMoney(id, {
+    paymentMethod: method,
+    amount: amount,
+    note: note
   });
+
+  if (!res.ok) {
+    showToast(res.error || 'Có lỗi xảy ra', 'danger');
+    return;
+  }
+
+  closeModal('collectModal');
+  thuTienData = DataManager.getBookings();
+  renderThuTienStats();
+  filterThuTien();
+  showToast(`Đã ghi nhận thu tiền ${formatCurrency(amount)} và xác nhận đơn ${id}!`);
 }
 
-function processUnlockUser(id) {
-  const users = DataManager.getUsers();
-  const idx = users.findIndex(u => u.id === id);
-  if (idx === -1) return;
+function confirmCollectMoneyAction(id) {
+  const b = DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
 
-  users[idx].status = 'active';
-  DataManager.saveUsers(users);
-  renderLockedUsers();
-  showToast('Đã mở khóa người dùng!');
-}
+  const isBank = b.paymentMethod === 'bank_transfer';
+  const methodText = isBank ? 'chuyển khoản MBBank' : 'tiền mặt tại quầy';
 
-function processActivateField(id) {
-  const fields = DataManager.getFields();
-  const idx = fields.findIndex(f => f.id === id);
-  if (idx === -1) return;
-
-  fields[idx].status = 'active';
-  DataManager.saveFields(fields);
-  renderInactiveFields();
-  showToast('Đã kích hoạt sân bóng!');
+  showConfirm(
+    'Xác nhận thu tiền',
+    `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã thanh toán thành công qua ${methodText}? Đơn hàng sẽ tự động chuyển sang trạng thái Đã xác nhận.`,
+    () => {
+      processCollectMoney(id, {
+        paymentMethod: b.paymentMethod || (isBank ? 'bank_transfer' : 'at_court'),
+        amount: b.total,
+        note: `Đã đối soát xác nhận ${methodText}`
+      });
+      thuTienData = DataManager.getBookings();
+      renderThuTienStats();
+      filterThuTien();
+      showToast(`Đã ghi nhận thanh toán thành công cho đơn ${b.id}!`);
+    }
+  );
 }
 
 // ==========================================
-// QUẢN LÝ THANH TOÁN & HOÀN TIỀN
+// 3. GIAO DIỆN QUẢN LÝ HOÀN TIỀN (HOAN-TIEN.HTML)
 // ==========================================
-let paymentsData = [];
-let currentRefundBookingId = null;
+
+function initHoanTien() {
+  hoanTienData = DataManager.getBookings();
+  renderHoanTienStats();
+  filterHoanTien();
+
+  document.getElementById('searchHoanTien')?.addEventListener('input', filterHoanTien);
+  document.getElementById('filterHoanTienStatus')?.addEventListener('change', filterHoanTien);
+  document.getElementById('btnRefreshHoanTien')?.addEventListener('click', () => {
+    hoanTienData = DataManager.getBookings();
+    renderHoanTienStats();
+    filterHoanTien();
+    showToast('Đã làm mới danh sách hoàn tiền!');
+  });
+
+  document.getElementById('btnConfirmRefund')?.addEventListener('click', executeRefund);
+}
+
+function renderHoanTienStats() {
+  const all = DataManager.getBookings();
+
+  const refundedBookings = all.filter(b => b.paymentStatus === 'refunded');
+  const refundedRev = refundedBookings.reduce((sum, b) => sum + (Number(b.refundAmount || b.total) || 0), 0);
+
+  const pendingRefundBookings = all.filter(b =>
+    b.status === 'cancelled' && b.paymentStatus === 'paid'
+  );
+  const pendingRefundRev = pendingRefundBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const cancelledCount = all.filter(b => b.status === 'cancelled').length;
+
+  const elRefundedRev = document.getElementById('statHoanTienTotalRev');
+  const elRefundedCnt = document.getElementById('statHoanTienTotalCount');
+  if (elRefundedRev) elRefundedRev.textContent = formatCurrency(refundedRev);
+  if (elRefundedCnt) elRefundedCnt.textContent = `${refundedBookings.length} đơn`;
+
+  const elPendingRev = document.getElementById('statHoanTienPendingRev');
+  const elPendingCnt = document.getElementById('statHoanTienPendingCount');
+  if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingRefundRev);
+  if (elPendingCnt) elPendingCnt.textContent = `${pendingRefundBookings.length} đơn cần hoàn`;
+
+  const elCancelledCnt = document.getElementById('statHoanTienCancelledCount');
+  if (elCancelledCnt) elCancelledCnt.textContent = `${cancelledCount} đơn`;
+}
+
+function filterHoanTien() {
+  hoanTienData = DataManager.getBookings();
+  const keyword = (document.getElementById('searchHoanTien')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('filterHoanTienStatus')?.value;
+
+  let filtered = hoanTienData.filter(b =>
+    b.paymentStatus === 'refunded' ||
+    b.status === 'cancelled' ||
+    b.paymentStatus === 'paid'
+  );
+
+  if (statusFilter === 'needs_refund') {
+    filtered = filtered.filter(b => b.status === 'cancelled' && b.paymentStatus === 'paid');
+  } else if (statusFilter === 'refunded') {
+    filtered = filtered.filter(b => b.paymentStatus === 'refunded');
+  }
+
+  if (keyword) {
+    filtered = filtered.filter(b =>
+      String(b.id || '').toLowerCase().includes(keyword) ||
+      String(b.userName || '').toLowerCase().includes(keyword) ||
+      String(b.customer?.phone || '').includes(keyword) ||
+      String(b.fieldName || '').toLowerCase().includes(keyword) ||
+      String(b.refundReason || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
+
+  const totalEl = document.getElementById('hoanTienTotalRecords');
+  if (totalEl) totalEl.textContent = filtered.length;
+
+  renderHoanTienTable(filtered);
+}
+
+function renderHoanTienTable(data) {
+  const tbody = document.getElementById('hoanTienTableBody');
+  if (!tbody) return;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">↩️</div><div class="empty-text">Không có đơn hoàn tiền nào</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(b => {
+    let actions = '';
+    const isRefunded = b.paymentStatus === 'refunded';
+
+    if (isRefunded) {
+      actions = `<button class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fca5a5;" onclick="viewRefundDetail('${b.id}')" title="Xem phiếu hoàn tiền">👁️ Phiếu hoàn</button>`;
+    } else {
+      actions = `<button class="btn btn-sm btn-danger" onclick="openRefundModal('${b.id}')" title="Thực hiện hoàn tiền cho khách">↩️ Hoàn tiền</button>`;
+    }
+
+    const phoneStr = b.customer?.phone ? `<br><small style="color:#64748b;">📞 ${b.customer.phone}</small>` : '';
+    const refundAmountDisplay = isRefunded
+      ? `<strong class="text-danger">${formatCurrency(b.refundAmount || b.total)}</strong>`
+      : `<span class="text-muted">Chưa hoàn</span>`;
+    const reasonDisplay = isRefunded
+      ? `<div style="font-size:13px; font-weight:500;">${b.refundReason || 'Khách hủy đơn'}</div><small style="color:#64748b;">⏰ ${b.refundedAt || '—'}</small>`
+      : `<span class="text-muted">Đang chờ xử lý hoàn</span>`;
+
+    return `
+      <tr>
+        <td><strong>${b.id}</strong></td>
+        <td>
+          <div style="font-weight: 600;">${b.userName}</div>
+          ${phoneStr}
+        </td>
+        <td>
+          <div style="font-weight: 500;">${b.fieldName}</div>
+          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+        </td>
+        <td><strong>${formatCurrency(b.total)}</strong></td>
+        <td>${refundAmountDisplay}</td>
+        <td>${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</td>
+        <td>${reasonDisplay}</td>
+        <td><div class="action-btns">${actions}</div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openRefundModal(id) {
+  const b = DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
+
+  currentRefundBookingId = id;
+  const idEl = document.getElementById('refundBookingId');
+  if (idEl) idEl.textContent = b.id;
+
+  const nameEl = document.getElementById('refundCustomerName');
+  if (nameEl) nameEl.textContent = b.userName + (b.customer?.phone ? ` (${b.customer.phone})` : '');
+
+  const courtEl = document.getElementById('refundCourtInfo');
+  if (courtEl) courtEl.textContent = `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
+
+  const paidEl = document.getElementById('refundPaidAmount');
+  if (paidEl) paidEl.textContent = formatCurrency(b.total);
+
+  const amountInput = document.getElementById('refundAmountInput');
+  if (amountInput) {
+    amountInput.value = b.total;
+    amountInput.max = b.total;
+  }
+
+  const reasonSelect = document.getElementById('refundReasonSelect');
+  if (reasonSelect) reasonSelect.selectedIndex = 0;
+
+  const noteInput = document.getElementById('refundNoteInput');
+  if (noteInput) noteInput.value = '';
+
+  openModal('refundModal');
+}
+
+function executeRefund() {
+  if (!currentRefundBookingId) return;
+  const id = currentRefundBookingId;
+  const b = DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
+
+  const amount = Number(document.getElementById('refundAmountInput')?.value) || b.total;
+  const reason = document.getElementById('refundReasonSelect')?.value || 'Khách yêu cầu hủy đơn hợp lệ (báo trước quy định)';
+  const note = document.getElementById('refundNoteInput')?.value.trim() || '';
+
+  const res = processRefundMoney(id, {
+    amount: amount,
+    reason: reason,
+    note: note
+  });
+
+  if (!res.ok) {
+    showToast(res.error || 'Có lỗi xảy ra', 'danger');
+    return;
+  }
+
+  closeModal('refundModal');
+  hoanTienData = DataManager.getBookings();
+  renderHoanTienStats();
+  filterHoanTien();
+
+  if (document.body.dataset.page === 'thu-tien') {
+    renderThuTienStats();
+    filterThuTien();
+  } else if (document.body.dataset.page === 'payments') {
+    renderPaymentStats();
+    filterPayments();
+  }
+
+  showToast(`Đã hoàn tiền ${formatCurrency(amount)} cho đơn ${id} và mở lại sân thành công!`);
+}
+
+function viewRefundDetail(id) {
+  const b = DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
+
+  const body = document.getElementById('refundDetailBody');
+  if (body) {
+    body.innerHTML = `
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 13px; color: #64748b;">Mã đơn đặt sân:</span>
+          <strong style="font-size: 15px;">${b.id}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; color: #64748b;">Số tiền đã hoàn trả:</span>
+          <span style="font-size: 18px; font-weight: 800; color: #dc2626;">${formatCurrency(b.refundAmount || b.total)}</span>
+        </div>
+      </div>
+
+      <div class="detail-row"><div class="detail-label">Khách nhận hoàn:</div><div class="detail-value"><strong>${b.userName}</strong></div></div>
+      <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${b.customer?.phone || '—'}</div></div>
+      <div class="detail-row"><div class="detail-label">Sân bóng:</div><div class="detail-value">${b.fieldName}</div></div>
+      <div class="detail-row"><div class="detail-label">Lịch đặt đã hủy:</div><div class="detail-value">${b.date} (${b.startTime} - ${b.endTime})</div></div>
+      <div class="detail-row"><div class="detail-label">Thời gian hoàn tiền:</div><div class="detail-value"><strong>${b.refundedAt || '—'}</strong></div></div>
+      <div class="detail-row"><div class="detail-label">Lý do hoàn:</div><div class="detail-value"><span class="badge badge-warning">${b.refundReason || 'Khách yêu cầu hủy đơn'}</span></div></div>
+      <div class="detail-row"><div class="detail-label">Ghi chú đối soát:</div><div class="detail-value">${b.refundNote || '—'}</div></div>
+
+      <div style="margin-top: 14px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 12px; color: #166534;">
+        ✓ Khung giờ sân đã được giải phóng trên hệ thống. Khách hàng khác có thể đặt lại bình thường.
+      </div>
+    `;
+  }
+  openModal('refundDetailModal');
+}
+
+// ==========================================
+// 4. TRANG THANH TOÁN TỔNG HỢP (THANH-TOAN.HTML)
+// ==========================================
 
 function initPayments() {
   paymentsData = DataManager.getBookings();
@@ -968,19 +1280,15 @@ function initPayments() {
 function renderPaymentStats() {
   const all = DataManager.getBookings();
 
-  // 1. Thực thu (paid)
   const paidBookings = all.filter(b => b.paymentStatus === 'paid');
-  const paidRevenue = paidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const paidRevenue = paidBookings.reduce((sum, b) => sum + (Number(b.paidAmount || b.total) || 0), 0);
 
-  // 2. Chờ xác nhận chuyển khoản (awaiting_payment)
   const pendingBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
   const pendingRevenue = pendingBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
-  // 3. Chưa thanh toán tại sân (unpaid)
   const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid');
   const unpaidRevenue = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
-  // 4. Đã hoàn tiền (refunded)
   const refundedBookings = all.filter(b => b.paymentStatus === 'refunded');
   const refundedRevenue = refundedBookings.reduce((sum, b) => sum + (Number(b.refundAmount || b.total) || 0), 0);
 
@@ -1099,81 +1407,17 @@ function confirmPaymentReceived(id) {
     'Xác nhận nhận tiền',
     `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã thanh toán thành công qua ${methodText}?`,
     () => {
-      SV.setPaymentStatus(id, 'paid');
-      if (b.status === 'pending') {
-        SV.setBookingStatus(id, 'confirmed');
-      }
+      processCollectMoney(id, {
+        paymentMethod: b.paymentMethod,
+        amount: b.total,
+        note: `Đã xác nhận thanh toán qua ${methodText}`
+      });
       paymentsData = DataManager.getBookings();
       renderPaymentStats();
       filterPayments();
       showToast(`Đã ghi nhận thanh toán thành công cho đơn ${b.id}!`);
     }
   );
-}
-
-function openRefundModal(id) {
-  const b = DataManager.getBookings().find(x => x.id === id);
-  if (!b) return;
-
-  currentRefundBookingId = id;
-  const idEl = document.getElementById('refundBookingId');
-  if (idEl) idEl.textContent = b.id;
-  
-  const nameEl = document.getElementById('refundCustomerName');
-  if (nameEl) nameEl.textContent = b.userName + (b.customer?.phone ? ` (${b.customer.phone})` : '');
-
-  const courtEl = document.getElementById('refundCourtInfo');
-  if (courtEl) courtEl.textContent = `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
-
-  const paidEl = document.getElementById('refundPaidAmount');
-  if (paidEl) paidEl.textContent = formatCurrency(b.total);
-  
-  const amountInput = document.getElementById('refundAmountInput');
-  if (amountInput) {
-    amountInput.value = b.total;
-    amountInput.max = b.total;
-  }
-  
-  const reasonSelect = document.getElementById('refundReasonSelect');
-  if (reasonSelect) reasonSelect.selectedIndex = 0;
-
-  const noteInput = document.getElementById('refundNoteInput');
-  if (noteInput) noteInput.value = '';
-
-  openModal('refundModal');
-}
-
-function executeRefund() {
-  if (!currentRefundBookingId) return;
-  const id = currentRefundBookingId;
-  const b = DataManager.getBookings().find(x => x.id === id);
-  if (!b) return;
-
-  const amount = Number(document.getElementById('refundAmountInput')?.value) || b.total;
-  const reason = document.getElementById('refundReasonSelect')?.value || 'Khách yêu cầu hủy đơn hợp lệ (báo trước quy định)';
-  const note = document.getElementById('refundNoteInput')?.value.trim() || '';
-
-  const updateData = {
-    paymentStatus: 'refunded',
-    status: 'cancelled',
-    refundAmount: amount,
-    refundReason: reason,
-    refundNote: note,
-    refundedAt: new Date().toLocaleString('vi-VN')
-  };
-
-  if (typeof SV.updateBooking === 'function') {
-    SV.updateBooking(id, updateData);
-  } else {
-    SV.setPaymentStatus(id, 'refunded', updateData);
-    SV.setBookingStatus(id, 'cancelled');
-  }
-
-  closeModal('refundModal');
-  paymentsData = DataManager.getBookings();
-  renderPaymentStats();
-  filterPayments();
-  showToast(`Đã hoàn tiền ${formatCurrency(amount)} cho đơn ${id} và mở lại sân thành công!`);
 }
 
 function viewPaymentDetail(id) {
@@ -1201,7 +1445,7 @@ function viewPaymentDetail(id) {
       <div class="detail-row"><div class="detail-label">Sân bóng:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đá:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Khung giờ:</div><div class="detail-value">${b.startTime} - ${b.endTime} (${b.duration}h)</div></div>
-      
+
       <hr style="margin: 12px 0; border: none; border-top: 1px dashed #e2e8f0;">
 
       <div class="detail-row"><div class="detail-label">Hình thức:</div><div class="detail-value">${getStatusBadge(b.paymentMethod || 'at_court', 'paymentMethod')}</div></div>
@@ -1216,6 +1460,10 @@ function viewPaymentDetail(id) {
 
       <div class="detail-row"><div class="detail-label">Trạng thái TT:</div><div class="detail-value">${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái đơn:</div><div class="detail-value">${getStatusBadge(b.status, 'booking')}</div></div>
+
+      ${b.paymentStatus === 'paid' && b.paidAt ? `
+        <div class="detail-row"><div class="detail-label">Thời gian thu:</div><div class="detail-value">${b.paidAt}</div></div>
+      ` : ''}
 
       ${b.paymentStatus === 'refunded' ? `
         <div style="margin-top: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
@@ -1232,9 +1480,6 @@ function viewPaymentDetail(id) {
   openModal('paymentDetailModal');
 }
 
-// ==========================================
-// QUẢN LÝ ĐÁNH GIÁ & BÌNH LUẬN
-// ==========================================
 function initReviews() {
   bindReviewListeners();
   renderTable();
@@ -1278,7 +1523,7 @@ function bindReviewListeners() {
   };
 
   window.toggleReviewStatus = function(id) {
-    // Ghi qua store để trang chủ ẩn/hiện đánh giá ngay ở lần hiển thị kế tiếp.
+
     const review = DataManager.getReviews().find(r => r.id === id);
     if (!review) return;
     const next = review.status === 'visible' ? 'hidden' : 'visible';
@@ -1301,7 +1546,6 @@ function bindReviewListeners() {
   };
 }
 
-/** Vẽ lại bảng đánh giá từ dữ liệu mới nhất, giữ nguyên bộ lọc đang dùng. */
 function renderTable() {
   const tableBody = document.getElementById('reviewsTableBody');
   if (!tableBody) return;
@@ -1368,7 +1612,6 @@ function renderTable() {
   }).join('');
 }
 
-/** Thống kê đánh giá: dùng chung hàm vẽ bảng để hai chỗ không lệch nhau. */
 function renderStats(reviews) {
   const total = reviews.length;
   const avg = total > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : '0.0';
@@ -1386,9 +1629,6 @@ function renderStats(reviews) {
   if (elHidden) animateCounter(elHidden, 0, hidden, 750);
 }
 
-// ==========================================
-// QUẢN LÝ MÃ GIẢM GIÁ (VOUCHERS)
-// ==========================================
 function initVouchers() {
   bindVoucherListeners();
   renderVoucherTable();
@@ -1464,7 +1704,6 @@ function renderVoucherStats(vouchers) {
   if (elExpired) animateCounter(elExpired, 0, expired, 750);
 }
 
-/** Đặt trạng thái voucher từ cả radio (giao diện) lẫn select ẩn (nơi đọc khi lưu). */
 function setVoucherStatus(status) {
   document.getElementById('voucherStatus').value = status;
   const radio = document.querySelector(`input[name="voucherStatusRadio"][value="${status}"]`);
@@ -1485,13 +1724,12 @@ function bindVoucherListeners() {
       document.getElementById('voucherForm').reset();
       document.getElementById('voucherEditId').value = '';
       document.getElementById('voucherModalTitle').textContent = 'Thêm mã giảm giá mới';
-      // select trạng thái đã bị ẩn sau khi đổi sang radio, nên reset thủ công
+
       setVoucherStatus('active');
       openModal('voucherModal');
     });
   }
 
-  // Radio là giao diện, select ẩn là nơi lưu giá trị - hai cái phải luôn khớp.
   document.querySelectorAll('input[name="voucherStatusRadio"]').forEach((radio) => {
     radio.addEventListener('change', () => setVoucherStatus(radio.value));
   });
@@ -1603,7 +1841,6 @@ function checkAdminAuth(onSuccess) {
     return;
   }
 
-  // Tự động cấp quyền nếu tài khoản hiện tại là Admin hoặc tên Long
   const cur = (window.SV && typeof SV.currentUser === 'function') ? SV.currentUser() : null;
   if (cur && (cur.role === 'admin' || String(cur.username || '').toLowerCase() === 'long' || String(cur.name || '').toLowerCase().includes('long'))) {
     sessionStorage.setItem('admin_authenticated', 'true');
@@ -1736,8 +1973,6 @@ function checkAdminAuth(onSuccess) {
       return fail('Tên đăng nhập hoặc mật khẩu không đúng!');
     }
 
-    // Kiểm tra mật khẩu:
-    // Chấp nhận các mật khẩu phổ biến / mặc định
     const acceptedPws = ['admin123', '123456', 'long', 'Long', 'admin', 'Admin'];
     let matched = false;
     if (acceptedPws.includes(password)) {
@@ -1774,11 +2009,17 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'bookings':
         initBookings();
         break;
-      case 'payments':
-        initPayments();
-        break;
       case 'users':
         initUsers();
+        break;
+      case 'thu-tien':
+        initThuTien();
+        break;
+      case 'hoan-tien':
+        initHoanTien();
+        break;
+      case 'payments':
+        initPayments();
         break;
       case 'reviews':
         initReviews();
@@ -1786,27 +2027,20 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'vouchers':
         initVouchers();
         break;
-      case 'settings':
-        initSettings();
-        break;
-      case 'processing':
-        initProcessing();
-        break;
     }
 
     applySettings();
 
-    // Trang khác (trang chủ, trang đăng nhập, tab admin khác) sửa dữ liệu thì
-    // trang này vẽ lại để bảng và thống kê không bị cũ.
     const REFRESH = {
       dashboard: initDashboard,
       fields: refreshFields,
       bookings: filterBookings,
-      payments: initPayments,
       users: filterUsers,
+      'thu-tien': initThuTien,
+      'hoan-tien': initHoanTien,
+      payments: initPayments,
       reviews: renderTable,
       vouchers: renderVoucherTable,
-      processing: initProcessing,
     };
     SV.on((key) => {
       if (key === 'settings' || key === '*') {
@@ -1816,6 +2050,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (key === 'bookings' || key === '*') {
         bookingsData = DataManager.getBookings();
         paymentsData = DataManager.getBookings();
+        thuTienData = DataManager.getBookings();
+        hoanTienData = DataManager.getBookings();
       }
       if (key === 'fields' || key === '*') fieldsData = DataManager.getFields();
       if (key === 'settings') return;
@@ -1823,3 +2059,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+

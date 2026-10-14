@@ -40,6 +40,24 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="nguoi-dung.html" class="nav-link">
+              <span class="nav-icon">👥</span>
+              <span>Quản lý người dùng</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="thu-tien.html" class="nav-link">
+              <span class="nav-icon">💵</span>
+              <span>Thu tiền</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="hoan-tien.html" class="nav-link">
+              <span class="nav-icon">↩️</span>
+              <span>Hoàn tiền</span>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="danh-gia.html" class="nav-link">
               <span class="nav-icon">⭐</span>
               <span>Đánh giá & Bình luận</span>
@@ -49,12 +67,6 @@
             <a href="ma-giam-gia.html" class="nav-link active">
               <span class="nav-icon">🎟️</span>
               <span>Mã giảm giá</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="thanh-toan.html" class="nav-link">
-              <span class="nav-icon">💳</span>
-              <span>Thanh toán & Hoàn tiền</span>
             </a>
           </li>
         </ul>
@@ -77,7 +89,7 @@
       </header>
 
       <div class="page-content">
-        <!-- Thống kê Voucher -->
+
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon blue">🎟️</div>
@@ -109,7 +121,6 @@
           </div>
         </div>
 
-        <!-- Bảng danh sách mã giảm giá -->
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Danh sách Voucher</h2>
@@ -150,10 +161,9 @@
     </div>
   </div>
 
-  <!-- Modal Thêm / Sửa Voucher -->
   <div class="modal-overlay" id="voucherModal">
     <div class="voucher-modal">
-      <!-- Header -->
+
       <div class="voucher-modal__header">
         <div class="voucher-modal__header-left">
           <div class="voucher-modal__icon">
@@ -178,7 +188,6 @@
         <input type="hidden" id="voucherEditId">
         <div class="voucher-modal__body">
 
-          <!-- Section: Mã Code -->
           <div class="voucher-section">
             <div class="voucher-section__label">
               <span class="voucher-section__icon">🏷️</span>
@@ -193,7 +202,6 @@
             </div>
           </div>
 
-          <!-- Section: Giá trị giảm giá -->
           <div class="voucher-section">
             <div class="voucher-section__label">
               <span class="voucher-section__icon">💰</span>
@@ -232,7 +240,6 @@
             </div>
           </div>
 
-          <!-- Section: Giới hạn & Thời hạn -->
           <div class="voucher-section">
             <div class="voucher-section__label">
               <span class="voucher-section__icon">📅</span>
@@ -267,7 +274,7 @@
                     </span>
                   </label>
                 </div>
-                <!-- Hidden select for backward compatibility -->
+
                 <select id="voucherStatus" class="form-control" style="display: none;">
                   <option value="active">Hoạt động</option>
                   <option value="disabled">Tạm tắt</option>
@@ -278,7 +285,6 @@
 
         </div>
 
-        <!-- Footer -->
         <div class="voucher-modal__footer">
           <button type="button" class="btn btn-outline modal-close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
