@@ -7,11 +7,11 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         auth: fileURLToPath(new URL('./src/auth.html', import.meta.url)),
-        taiKhoan: fileURLToPath(new URL('./src/tai-khoan.html', import.meta.url)),
-        // Bản trùc này không ai trỏ tới nhưng vẫn còn trong repo. Đưa vào input
-        // để Vite xử lý /src/style.css và /src/main.js thành đường dẫn trong
-        // dist/assets, thay vì để nguyên đường dẫn gốc không tồn tại khi deploy.
-        projectIndex: fileURLToPath(new URL('./project/index.html', import.meta.url)),
+        account: fileURLToPath(new URL('./src/tai-khoan.html', import.meta.url)),
+        payment: fileURLToPath(new URL('./src/thanh-toan.html', import.meta.url)),
+        // Các trang trong public/project/ (danh sách sân, quản trị) là HTML
+        // tĩnh: Vite copy nguyên vẹn từ public/ sang dist/, không cần khai báo.
+        // public/project/index.html chỉ là trang chuyển hướng về /index.html.
       },
     },
   },

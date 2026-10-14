@@ -1,5 +1,4 @@
-import { getUser, getRemembered, setUser } from './session.js'
-import { readUsers, writeUsers } from './storage.js'
+import { initProfile, openProfile } from './profile.js'
 
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
@@ -7,6 +6,9 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 const OTP_DEMO = '123456'
 const RESEND_SECONDS = 60
 const REDIRECT_MS = 3000
+// Cả tài khoản lẫn phiên đăng nhập đều do store chung quản lý
+// (public/project/js/store.js): đăng ký ở đây thì trang quản trị thấy ngay,
+// đăng nhập xong thì header mọi trang đổi sang ô tài khoản.
 const DEMO_USER = {
   name: 'Nguyễn Minh Tuấn',
   email: 'demo@4sv.vn',
@@ -77,7 +79,6 @@ const resendBtn = $('[data-otp-resend]')
 let mode = 'login'
 let otpContext = 'register'
 let otpTarget = ''
-let otpNewUser = null
 let resendTimer = null
 let redirectTimer = null
 
@@ -87,6 +88,13 @@ function setMode(next, { updateHash = true, focus = true } = {}) {
   panels.forEach((panel) => {
     panel.hidden = panel.dataset.panel !== next
   })
+
+  // Panel tài khoản rộng hơn (2 cột) nên mở rộng thẻ và ẩn hẳn cột quảng cáo
+  // bên trái để không chiếm chỗ.
+  const card = $('.auth-card')
+  if (card) card.classList.toggle('auth-card--wide', next === 'profile')
+  const page = $('.auth-page')
+  if (page) page.classList.toggle('auth-page--account', next === 'profile')
 
   const isTabMode = next === 'login' || next === 'register'
   tabs.hidden = !isTabMode
@@ -104,6 +112,17 @@ function setMode(next, { updateHash = true, focus = true } = {}) {
     const first = $(`[data-panel="${next}"] [data-rule]`)
     if (first) setTimeout(() => first.focus(), 60)
   }
+}
+
+/** Chỉ mở được panel tài khoản khi đã đăng nhập; chưa thì đưa về đăng nhập. */
+function goProfile() {
+  if (!SV.currentUser()) {
+    toast('Vui lòng đăng nhập để xem tài khoản của bạn')
+    setMode('login')
+    return
+  }
+  openProfile()
+  setMode('profile')
 }
 
 /* ---------- HIỂN THỊ LỖI ---------- */
@@ -272,8 +291,6 @@ function submitOtp() {
   resendBtn.textContent = 'Gửi lại mã'
 
   if (otpContext === 'register') {
-    if (otpNewUser) setUser(otpNewUser, true)
-    otpNewUser = null
     showSuccess(
       'Tạo tài khoản thành công!',
       `Voucher giảm 20% đã gửi tới ${otpTarget}. Chào mừng bạn đến với 4SV.vn.`,
@@ -297,16 +314,16 @@ function showSuccess(title, desc, redirectTo) {
   }
 }
 
-/* ---------- NGƯỜI DÙNG (demo localStorage) ---------- */
-/** Đọc cả khoá mới (4sv_users) và khoá cũ (4sv_auth_users) sau khi quản trị migrate. */
+/* ---------- NGƯỜI DÙNG (lấy từ store dùng chung) ---------- */
 function getUsers() {
-  return readUsers()
+  return SV.users()
 }
 
-function saveUsers(users) {
-  return writeUsers(users)
-}
-
+/**
+ * Chỉ nhận email hoặc số điện thoại. SV.findUser() còn khớp cả tên để tiện
+ * tìm kiếm ở trang quản trị, nhưng đăng nhập thì không nên cho đăng nhập
+ * bằng tên vì hai người có thể trùng tên.
+ */
 function findUser(identity) {
   const key = identity.trim().toLowerCase()
   const phone = digits(identity)
@@ -338,6 +355,10 @@ function initTabs() {
     if (target === 'login') {
       clearTimeout(redirectTimer)
       setMode('login')
+      return
+    }
+    if (target === 'profile') {
+      goProfile()
       return
     }
     setMode(target)
@@ -460,8 +481,18 @@ function initForms() {
       )
       return
     }
+    // Admin khoá tài khoản ở trang quản trị thì không cho đăng nhập.
+    if (user.status === 'locked') {
+      setFieldState(
+        $('#loginIdentity'),
+        'Tài khoản đã bị khoá, vui lòng liên hệ quản trị viên',
+      )
+      return
+    }
     const remember = $('#loginRemember').checked
-    setUser(user, remember)
+    // Phiên do store quản lý để mọi trang đều thấy đăng nhập, không tự đọc
+    // localStorage ở đây nữa.
+    SV.signIn(user, remember)
     showSuccess(
       `Xin chào, ${user.name}!`,
       'Bạn đã đăng nhập thành công. Chúc bạn có những trận đấu thật chất!',
@@ -473,23 +504,34 @@ function initForms() {
     e.preventDefault()
     if (!validateForm(forms.register)) return
     const email = $('#regEmail').value.trim()
-    const users = getUsers()
-    if (users.some((u) => String(u.email || '').toLowerCase() === email.toLowerCase())) {
-      setFieldState($('#regEmail'), 'Email này đã được đăng ký trước đó')
+    const phone = digits($('#regPhone').value)
+    // Báo trùng ngay khi gõ, không đợi qua bước OTP mới biết.
+    const takenBy = SV.users().find(
+      (u) =>
+        String(u.email || '').toLowerCase() === email.toLowerCase() ||
+        (phone && digits(u.phone) === phone),
+    )
+    if (takenBy) {
+      setFieldState(
+        takenBy.email && takenBy.email.toLowerCase() === email.toLowerCase()
+          ? $('#regEmail')
+          : $('#regPhone'),
+        'Thông tin này đã được đăng ký trước đó',
+      )
       return
     }
     await fakeRequest(forms.register)
-    const newUser = {
+    const result = SV.addUser({
       name: $('#regName').value.trim(),
       email,
-      phone: digits($('#regPhone').value),
+      phone,
       password: $('#regPassword').value,
       role: $('input[name="role"]:checked').value,
-      createdAt: new Date().toISOString(),
+    })
+    if (!result.ok) {
+      setFieldState($('#regEmail'), result.error || 'Không tạo được tài khoản')
+      return
     }
-    users.push(newUser)
-    saveUsers(users)
-    otpNewUser = newUser
     showOtp('register', email)
   })
 
@@ -517,14 +559,8 @@ function initForms() {
     const password = $('#newPassword').value
     const email = $('#forgotEmail').value.trim()
     await fakeRequest(forms.newpass)
-    const users = getUsers()
-    const user = users.find(
-      (u) => String(u.email || '').toLowerCase() === email.toLowerCase(),
-    )
-    if (user) {
-      user.password = password
-      saveUsers(users)
-    }
+    const user = findUser(email)
+    if (user) SV.updateUser(user.id, { password })
     forms.newpass.reset()
     $('#newPassword').dispatchEvent(new Event('input'))
     toast('Đặt mật khẩu mới thành công, hãy đăng nhập lại')
@@ -537,14 +573,13 @@ function init() {
   const year = $('#year')
   if (year) year.textContent = String(new Date().getFullYear())
 
-  if (!getUsers().length) saveUsers([{ ...DEMO_USER }])
+  // Tài khoản demo do store cung cấp sẵn, không tự tạo ở đây để tránh hai nơi
+  // cùng ghi một danh sách và sinh ra bản ghi trùng.
+  const demo = findUser(DEMO_USER.email)
+  if (!demo) SV.addUser({ ...DEMO_USER })
 
-  if (getUser()) {
-    window.location.replace('/')
-    return
-  }
-
-  const remembered = getRemembered()
+  // Ô nhập tài khoản điền sẵn email đã "ghi nhớ" để bấm 1 phát là vào.
+  const remembered = SV.remembered()
   if (remembered) {
     $('#loginRemember').checked = true
     $('#loginIdentity').value = remembered.email || ''
@@ -556,8 +591,19 @@ function init() {
   initFields()
   initOtpInputs()
   initForms()
+  initProfile({ toast })
 
   const hash = location.hash.slice(1)
+  if (hash === 'profile') {
+    if (SV.currentUser()) {
+      openProfile()
+      setMode('profile', { updateHash: false })
+    } else {
+      setMode('login', { updateHash: false })
+      toast('Vui lòng đăng nhập để xem tài khoản của bạn')
+    }
+    return
+  }
   setMode(hash === 'register' ? 'register' : 'login', { updateHash: false })
 }
 

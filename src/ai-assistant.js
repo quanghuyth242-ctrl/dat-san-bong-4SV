@@ -7,9 +7,41 @@
  * - "sân gần tôi nhất"              -> dùng vị trí đã lấy được, nếu chưa có thì hỏi xin quyền
  */
 
-import { escapeHtml } from './auth-nav.js'
-import { priceValue } from './venues.js'
 import { norm, expand, venueHaystack, deaccent } from './vn-text.js'
+
+/**
+ * store.js (SV) lo phần escape và quy đổi giá. Trang nào quên nạp store thì
+ * trợ lý vẫn phải chạy được, nên có bộ escape dự phòng thay vì vỡ toàn khung chat.
+ */
+function escapeHtml(value) {
+  if (typeof SV !== 'undefined' && SV?.escape) return SV.escape(value)
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  )
+}
+
+/** Giá một tiếng dạng số: store trả số đồng, dữ liệu cũ có thể là "300k". */
+function priceValue(venue) {
+  const price = Number(venue.price)
+  if (Number.isFinite(price) && price > 0) return price
+  return (parseInt(String(venue.price).replace(/\D/g, ''), 10) || 0) * 1000
+}
+
+/**
+ * Cỡ sân dạng số (5/7/11). Chấp nhận cả nhãn do trợ lý tự sinh ('Sân 7') lẫn giá
+ * trị thô của store ('7') để so khớp không bị lệch.
+ */
+function pitchNumber(value) {
+  const n = Number(String(value ?? '').match(/\d+/)?.[0])
+  return [5, 7, 11].includes(n) ? n : null
+}
+
+/** Nhãn hiển thị của cỡ sân: store trả '7' thì thành 'Sân 7'. */
+function typeLabel(value) {
+  const n = pitchNumber(value)
+  return n ? `Sân ${n}` : 'Sân bóng'
+}
 
 const STASH_KEY = '4sv_ai_intent'
 
@@ -31,6 +63,33 @@ const PART_OF_DAY = {
   'chieu': { from: 14, to: 18, hint: 'buoi chieu' },
   'toi': { from: 18, to: 23, hint: 'buoi toi' },
   'dem': { from: 20, to: 23, hint: 'buoi dem' },
+}
+
+/** Bản có dấu của từng từ buổi: đọc trước để không trộn "tối" với "tôi". */
+const PART_OF_DAY_VI = { sang: 'sáng', trua: 'trưa', chieu: 'chiều', toi: 'tối', dem: 'đêm' }
+
+/**
+ * Khi người dùng gõ không dấu thì "toi" là cả "tối" (buổi tối) lẫn "tôi" (đại từ).
+ * Chỉ coi là buổi tối khi không thuộc cụm đại từ thường gặp:
+ * "đặt sân giúp tôi", "gần tôi", "tôi muốn đặt sân"...
+ */
+const TOI_PRONOUN_RE =
+  /(?:^|\s)(?:giup|gan|cho|cua|voi|danh|la|va|nho|xin|nghi|thuoc)\s+toi\b|^toi\s+(?:muon|can|chon|hoi|dang|se|la|bi|biet|thich|nghi|xem|doc|tra|quet|dang ky|dang ki|tim|dat|gui|hoc|lam)/
+
+/**
+ * Đọc buổi trong ngày. Ưu tiên bản có dấu ("tối mai" khác "tôi"), chỉ khi nào
+ * người gõ hoàn toàn không dấu mới đọc bản bỏ dấu kèm quy tắc loại đại từ.
+ */
+function findPartOfDay(nViet, nText) {
+  for (const key of Object.keys(PART_OF_DAY)) {
+    const vi = PART_OF_DAY_VI[key]
+    if (vi && new RegExp(`\\b${vi}\\b`).test(nViet)) return PART_OF_DAY[key]
+  }
+  for (const key of Object.keys(PART_OF_DAY)) {
+    if (key === 'toi' && TOI_PRONOUN_RE.test(nText)) continue
+    if (new RegExp(`\\b${key}\\b`).test(nText)) return PART_OF_DAY[key]
+  }
+  return null
 }
 
 const TYPE_WORDS = [
@@ -135,6 +194,17 @@ function buildPlaceIndex(venues) {
 
 /** Từ báo hiệu địa điểm đứng trước tên khu vực ("ở Cầu Giấy", "khu Đà Nẵng"). */
 const PLACE_CUES = 'o|tai|khu vuc|khu|gan|quanh|thuoc|ben|canh|gap'
+
+/** Từ đơn lẻ trong PLACE_CUES, dùng để nhận "ở Mai Dịch" là tên nơi. */
+const PLACE_CUE_WORDS = new Set(PLACE_CUES.split('|').concat(['khu_vuc']))
+
+/** Từ đứng ngay trước `index` có phải từ báo địa điểm không ("ở mai ..." -> tên nơi). */
+function isPlaceWordBefore(text, index) {
+  const words = text.slice(0, index).trim().split(/\s+/).filter(Boolean)
+  const last = words[words.length - 1] || ''
+  const prev = words[words.length - 2] || ''
+  return PLACE_CUE_WORDS.has(last) || (prev === 'khu' && last === 'vuc')
+}
 
 /** Từ chung về địa danh, không dùng để lọc sân. */
 const GENERIC_PLACE_WORDS = new Set([
@@ -251,9 +321,8 @@ function parseDuration(nText) {
   return DURATIONS.reduce((a, b) => (Math.abs(b - best) < Math.abs(a - best) ? b : a))
 }
 
-function parseTime(nText) {
-  const part = Object.keys(PART_OF_DAY).find((k) => new RegExp(`\\b${k}\\b`).test(nText))
-  const partInfo = part ? PART_OF_DAY[part] : null
+function parseTime(nViet, nText) {
+  const partInfo = findPartOfDay(nViet, nText)
 
   // "17h30", "17:30", "17.30" — bỏ qua khi phút >= 60 ("19 giờ 90 phút" là 19h, không phải 19h90)
   for (const re of [/\b(\d{1,2})\s*(?:h|gio)\s*(\d{2})\b/, /\b(\d{1,2})\s*[:.]\s*(\d{2})\b/]) {
@@ -308,9 +377,14 @@ function parseDate(nText, hour, today) {
     return iso >= today ? iso : addDays(iso, 365)
   }
 
-  if (/\bhom\s*nay\b/.test(nText)) return today
+  if (/\b(?:hom|toi)\s*nay\b/.test(nText)) return today
   if (/\bngay\s*kia\b/.test(nText)) return addDays(today, 2)
-  if (/\bngay\s*mai\b/.test(nText)) return addDays(today, 1)
+  // "ngày mai", "hôm mai", "tối mai" đều là ngày mai.
+  if (/\b(?:ngay|hom|toi)\s+mai\b/.test(nText)) return addDays(today, 1)
+  // "mai 19h", "mai đặt sân" cũng là ngày mai, trừ khi "mai" đứng ngay sau từ
+  // địa điểm ("ở Mai Dịch", "tại Mai Động") thì đó là tên nơi chứ không phải ngày.
+  const bareMai = nText.match(/\bmai\b/)
+  if (bareMai && !isPlaceWordBefore(nText, bareMai.index)) return addDays(today, 1)
   if (/\bcuoi\s*tuan\b/.test(nText)) return nextWeekday(today, 6)
   if (/\btuan\s*sau\b/.test(nText)) return addDays(today, 7)
 
@@ -341,6 +415,8 @@ export function parseIntent(text, { venues = [], today = todayStr() } = {}) {
   // nText dùng để so từ khoá/địa điểm (đã mở rộng viết tắt).
   // nTime giữ nguyên dấu ":" và "." để không vỡ mấy mốc giờ kiểu "17.30".
   const nText = expand(raw)
+  // nViet giữ nguyên dấu tiếng Việt để phân biệt "tối" (buổi tối) với "tôi" (đại từ).
+  const nViet = raw.toLowerCase().replace(/\s+/g, ' ').trim()
   const nTime = raw
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -365,7 +441,7 @@ export function parseIntent(text, { venues = [], today = todayStr() } = {}) {
 
   if (!nText) return intent
 
-  const hour = parseTime(nTime)
+  const hour = parseTime(nViet, nTime)
   intent.hour = hour
   intent.date = parseDate(nTime, hour, today)
 
@@ -418,8 +494,9 @@ function placeMatches(venue, loc, words) {
  * Ưu tiên sẵn sàng đúng khung giờ người dùng nói, rồi mới tới giá/khoảng cách.
  */
 export function rankVenues(intent, { venues = [], coords = null, hasSlot = null } = {}) {
+  const wantPitch = pitchNumber(intent.fieldType)
   let list = venues.filter((v) => {
-    if (intent.fieldType && v.type !== intent.fieldType) return false
+    if (wantPitch && pitchNumber(v.type) !== wantPitch) return false
     if (!placeMatches(v, intent.loc, intent.locWords)) return false
     if (intent.hour != null && (intent.hour < v.hours.open || intent.hour >= v.hours.close)) return false
     return true
@@ -460,6 +537,9 @@ const EXAMPLES = [
   'Sân 11 cho 12 người',
   'Sân 7 thứ 7 sáng 8h đặt 2 tiếng',
 ]
+
+/** Người dùng muốn đặt sân nhưng chưa nói loại/ngày/giờ -> hỏi lại đúng thứ cần. */
+const WANT_BOOK_RE = /\b(?:dat|giu|khoanh|thue|chon)\s+san\b|\bmuon\s+dat\b|\bdat\s+cho\b|\bdat\s+(?:toi|minh|ban)\b/
 
 function describeIntent(intent) {
   const bits = []
@@ -595,7 +675,7 @@ export function mountAssistant(handlers = {}) {
         <img src="${v.img}" alt="" />
         <div class="ai-card-body">
           <div class="ai-card-name">${escapeHtml(v.name)}</div>
-          <div class="ai-card-meta">${escapeHtml(v.type || 'Sân bóng')} · ${escapeHtml(v.addr || '')}</div>
+          <div class="ai-card-meta">${escapeHtml(typeLabel(v.type))} · ${escapeHtml(v.addr || '')}</div>
           <div class="ai-card-foot">
             <span class="ai-card-price">${escapeHtml(v.price)}${escapeHtml(v.per || '/tiếng')}</span>
             ${slotNote}
@@ -640,7 +720,10 @@ export function mountAssistant(handlers = {}) {
       const email = (user && user.email) || ''
       const phone = (user && user.phone) || ''
       const mine = getBookings().filter(
-        (b) => (email && (b.userEmail === email || b.customer?.email === email)) || (phone && b.customer?.phone === phone),
+        (b) =>
+          (user && user.id && b.userId === user.id) ||
+          (email && (b.userEmail === email || b.customer?.email === email)) ||
+          (phone && b.customer?.phone === phone),
       )
       if (!mine.length) {
         pushBot('Bạn chưa có đơn nào. Nói giúp mình loại sân, khu vực và khung giờ nhé.')
@@ -649,7 +732,7 @@ export function mountAssistant(handlers = {}) {
       }
       const pending = mine.filter((b) => b.status === 'pending').length
       pushBot(
-        `Bạn có <b>${mine.length}</b> đơn, trong đó <b>${pending}</b> đang chờ xác nhận. Đơn gần nhất: <b>${escapeHtml(mine[mine.length - 1].courtName || '')}</b> ${formatWhen(mine[mine.length - 1])}.`,
+        `Bạn có <b>${mine.length}</b> đơn, trong đó <b>${pending}</b> đang chờ xác nhận. Đơn gần nhất: <b>${escapeHtml(mine[mine.length - 1].fieldName || mine[mine.length - 1].courtName || '')}</b> ${formatWhen(mine[mine.length - 1])}.`,
       )
       quickReplies(['Đặt thêm 1 sân', 'Sân rẻ nhất hôm nay'])
       return
@@ -659,7 +742,12 @@ export function mountAssistant(handlers = {}) {
     const coords = getCoords ? getCoords() : null
 
     if (!intent.understood) {
-      pushBot('Mình chưa nắm được bạn muốn tìm gì. Bạn thử nói như: <b>“sân 7 tối mai 18h ở Cầu Giấy”</b>.')
+      // "Đặt sân giúp tôi" mà chưa có loại/ngày/giờ -> hỏi đúng thông tin còn thiếu.
+      pushBot(
+        WANT_BOOK_RE.test(n)
+          ? 'Mình giúp bạn đặt sân ngay! Cho mình xin thêm <b>loại sân</b> (5/7/11 người), <b>ngày</b> và <b>giờ</b> nhé. Ví dụ:'
+          : 'Mình chưa nắm được bạn muốn tìm gì. Bạn thử nói như: <b>“sân 7 tối mai 18h ở Cầu Giấy”</b>.',
+      )
       quickReplies(EXAMPLES)
       return
     }
@@ -720,7 +808,9 @@ export function mountAssistant(handlers = {}) {
       intent.fieldType ? `loại <b>${intent.fieldType}</b>` : '',
       // Địa điểm gõ tự do thì nói "gần ...", địa điểm có trong dữ liệu thì nói "tại ..."
       intent.loc ? `${Array.isArray(intent.locWords) ? 'gần' : 'tại'} <b>${escapeHtml(intent.loc)}</b>` : '',
-      intent.date ? `ngày <b>${escapeHtml(formatDate(intent.date))}</b>` : '',
+      // "hôm nay"/"ngày mai" đã hàm nghĩa thời gian nên không thêm chữ "ngày" nữa,
+      // chỉ thêm khi hiển thị một ngày cụ thể (17/10/26).
+      intent.date ? `${isRelativeDate(intent.date) ? '' : 'ngày '}<b>${escapeHtml(formatDate(intent.date))}</b>` : '',
       intent.hour != null ? `lúc <b>${timeLabel(intent.hour)}</b>` : '',
     ]
       .filter(Boolean)
@@ -755,7 +845,12 @@ export function mountAssistant(handlers = {}) {
       const cards = log.querySelectorAll('.ai-cards')
       const last = cards[cards.length - 1]
       const entry = last?._results?.[Number(bookBtn.dataset.book)]
-      if (entry && onBook) onBook(entry.venue, last._intent)
+      if (entry && onBook) {
+        // Khung chat cao hơn modal đặt sân (z-index), nên đóng trước khi mở form
+        // để biểu mẫu không bị che mất khi màn hình hẹp.
+        setOpen(false)
+        onBook(entry.venue, last._intent)
+      }
     }
   })
 
@@ -789,6 +884,12 @@ export function mountAssistant(handlers = {}) {
     ask: (text) => {
       setOpen(true)
       handle(text)
+    },
+    /** Mở khung chat rồi báo một câu của trợ lý (dùng khi form đặt sân đóng lại). */
+    say: (html) => {
+      setOpen(true)
+      if (!log.childElementCount) greet()
+      pushBot(html)
     },
     greet,
   }
@@ -828,6 +929,12 @@ function formatDate(dateStr) {
   if (dateStr === addDays(today, 2)) return 'ngày kia'
   const [y, m, d] = dateStr.split('-')
   return `${d}/${m}/${y.slice(2)}`
+}
+
+/** Ngày trong 3 hôm tới: formatDate() đã trả về nhãn "hôm nay/ngày mai/ngày kia". */
+function isRelativeDate(dateStr) {
+  const today = todayStr()
+  return dateStr === today || dateStr === addDays(today, 1) || dateStr === addDays(today, 2)
 }
 
 function formatWhen(b) {

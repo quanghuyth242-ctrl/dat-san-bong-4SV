@@ -1,161 +1,37 @@
-// ============================= DỮ LIỆU SÂN BÓNG MẶC ĐỊNH =============================
-const DEFAULT_SAN_DATA = [
-  {
-    id: 'san-1',
-    name: 'Sân Bóng Galaxy Turf',
-    address: '296 Lý Thường Kiệt, P.14, Q.10, TP.HCM',
-    type: '7',
-    price: 800000,
-    status: 'trong',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân cỏ nhân tạo chất lượng cao, hệ thống đèn chiếu sáng hiện đại, có phòng thay đồ và khu vực nghỉ ngơi. Vị trí trung tâm thuận tiện di chuyển.',
-    img: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-2',
-    name: 'Sân Bóng An Phú',
-    address: '32 Lê Đức Thọ, P.6, Q.Gò Vấp, TP.HCM',
-    type: '5',
-    price: 500000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 5 người mặt cỏ đẹp, không gian thoáng mát, có khu vực giải khát và WiFi miễn phí. Phù hợp cho đội bóng phong trào.',
-    img: 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-3',
-    name: 'Sân Bóng Minh Khai',
-    address: '85 Trần Hưng Đạo, P.Phạm Đình Hổ, Q.Hai Bà Trưng, Hà Nội',
-    type: '5',
-    price: 450000,
-    status: 'da-dat',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân 5 người trong khu đô thị trung tâm, cỏ nhập khẩu an toàn, đèn LED tiết kiệm điện. Có chỗ gửi xe máy miễn phí.',
-    img: 'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-4',
-    name: 'Sân Bóng TP. Thủ Đức',
-    address: '12 Võ Văn Ngân, P.Bình Thọ, TP.Thủ Đức, TP.HCM',
-    type: '7',
-    price: 700000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 7 người rộng rãi, hệ thống thoát nước tốt sau mưa. Có căng tin phục vụ đồ uống và đồ ăn nhanh.',
-    img: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-5',
-    name: 'Sân Bóng Hòa Lạc 11',
-    address: 'Khu CNC Hòa Lạc, H.Thạch Thất, Hà Nội',
-    type: '11',
-    price: 1500000,
-    status: 'bao-tri',
-    hours: { open: 7, close: 21 },
-    desc: 'Sân 11 người tiêu chuẩn thi đấu, cỏ tự nhiên kết hợp nhân tạo. Có khán đài và phòng VIP cho đội bóng chuyên nghiệp.',
-    img: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-6',
-    name: 'Sân Bóng Eco Dream',
-    address: '140 Cộng Hòa, P.13, Q.Tân Bình, TP.HCM',
-    type: '7',
-    price: 900000,
-    status: 'trong',
-    hours: { open: 6, close: 24 },
-    desc: 'Sân 7 người cao cấp, mái che mưa, đèn Proview sáng rõ. Trang bị hệ thống camera quay lại trận đấu theo yêu cầu.',
-    img: 'https://images.unsplash.com/photo-1522770179533-24471fcdba45?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-7',
-    name: 'Sân Bóng Phú Nhuận Star',
-    address: '99 Trường Sa, P.13, Q.Phú Nhuận, TP.HCM',
-    type: '5',
-    price: 600000,
-    status: 'trong',
-    hours: { open: 5, close: 23 },
-    desc: 'Sân 5 người được trang bị lưới chắn bóng cao, cỏ êm giảm chấn thương. Khu vực chờ mát mẻ.',
-    img: 'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-8',
-    name: 'Sân Bóng Biên Hòa FC',
-    address: '45 Đồng Khởi, P.Tam Hiệp, TP.Biên Hòa, Đồng Nai',
-    type: '11',
-    price: 1800000,
-    status: 'da-dat',
-    hours: { open: 7, close: 22 },
-    desc: 'Sân 11 người quy mô lớn, phục vụ giải đấu khu vực. Có phòng y tế, bãi đỗ xe ô tô và khu thể thao phụ trợ.',
-    img: 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-9',
-    name: 'Sân Bóng Bình Dương Arena',
-    address: '7 Nguyễn Đình Chiểu, P.Phú Cường, TP.Thủ Dầu Một, Bình Dương',
-    type: '5',
-    price: 350000,
-    status: 'trong',
-    hours: { open: 5, close: 22 },
-    desc: 'Sân 5 người giá rẻ, phù hợp học sinh sinh viên. Giờ sáng có chương trình ưu đãi giảm 20%.',
-    img: 'https://images.unsplash.com/photo-1552318965-6e6be7484ada?w=800&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 'san-10',
-    name: 'Sân Bóng Đà Nẵng Sport',
-    address: '88 Nguyễn Hữu Thọ, P.Hòa Cường Bắc, Q.Hải Châu, Đà Nẵng',
-    type: '7',
-    price: 850000,
-    status: 'trong',
-    hours: { open: 6, close: 22 },
-    desc: 'Sân 7 người ngay ven sông Hàn, khung cảnh thoáng đãng. Có dịch vụ cho thuê giày đá bóng và dụng cụ.',
-    img: 'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
-  },
-];
 
-// ============================= ĐỌC DỮ LIỆU TỪ ADMIN (localStorage) =============================
-const SAN_IMAGES = [
-  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80&auto=format&fit=crop',
-];
-
-function parseTypeNumber(typeStr) {
-  // "Sân 5" -> "5", "Sân 7" -> "7", "Sân 11" -> "11"
-  const match = typeStr && typeStr.match(/\d+/);
-  return match ? match[0] : '5';
+// ============================= DỮ LIỆU SÂN TỪ STORE DÙNG CHUNG =============================
+/**
+ * Trang này không còn giữ danh sách sân riêng mà đọc chung với trang chủ và
+ * trang quản trị, nên sửa sân ở admin là thấy ngay ở đây. Toạ độ, số sân, giờ
+ * mở cửa và ảnh đều lấy đúng như admin đã nhập thay vì tự đoán giá trị.
+ */
+function buildSanData() {
+  return SV.fields().map((f) => ({
+    id: f.id,
+    name: f.name,
+    address: f.address,
+    type: SV.pitchNumber(f.type),
+    price: f.price,
+    status: f.status === 'active' ? 'trong' : 'bao-tri',
+    courts: f.courts,
+    hours: { open: f.hours.open, close: f.hours.close },
+    lat: f.lat,
+    lng: f.lng,
+    desc: f.desc || `${f.name} - ${f.type} tại ${f.address}.`,
+    img: f.img,
+  }));
 }
 
-function loadSanDataFromAdmin() {
-  try {
-    const stored = localStorage.getItem('admin_fields');
-    if (!stored) return null;
-    const fields = JSON.parse(stored);
-    if (!Array.isArray(fields) || fields.length === 0) return null;
+/** Ảnh dự phòng khi admin nhập URL ảnh hỏng hoặc sân chưa có ảnh. */
+const DEFAULT_IMG =
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=80&auto=format&fit=crop';
 
-    return fields.map((f, idx) => ({
-      id: f.id || 'san-' + (idx + 1),
-      name: f.name,
-      address: f.address,
-      type: parseTypeNumber(f.type),
-      price: f.price,
-      status: f.status === 'active' ? 'trong' : 'bao-tri',
-      hours: { open: 6, close: 22 },
-      desc: `${f.name} - ${f.type} tại ${f.address}. Sân chất lượng cao, hệ thống đèn chiếu sáng hiện đại.`,
-      img: SAN_IMAGES[idx % SAN_IMAGES.length],
-    }));
-  } catch (e) {
-    console.warn('Lỗi đọc dữ liệu admin:', e);
-    return null;
-  }
+/** Thoát ký tự HTML: tên/địa chỉ sân do admin nhập có thể chứa markup. */
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
-// Ưu tiên dữ liệu từ admin (localStorage), nếu không có thì dùng dữ liệu mặc định
-const SAN_DATA = loadSanDataFromAdmin() || DEFAULT_SAN_DATA;
+let SAN_DATA = buildSanData();
 
 // ============================= TIỆN ÍCH =============================
 const $ = (s, el) => (el || document).querySelector(s);
@@ -183,58 +59,41 @@ function diffPriceRange(v) {
 }
 
 // ============================= STORE ĐƠN ĐẶT =============================
-const BOOKING_KEY = '4sv_bookings';
-
+/**
+ * Đơn đặt nằm trong store dùng chung nên đơn tạo ở trang chủ cũng hiện và bị
+ * chặn trùng ở đây, và admin đổi trạng thái thì các trang khác cập nhật theo.
+ */
 function loadBookings() {
-  try {
-    const raw = localStorage.getItem(BOOKING_KEY);
-    if (!raw) return [];
-    const list = JSON.parse(raw);
-    return Array.isArray(list) ? list : [];
-  } catch (e) {
-    console.warn('Lỗi đọc đơn đặt:', e);
-    return [];
-  }
-}
-
-function saveBookings(list) {
-  try {
-    localStorage.setItem(BOOKING_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn('Lỗi lưu đơn đặt:', e);
-  }
-}
-
-let bookingSeq = 0;
-function addBooking(booking) {
-  const list = loadBookings();
-  booking.id = 'BD' + (Date.now() + bookingSeq++);
-  list.push(booking);
-  saveBookings(list);
-  return booking;
+  return SV.bookings();
 }
 
 /**
  * Slot đã bị chiếm: giờ bắt đầu -> giờ kết thúc (số thập phân).
  * duration có thể 1.5 nên giữ dạng số thập phân, ví dụ 17.5 = 17:30.
- * Đơn đã hủy không tính là chiếm sân.
  */
 function isSlotTaken(courtId, date, startHour, duration) {
-  const endHour = startHour + duration;
-  return loadBookings().some(
-    (b) =>
-      b.status !== 'cancelled' &&
-      b.courtId === courtId &&
-      b.date === date &&
-      startHour < b.endHour &&
-      endHour > b.startHour
-  );
+  return SV.isSlotTaken(courtId, date, startHour, startHour + duration);
+}
+
+function isCourtFullyBooked(courtId, date) {
+  return loadBookings().some((b) => b.courtId === courtId && b.date === date);
 }
 
 function isPastSlot(date, startHour) {
   if (date !== todayStr()) return false;
   const now = new Date();
   return startHour < now.getHours() + now.getMinutes() / 60;
+}
+
+/** Khung giờ còn khả dụng = trong giờ mở cửa, chưa qua, chưa bị đặt, đủ sức chứa duration. */
+function availableHours(court, date) {
+  const out = [];
+  for (let h = court.hours.open; h <= court.hours.close - 1; h += 0.5) {
+    if (h < court.hours.open) continue;
+    if (isPastSlot(date, h)) continue;
+    out.push(h);
+  }
+  return out;
 }
 
 // ============================= STATE =============================
@@ -245,7 +104,7 @@ const state = {
   onlyAvailable: false,
   sort: 'default',
   activeCourt: null,
-  booking: { date: '', time: '', duration: 1, repeat: 'none', repeatCount: 1, services: {} },
+  booking: { date: '', time: '', duration: 1 },
 };
 
 // ============================= RENDER LIST =============================
@@ -300,9 +159,9 @@ function renderGrid() {
   grid.innerHTML = list
     .map(
       (c) => `
-      <article class="san-card" data-id="${c.id}">
+      <article class="san-card" data-id="${esc(c.id)}">
         <div class="san-card-img">
-          <img src="${c.img}" alt="${c.name}" loading="lazy"/>
+          <img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'"/>
           <span class="san-badge badge-status ${c.status}">
             <i class="fa-solid ${c.status === 'trong' ? 'fa-circle-check' : c.status === 'da-dat' ? 'fa-circle-xmark' : 'fa-triangle-exclamation'}"></i>
             ${STATUS_LABEL[c.status]}
@@ -310,10 +169,11 @@ function renderGrid() {
           <span class="san-badge badge-type type"><i class="fa-solid fa-futbol"></i> ${TYPE_LABEL[c.type]}</span>
         </div>
         <div class="san-card-body">
-          <h3 class="san-name">${c.name}</h3>
-          <p class="san-address"><i class="fa-solid fa-location-dot"></i>${c.address}</p>
+          <h3 class="san-name">${esc(c.name)}</h3>
+          <p class="san-address"><i class="fa-solid fa-location-dot"></i>${esc(c.address)}</p>
           <div class="san-meta">
             <span class="meta-item"><i class="fa-regular fa-clock"></i> ${timeLabel(c.hours.open)} – ${timeLabel(c.hours.close)}</span>
+            ${c.courts > 1 ? `<span class="meta-item"><i class="fa-solid fa-layer-group"></i> ${c.courts} sân</span>` : ''}
           </div>
           <div class="san-price">
             <b>${formatPrice(c.price)}</b>
@@ -380,15 +240,19 @@ function openDetail(court) {
   const body = $('#detailBody');
   body.innerHTML = `
     <div class="detail-hero">
-      <img src="${court.img}" alt="${court.name}"/>
+      <img src="${esc(court.img)}" alt="${esc(court.name)}" onerror="this.src='${DEFAULT_IMG}'"/>
       <div class="overlay">
-        <h2>${court.name}</h2>
+        <h2>${esc(court.name)}</h2>
       </div>
     </div>
     <div class="detail-rows">
       <div class="detail-item">
         <i class="fa-solid fa-location-dot"></i>
-        <div><div class="lbl">Địa chỉ</div><div class="val">${court.address}</div></div>
+        <div><div class="lbl">Địa chỉ</div><div class="val">${esc(court.address)}</div></div>
+      </div>
+      <div class="detail-item">
+        <i class="fa-solid fa-layer-group"></i>
+        <div><div class="lbl">Số sân</div><div class="val">${court.courts} sân</div></div>
       </div>
       <div class="detail-item">
         <i class="fa-solid fa-futbol"></i>
@@ -409,7 +273,7 @@ function openDetail(court) {
     </div>
     <div class="detail-section">
       <h4><i class="fa-solid fa-align-left"></i> Mô tả sân</h4>
-      <p class="detail-desc">${court.desc}</p>
+      <p class="detail-desc">${esc(court.desc)}</p>
     </div>
     <button type="button" class="btn-book detail-book" data-open-book="${court.id}" ${court.status !== 'trong' ? 'disabled' : ''}>
       ${court.status === 'trong' ? '<i class="fa-solid fa-calendar-check"></i> Đặt sân ngay' : 'Sân hiện ' + (court.status === 'da-dat' ? 'đã được đặt' : 'đang bảo trì')}
@@ -419,13 +283,49 @@ function openDetail(court) {
 }
 
 // ---------- ĐẶT SÂN ----------
-const REPEAT_LABEL = {
-  none: 'Không lặp lại',
-  weekly: 'Hàng tuần',
-  monthly: 'Hàng tháng',
-  quarterly: 'Hàng quý',
-  yearly: 'Hàng năm',
-};
+/**
+ * Khung giờ khả dụng cho một ngày + duration.
+ * Bỏ khung nào đã qua, đã có đơn, hoặc không đủ sức chứa duration.
+ */
+function buildTimeOptions(court, date, duration) {
+  const opts = [];
+  for (let h = court.hours.open; h < court.hours.close; h += 1) {
+    if (h + duration > court.hours.close) continue;
+    if (isPastSlot(date, h)) continue;
+    if (isSlotTaken(court.id, date, h, duration)) continue;
+    opts.push(
+      `<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`
+    );
+  }
+  return opts.join('');
+}
+
+function refreshTimeOptions() {
+  const court = state.activeCourt;
+  const sel = $('#timeSelect');
+  if (!court || !sel) return;
+
+  const date = $('#dateInput').value;
+  if (!date) {
+    sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>';
+    sel.value = '';
+    return;
+  }
+
+  const duration = parseFloat($('#durationSelect').value) || 1;
+  const prev = sel.value;
+  sel.innerHTML = buildTimeOptions(court, date, duration);
+
+  if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  if (!sel.value) sel.selectedIndex = 0;
+
+  if (!sel.options.length) {
+    sel.innerHTML = `<option value="">-- ${
+      isCourtFullyBooked(court.id, date) ? 'Đã kín lịch' : 'Không còn khung giờ trống'
+    } --</option>`;
+    sel.value = '';
+  }
+}
 
 // Dịch vụ đi kèm khi đặt sân (giá tính cho mỗi buổi)
 const SERVICES = [
@@ -453,6 +353,14 @@ function serviceCostPerSession() {
   return selectedServices().reduce((sum, s) => sum + s.price * s.qty, 0);
 }
 
+const REPEAT_LABEL = {
+  none: 'Không lặp lại',
+  weekly: 'Hàng tuần',
+  monthly: 'Hàng tháng',
+  quarterly: 'Hàng quý',
+  yearly: 'Hàng năm',
+};
+
 function toDateStr(d) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -465,7 +373,7 @@ function addDays(dateStr, days) {
   return toDateStr(d);
 }
 
-/** Cộng tháng và tự kẹp ngày về cuối tháng đích (31/1 + 1 tháng = 28/2). */
+/** Cộng tháng và tự kẹp ngày về cuối tháng khác (31/1 + 1 tháng = 28/2). */
 function addMonths(dateStr, months) {
   const d = new Date(dateStr + 'T00:00:00');
   const day = d.getDate();
@@ -490,101 +398,7 @@ function repeatDates(startDate, type, count) {
   return out;
 }
 
-/**
- * Trạng thái từng khung giờ bắt đầu cho ngày + thời lượng hiện tại.
- * Giữ lại cả khung đã bị đặt để người dùng thấy, nhưng không cho chọn.
- */
-function slotList(court, date, duration) {
-  const list = [];
-  for (let h = court.hours.open; h < court.hours.close; h += 1) {
-    const bookedHour = isSlotTaken(court.id, date, h, 1);
-    list.push({
-      hour: h,
-      end: h + duration,
-      past: isPastSlot(date, h),
-      bookedHour,
-      overlaps: !bookedHour && isSlotTaken(court.id, date, h, duration),
-    });
-  }
-  return list;
-}
-
-/** Vẽ lưới khung giờ: còn trống / đã đặt / trùng giờ / đã qua. */
-function renderSlots(court, date, duration) {
-  const grid = $('#slotGrid');
-  if (!grid) return;
-
-  if (!date) {
-    grid.innerHTML = '<p class="slot-empty">Chọn ngày để xem khung giờ trống.</p>';
-    return;
-  }
-
-  const slots = slotList(court, date, duration);
-  if (!slots.length) {
-    grid.innerHTML = '<p class="slot-empty">Sân không có khung giờ nào.</p>';
-    return;
-  }
-
-  grid.innerHTML = slots
-    .map((s) => {
-      const selected = Number(state.booking.time) === s.hour ? ' selected' : '';
-      let mod = 'free';
-      let note = 'Còn trống';
-      if (s.past) {
-        mod = 'past';
-        note = 'Đã qua';
-      } else if (s.bookedHour) {
-        mod = 'booked';
-        note = 'Đã đặt';
-      } else if (s.overlaps) {
-        mod = 'blocked';
-        note = 'Trùng giờ';
-      }
-      return `<button type="button" class="slot slot-${mod}${selected}" data-hour="${s.hour}">
-        <span class="slot-time">${timeLabel(s.hour)}</span>
-        <span class="slot-note">${note}</span>
-      </button>`;
-    })
-    .join('');
-}
-
-/** Bấm vào khung giờ: chọn được nếu trống, còn lại thì thông báo lý do. */
-function bindSlotGrid(court) {
-  const grid = $('#slotGrid');
-  if (!grid) return;
-  grid.addEventListener('click', (e) => {
-    const btn = e.target.closest('.slot');
-    if (!btn) return;
-    const hour = parseFloat(btn.dataset.hour);
-    const date = $('#dateInput').value;
-    const duration = parseFloat($('#durationSelect').value) || 1;
-    const end = hour + duration;
-
-    if (btn.classList.contains('slot-past')) {
-      showToast('Khung giờ đã qua', `${timeLabel(hour)} đã qua, vui lòng chọn khung giờ khác.`);
-      return;
-    }
-    if (btn.classList.contains('slot-booked')) {
-      showToast(
-        'Khung giờ đã có người đặt',
-        `${timeLabel(hour)} – ${timeLabel(hour + 1)} đã được đặt. Vui lòng chọn khung giờ khác.`
-      );
-      return;
-    }
-    if (btn.classList.contains('slot-blocked')) {
-      showToast(
-        'Khung giờ trùng lịch đã đặt',
-        `Khung ${timeLabel(hour)} – ${timeLabel(end)} trùng với lịch đã có người đặt. Vui lòng chọn khung khác.`
-      );
-      return;
-    }
-
-    state.booking.time = hour;
-    $('#f-time')?.classList.remove('invalid');
-    renderSlots(court, date, duration);
-  });
-}
-
+/** Hiện/ẩn ô số buổi theo lựa chọn định kỳ. */
 function updateRepeatUI() {
   const repeat = $('#repeatSelect')?.value || 'none';
   const wrap = $('#f-repeatCount');
@@ -607,48 +421,67 @@ function openBook(court) {
 
   const dateInput = $('#dateInput');
   dateInput.min = todayStr();
-  dateInput.value = todayStr();
+  $('#dateInput').value = todayStr();
   state.booking.date = todayStr();
   $('#durationSelect').value = '1';
-  $('#repeatSelect').value = 'none';
-  $('#repeatCount').value = '1';
-  updateRepeatUI();
+  if ($('#repeatSelect')) {
+    $('#repeatSelect').value = 'none';
+    $('#repeatCount').value = '1';
+    updateRepeatUI();
+  }
 
-  const duration = 1;
-  renderSlots(court, state.booking.date, duration);
+  refreshTimeOptions();
   updateTotal();
   openModal($('#bookModal'));
 }
 
 function todayStr() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  return SV.todayStr();
 }
 
 function updateTotal() {
   const court = state.activeCourt;
   if (!court) return;
   const duration = parseFloat($('#durationSelect').value) || 1;
-  const repeat = $('#repeatSelect').value || 'none';
-  const count = repeat === 'none' ? 1 : Math.max(1, Math.min(52, parseInt($('#repeatCount').value, 10) || 1));
-  const sessions = count;
-  const courtPer = court.price * duration;
+  const repeat = $('#repeatSelect')?.value || 'none';
+  const count =
+    repeat === 'none'
+      ? 1
+      : Math.max(1, Math.min(52, parseInt($('#repeatCount')?.value, 10) || 1));
+  const courtSub = Math.round((Number(court.price) || 0) * duration);
   const servicePer = serviceCostPerSession();
-  const total = (courtPer + servicePer) * sessions;
+  const subtotal = courtSub + servicePer;
   state.booking.duration = duration;
   state.booking.repeat = repeat;
   state.booking.repeatCount = count;
+  state.booking.subtotal = subtotal;
 
-  const amount = $('#totalAmount');
-  const parts = [`${formatPrice(courtPer)} × ${sessions}`];
-  if (servicePer > 0) parts.push(`+ DV ${formatPrice(servicePer)}`);
-  if (repeat !== 'none' && sessions > 1) {
-    amount.innerHTML = `${formatPrice(total)} <small>(${sessions} buổi)</small><span class="t-detail">${parts.join(' ')}</span>`;
-  } else {
-    amount.innerHTML = `${formatPrice(total)}<span class="t-detail">${parts.join(' ')}</span>`;
+  // Ô mã chỉ tồn tại khi form đặt sân đang mở.
+  const voucherInput = $('#voucherInput');
+  if (!voucherInput) {
+    $('#totalAmount').innerHTML = formatPrice(subtotal * count);
+    state.booking.voucherCode = '';
+    state.booking.discount = 0;
+    return;
   }
+
+  const code = voucherInput.value.trim().toUpperCase();
+  const voucher = code ? SV.previewVoucher(code, subtotal) : null;
+  const usable = !!(voucher && voucher.ok);
+  state.booking.voucherCode = usable ? code : '';
+  state.booking.discount = usable ? voucher.discount : 0;
+
+  // Báo lỗi ngay khi gõ, không bắt phải bấm mới thấy.
+  $('#f-voucher').classList.toggle('invalid', !!code && !usable);
+
+  const perSession = subtotal - state.booking.discount;
+  const total = perSession * count;
+  const parts = [`${formatPrice(courtSub)} × ${count} buổi`];
+  if (servicePer > 0) parts.push(`+ DV ${formatPrice(servicePer)}`);
+  if (state.booking.discount > 0) parts.push(`-${formatPrice(state.booking.discount)}`);
+  $('#totalAmount').innerHTML =
+    `${formatPrice(total)}${count > 1 ? ` <small>(${count} buổi)</small>` : ''}` +
+    `<span class="t-detail">${parts.join(' ')}</span>`;
 }
 
 function validateBooking() {
@@ -660,18 +493,16 @@ function validateBooking() {
   if (!court) return false;
 
   // Ngày
-  let ok = true;
   const dateVal = $('#dateInput').value;
   const dateOk = !!dateVal && dateVal >= todayStr();
   set('date', dateOk);
-  if (!dateOk) ok = false;
 
-  // Giờ: chưa qua và chưa bị đặt (cho phép kéo dài quá giờ đóng cửa)
-  const timeVal = Number(state.booking.time);
+  // Giờ: phải còn trong giờ mở cửa, chưa qua và chưa bị đặt
+  const timeVal = parseFloat($('#timeSelect').value);
   const duration = parseFloat($('#durationSelect').value) || 1;
-  let timeOk = Number.isFinite(timeVal) && timeVal !== 0 && !!dateVal;
+  let timeOk = Number.isFinite(timeVal) && !!dateVal;
   if (timeOk) {
-    if (timeVal < court.hours.open) {
+    if (timeVal < court.hours.open || timeVal + duration > court.hours.close) {
       timeOk = false;
     } else if (isPastSlot(dateVal, timeVal)) {
       timeOk = false;
@@ -680,48 +511,86 @@ function validateBooking() {
     }
   }
   set('time', timeOk);
-  if (!timeOk) ok = false;
 
-  // Lịch định kỳ: số buổi hợp lệ và không vượt quá tương lai quá xa
-  const repeat = $('#repeatSelect').value || 'none';
-  if (repeat !== 'none') {
-    const count = parseInt($('#repeatCount').value, 10);
-    const countOk = Number.isFinite(count) && count >= 1 && count <= 52;
-    set('repeatCount', countOk);
-    if (!countOk) ok = false;
+  // Số buổi đặt định kỳ (chỉ khi chọn lặp lại)
+  const repeatVal = $('#repeatSelect')?.value || 'none';
+  let repeatOk = true;
+  if (repeatVal !== 'none') {
+    const cnt = parseInt($('#repeatCount')?.value, 10);
+    repeatOk = Number.isFinite(cnt) && cnt >= 1 && cnt <= 52;
   }
+  set('repeatCount', repeatOk);
 
   // Họ tên
   const nameVal = $('#nameInput').value.trim();
   const nameOk = nameVal.length >= 2;
   set('name', nameOk);
-  if (!nameOk) ok = false;
 
   // SĐT
   const phoneVal = $('#phoneInput').value.trim().replace(/[\s.-]/g, '');
   const phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phoneVal);
   set('phone', phoneOk);
-  if (!phoneOk) ok = false;
 
-  // Email
+  // Email (nếu nhập thì phải đúng cú pháp, hoặc để trống)
   const emailVal = $('#emailInput').value.trim();
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  const emailOk = !emailVal || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
   set('email', emailOk);
-  if (!emailOk) ok = false;
 
-  return ok;
+  if (!nameOk) {
+    $('#nameInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng nhập họ tên của bạn (tối thiểu 2 ký tự)');
+    return false;
+  }
+  if (!phoneOk) {
+    $('#phoneInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng nhập số điện thoại hợp lệ (10 số, VD: 0912345678)');
+    return false;
+  }
+  if (!dateOk) {
+    $('#dateInput')?.focus();
+    showToast('Lỗi nhập liệu', 'Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)');
+    return false;
+  }
+  if (!timeOk) {
+    $('#timeSelect')?.focus();
+    showToast('Lỗi khung giờ', 'Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa');
+    return false;
+  }
+
+  if (!repeatOk) {
+    $('#repeatCount')?.focus();
+    showToast('Lỗi nhập liệu', 'Số buổi đặt định kỳ phải từ 1 đến 52');
+    return false;
+  }
+  if (!emailOk) {
+    $('#emailInput')?.focus();
+    showToast('Lỗi email', 'Địa chỉ email không đúng định dạng');
+    return false;
+  }
+
+  return true;
 }
 
 function showSuccess() {
   const court = state.activeCourt;
   const startDate = $('#dateInput').value;
-  const startHour = Number(state.booking.time);
+  const startHour = parseFloat($('#timeSelect').value);
   const duration = state.booking.duration;
-  const repeat = $('#repeatSelect').value || 'none';
-  const count = repeat === 'none' ? 1 : Math.max(1, Math.min(52, parseInt($('#repeatCount').value, 10) || 1));
+  const repeat = $('#repeatSelect')?.value || 'none';
+  const count =
+    repeat === 'none'
+      ? 1
+      : Math.max(1, Math.min(52, parseInt($('#repeatCount')?.value, 10) || 1));
   const dates = repeatDates(startDate, repeat, count);
   const time = `${timeLabel(startHour)} – ${timeLabel(startHour + duration)}`;
 
+  const bookFn = window.SV?.createBooking || window.SV?.addBooking;
+  if (!bookFn) {
+    showToast('Lỗi hệ thống', 'Dữ liệu chưa sẵn sàng, vui lòng thử lại');
+    return;
+  }
+
+  const currentUser = window.SV?.currentUser ? window.SV.currentUser() : null;
   const customer = {
     name: $('#nameInput').value.trim(),
     phone: $('#phoneInput').value.trim(),
@@ -736,43 +605,63 @@ function showSuccess() {
     qty: s.qty,
   }));
   const servicePer = serviceCostPerSession();
-  const courtTotal = court.price * duration;
-  const bookingTotal = courtTotal + servicePer;
+  const courtTotal = Math.round((Number(court.price) || 0) * duration);
 
+  // Đặt định kỳ: tạo từng buổi, bỏ qua buổi đã có người đặt hoặc đã qua.
   const created = [];
   const skipped = [];
+  let lastError = '';
   dates.forEach((date) => {
-    // Bỏ qua buổi bị trùng (đã có người đặt hoặc đã qua) thay vì chặn toàn bộ
     if (isPastSlot(date, startHour) || isSlotTaken(court.id, date, startHour, duration)) {
       skipped.push(date);
       return;
     }
-    created.push(
-      addBooking({
-        courtId: court.id,
-        courtName: court.name,
-        date,
-        startHour,
-        endHour: startHour + duration,
-        duration,
-        courtTotal,
-        serviceTotal: servicePer,
-        services,
-        total: bookingTotal,
-        repeat: repeat,
-        customer,
-        status: 'pending',
-      })
-    );
+    const result = bookFn({
+      courtId: court.id,
+      courtName: court.name,
+      type: court.type || '',
+      date,
+      startHour,
+      endHour: startHour + duration,
+      duration,
+      courtTotal,
+      serviceTotal: servicePer,
+      services,
+      total: courtTotal + servicePer,
+      voucherCode: state.booking.voucherCode || '',
+      repeat,
+      repeatCount: repeat === 'none' ? 1 : count,
+      userId: currentUser?.id || '',
+      userName: customer.name,
+      customer,
+      status: 'pending',
+    });
+    if (result && result.ok) created.push(result.booking);
+    else {
+      if (result?.error) lastError = result.error;
+      skipped.push(date);
+    }
   });
 
   if (!created.length) {
-    showToast('Không thể đặt sân', 'Tất cả khung giờ đã chọn đều đã có người đặt. Vui lòng chọn lại.');
+    $('#bookBody').innerHTML = `
+      <div class="success-wrap">
+        <div class="success-icon" style="background:#fee2e2;color:#dc2626"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>Đặt sân không thành công</h3>
+        <p>${lastError || 'Tất cả khung giờ đã chọn đều đã có người đặt. Vui lòng chọn lại.'}</p>
+        <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-rotate-left"></i> Chọn giờ khác</button>
+      </div>`;
+    $('#bookAgainBtn').addEventListener('click', () => openBook(court));
     return;
   }
 
-  const total = bookingTotal * created.length;
-  const firstId = created[0].id;
+  const firstBooking = created[0];
+  const payId = firstBooking.id;
+  const total = created.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const dateRange =
+    created.length > 1
+      ? `${created[0].date} → ${created[created.length - 1].date}`
+      : startDate;
   const repeatLine =
     repeat === 'none'
       ? ''
@@ -790,15 +679,25 @@ function showSuccess() {
     <div class="success-wrap">
       <div class="success-icon"><i class="fa-solid fa-check"></i></div>
       <h3>Đặt sân thành công!</h3>
-      <p>Mã đơn <b>${firstId}</b>${created.length > 1 ? ` (+${created.length - 1} buổi)` : ''} · Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.</p>
+      <p>Mã đơn <b>${firstBooking.id}</b>${
+        created.length > 1 ? ` (+${created.length - 1} buổi)` : ''
+      } · Đang mở trang thanh toán...</p>
       <div class="success-summary">
         <div><span>Sân</span><b>${court.name}</b></div>
-        <div><span>Ngày</span><b>${created.length > 1 ? `${dates[0]} → ${dates[dates.length - 1]}` : startDate}</b></div>
+        <div><span>Ngày</span><b>${dateRange}</b></div>
         <div><span>Giờ</span><b>${time}</b></div>
         <div><span>Thời lượng</span><b>${duration} giờ</b></div>
         ${repeatLine}
-        <div><span>Số buổi</span><b>${created.length}${skipped.length ? ` (bỏ ${skipped.length} buổi trùng)` : ''}</b></div>
+        <div><span>Số buổi</span><b>${created.length}${
+          skipped.length ? ` (bỏ ${skipped.length} buổi trùng)` : ''
+        }</b></div>
         ${serviceLine}
+        ${
+          firstBooking.discount > 0
+            ? `<div><span>Tạm tính</span><b style="text-decoration:line-through">${formatPrice(firstBooking.subtotal)}${created.length > 1 ? ` × ${created.length}` : ''}</b></div>
+               <div><span>Giảm giá (${firstBooking.voucherCode})</span><b style="color:#16a34a">-${formatPrice(firstBooking.discount)}${created.length > 1 ? ` × ${created.length}` : ''}</b></div>`
+            : ''
+        }
         <div><span>Tổng tiền</span><b>${formatPrice(total)}</b></div>
       </div>
       <div class="success-summary">
@@ -806,11 +705,23 @@ function showSuccess() {
         <div><span>Số điện thoại</span><b>${customer.phone}</b></div>
         <div><span>Email</span><b>${customer.email}</b></div>
       </div>
-      <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-plus"></i> Đặt sân khác</button>
+      <div class="success-actions">
+        <a class="btn-pay" id="payNowBtn" href="../../src/thanh-toan.html?ma=${encodeURIComponent(payId)}"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</a>
+        <button type="button" class="btn-again" id="bookAgainBtn"><i class="fa-solid fa-plus"></i> Đặt sân khác</button>
+      </div>
     </div>
   `;
 
+  // Đặt thành công -> chuyển sang trang thanh toán sau vài giây, khách vẫn
+  // có thể bấm nút để đi ngay hoặc ở lại đặt sân khác.
+  const payTimer = setTimeout(() => {
+    window.location.href = `../../src/thanh-toan.html?ma=${encodeURIComponent(payId)}`;
+  }, 1500);
+
+  document.getElementById('payNowBtn').addEventListener('click', () => clearTimeout(payTimer));
+
   $('#bookAgainBtn').addEventListener('click', () => {
+    clearTimeout(payTimer);
     openBook(court);
   });
 
@@ -831,6 +742,11 @@ function renderBookForm(court) {
           <input type="date" id="dateInput" required />
           <span class="error-msg">Vui lòng chọn ngày hợp lệ (không ở quá khứ).</span>
         </div>
+        <div class="form-field" id="f-time">
+          <label><i class="fa-regular fa-clock"></i> Chọn giờ</label>
+          <select id="timeSelect" required></select>
+          <span class="error-msg">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa. Vui lòng chọn khung khác.</span>
+        </div>
         <div class="form-field" id="f-duration">
           <label><i class="fa-solid fa-hourglass-half"></i> Thời lượng</label>
           <select id="durationSelect">
@@ -839,17 +755,6 @@ function renderBookForm(court) {
             <option value="2">2 giờ</option>
             <option value="3">3 giờ</option>
           </select>
-        </div>
-        <div class="form-field full" id="f-time">
-          <label><i class="fa-regular fa-clock"></i> Chọn khung giờ</label>
-          <div class="slot-legend">
-            <span class="legend-item"><i class="dot dot-free"></i> Còn trống</span>
-            <span class="legend-item"><i class="dot dot-booked"></i> Đã có người đặt</span>
-            <span class="legend-item"><i class="dot dot-blocked"></i> Trùng giờ</span>
-            <span class="legend-item"><i class="dot dot-past"></i> Đã qua</span>
-          </div>
-          <div class="slot-grid" id="slotGrid"></div>
-          <span class="error-msg">Vui lòng chọn một khung giờ còn trống.</span>
         </div>
         <div class="form-field" id="f-repeat">
           <label><i class="fa-solid fa-repeat"></i> Đặt định kỳ</label>
@@ -905,6 +810,11 @@ function renderBookForm(court) {
             ).join('')}
           </div>
         </div>
+        <div class="form-field full" id="f-voucher">
+          <label><i class="fa-solid fa-ticket"></i> Mã giảm giá (nếu có)</label>
+          <input type="text" id="voucherInput" placeholder="VD: WELCOME4SV" autocomplete="off" />
+          <span class="error-msg">Mã giảm giá không dùng được với đơn này.</span>
+        </div>
         <div class="total-box">
           <div class="t-lbl"><i class="fa-solid fa-calculator"></i> Tổng tiền</div>
           <div class="t-amount" id="totalAmount">0đ</div>
@@ -917,13 +827,14 @@ function renderBookForm(court) {
   $('#dateInput').min = todayStr();
   $('#dateInput').addEventListener('change', (e) => {
     state.booking.date = e.target.value;
-    state.booking.time = '';
-    renderSlots(court, e.target.value, parseFloat($('#durationSelect').value) || 1);
+    refreshTimeOptions();
+  });
+  $('#timeSelect').addEventListener('change', (e) => {
+    state.booking.time = e.target.value;
   });
   $('#durationSelect').addEventListener('change', () => {
-    state.booking.time = '';
     updateTotal();
-    renderSlots(court, $('#dateInput').value, parseFloat($('#durationSelect').value) || 1);
+    refreshTimeOptions();
   });
   $('#repeatSelect').addEventListener('change', () => {
     updateRepeatUI();
@@ -931,6 +842,7 @@ function renderBookForm(court) {
   });
   $('#repeatCount').addEventListener('input', updateTotal);
 
+  // Dịch vụ đi kèm: ± số lượng, hoặc ✓ toggle cho loại max 1 (trọng tài/VAR)
   $('#serviceList').addEventListener('click', (e) => {
     const btn = e.target.closest('.qty-btn, .qty-check');
     if (!btn) return;
@@ -956,7 +868,7 @@ function renderBookForm(court) {
     updateTotal();
   });
 
-  bindSlotGrid(court);
+  $('#voucherInput').addEventListener('input', updateTotal);
 
   // Gỡ trạng thái lỗi ngay khi user sửa, không bắt submit lại mới hết đỏ
   $('#bookForm').querySelectorAll('input, select').forEach((el) => {
@@ -1067,7 +979,58 @@ function init() {
     $('#toast').classList.remove('show')
   );
 
+  // Admin sửa sân / đổi trạng thái đơn ở tab khác thì trang này cập nhật theo.
+  SV.on((key) => {
+    if (key !== 'fields' && key !== 'bookings' && key !== '*') return;
+    SAN_DATA = buildSanData();
+    renderGrid();
+    if (state.activeCourt) {
+      // Sân đang mở có thể đã bị admin khoá, đóng lại để khỏi đặt nhầm.
+      const still = SAN_DATA.find((c) => c.id === state.activeCourt.id);
+      if (!still || still.status !== 'trong') {
+        closeModal($('#bookModal'));
+        closeModal($('#detailModal'));
+        state.activeCourt = null;
+      } else {
+        // Giá / giờ mở cửa có thể vừa đổi: lấy bản mới và vẽ lại khung giờ
+        // vì số khung trống đã thay đổi theo đơn vừa được đặt hoặc huỷ.
+        state.activeCourt = still;
+        if ($('#bookModal')?.classList.contains('open')) refreshTimeOptions();
+      }
+    }
+  });
+
   renderGrid();
+  initAuthNav();
+}
+
+/** Đã đăng nhập thì nút "Đăng nhập" đổi thành tên + nút đăng xuất. */
+function initAuthNav() {
+  const nameEl = document.getElementById('listUserName');
+  const outBtn = document.getElementById('listUserLogout');
+  if (!nameEl || !outBtn) return;
+
+  function render() {
+    const user = SV.currentUser();
+    document.querySelectorAll('[data-auth="login"]').forEach((el) => {
+      el.hidden = !!user;
+    });
+    document.querySelectorAll('[data-auth="user"]').forEach((el) => {
+      el.hidden = !user;
+    });
+    if (user) nameEl.textContent = user.name || user.email || 'Tài khoản';
+  }
+
+  outBtn.addEventListener('click', () => {
+    SV.signOut();
+    render();
+  });
+
+  SV.on((key) => {
+    if (key === 'auth' || key === 'users' || key === '*') render();
+  });
+
+  render();
 }
 
 document.addEventListener('DOMContentLoaded', init);
