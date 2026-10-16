@@ -181,6 +181,10 @@ let VENUES = loadVenues()
 
 const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Khánh Hòa','Nghệ An','Thanh Hóa','Huế','Quảng Ninh','Bà Rịa - Vũng Tàu','Lâm Đồng','Kiên Giang','Bắc Ninh','Hải Dương','Hưng Yên','Nam Định','Thái Nguyên','Quảng Nam','Bình Định','Gia Lai','Đắk Lắk','Long An','Tiền Giang','Vĩnh Long','An Giang','Bình Thuận','Ninh Thuận','Phú Yên','Quảng Ngãi','Bình Phước','Tây Ninh']
 
+/**
+ * Quy mô nền tảng dùng cho footer. Đây là số liệu quảng bá, KHÔNG phải số đếm
+ * từ dữ liệu. Phần tìm sân và hero dùng số thật từ VENUES (xem datasetStats()).
+ */
 const PLATFORM = { venues: 629, courts: 858 }
 
 // ================================ CHUẨN HOÁ TIẾNG VIỆT ================================
@@ -562,71 +566,13 @@ function renderNearby(list) {
     .join('')
 }
 
-// ================================ TỈNH THÀNH ================================
-
-/** Khoá so khớp tỉnh: bỏ dấu, thường hoá, gộp mọi dấu phân cách thành khoảng trắng. */
-function provinceKey(name) {
-  return expand(name).replace(/[^a-z0-9]+/g, ' ').trim()
-}
-
-/** Tỉnh của một sân, ưu tiên tên dài nhất ("TP. Hồ Chí Minh" hơn "Hà Nội"). */
-function matchProvince(v) {
-  const hay = provinceKey(`${v.name} ${v.addr}`)
-  let best = null
-  // Tạo khi cần: ABBREVIATIONS khai báo sau nên không được gọi provinceKey ở top-level.
-  for (const p of PROVINCES.map((name) => ({ name, key: provinceKey(name) }))) {
-    if (hay.includes(p.key) && (!best || p.key.length > best.key.length)) best = p
-  }
-  return best
-}
-
-/**
- * Số sân thật theo tỉnh cho từng loại sân. Trước đây hàm này bịa ra số ngẫu nhiên
- * cho cả 34 tỉnh, khiến 32/34 thẻ dẫn tới trang không có kết quả. Giờ chỉ trả
- * về tỉnh thực sự có sân, nên mọi thẻ đều bấm được và ra kết quả.
- */
-function provinceStats(pitchType) {
-  const counts = new Map()
-  for (const v of VENUES) {
-    if (pitchType && v.type !== pitchType) continue
-    const p = matchProvince(v)
-    if (!p) continue
-    counts.set(p.name, (counts.get(p.name) || 0) + v.courts)
-  }
-  return counts
-}
-
-function renderProvinces(pitchType) {
-  const grid = document.getElementById('provinceGrid')
-  if (!grid) return
-  const label = pitchType ? typeLabel(pitchType).toLowerCase() : 'sân bóng đá'
-  const counts = provinceStats(pitchType)
-
-  if (!counts.size) {
-    grid.innerHTML = `<p class="province-empty">Chưa có ${esc(label)} nào được cập nhật địa chỉ. Xem <a href="#san-noi-bat">tất cả sân</a> nhé.</p>`
-    return
-  }
-
-  grid.innerHTML = PROVINCES.filter((p) => counts.has(p))
-    .map((p) => `<a href="#tim-san" class="province-card" data-province="${esc(p)}"><span><span class="province-name">${esc(p)}</span><span class="province-count">${counts.get(p)} ${esc(label)}</span></span><i class="fa-solid fa-chevron-right"></i></a>`)
-    .join('')
-
-  grid.querySelectorAll('.province-card').forEach((a) => {
-    a.addEventListener('click', () => {
-      document.getElementById('qLocation').value = a.dataset.province
-      applyFilters({ scroll: true })
-      toast(`Tìm ${label} tại ${a.dataset.province}`)
-    })
-  })
-}
-
 // ================================ BỘ LỌC DÙNG CHUNG ================================
 
 let lastResult = VENUES.slice()
 
 /**
  * Điểm vào duy nhất cho mọi thay đổi bộ lọc: submit form, dropdown Loại sân,
- * bấm tab tỉnh, bấm nút xoá lọc. Không bao giờ tự đổi sang hiển thị tất cả.
+ * link data-type ở navbar/footer, nút xoá lọc. Không bao giờ tự đổi sang hiển thị tất cả.
  */
 function applyFilters({ scroll = false, silent = false } = {}) {
   const filters = readFilters()
@@ -1517,39 +1463,6 @@ function applyStats() {
   })
 }
 
-// ================================ ĐÁNH GIÁ ================================
-
-/** Vòng xoay đánh giá, chỉ hiện những đánh giá admin đã duyệt. */
-function renderReviews() {
-  const wrap = document.getElementById('reviewsGrid')
-  if (!wrap) return
-  const list = SV.visibleReviews()
-  if (list.length === 0) {
-    wrap.innerHTML = '<p class="empty-state-4sv">Chưa có đánh giá nào được hiển thị.</p>'
-    return
-  }
-  wrap.innerHTML = list
-    .map((r) => {
-      const stars = Array.from({ length: 5 }, (_, i) => `<i class="fa-solid fa-star${i < r.rating ? '' : ' is-off'}"></i>`).join('')
-      return `
-        <article class="review-card">
-          <div class="review-head">
-            <img src="${esc(r.userAvatar || '')}" alt="" class="review-avatar" loading="lazy" />
-            <div>
-              <strong>${esc(r.userName)}</strong>
-              <span class="review-stars">${stars}</span>
-            </div>
-          </div>
-          <p class="review-text">${esc(r.comment)}</p>
-          <footer class="review-foot">
-            <span>${esc(r.fieldName || 'Sân bóng')}</span>
-            <time>${esc(r.date)}</time>
-          </footer>
-        </article>`
-    })
-    .join('')
-}
-
 // ================================ CÀI ĐẶT CHUNG ================================
 
 /** Tên, logo, màu và dark mode do admin đặt trong trang giao diện áp ở trang chủ. */
@@ -1585,9 +1498,6 @@ function watchStore() {
     if (key === 'settings' || key === '*') {
       applySettings()
     }
-    if (key === 'reviews' || key === '*') {
-      renderReviews()
-    }
     if (key === 'fields' || key === '*') {
       VENUES = loadVenues()
       applyStats()
@@ -1611,7 +1521,6 @@ function watchStore() {
       }
     }
     applyFilters({ silent: true })
-    renderProvinces(document.querySelector('.sport-tab.active')?.getAttribute('data-type') || '')
     if (map) renderMapFields(VENUES)
   })
 }
@@ -1663,15 +1572,6 @@ function boot() {
     link.addEventListener('click', (e) => {
       e.preventDefault()
       setTypeFilter(link.getAttribute('data-type') || '')
-    })
-  })
-
-  // province tabs
-  document.querySelectorAll('.sport-tab').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sport-tab').forEach((b) => b.classList.remove('active'))
-      btn.classList.add('active')
-      renderProvinces(btn.getAttribute('data-type'))
     })
   })
 
@@ -1739,9 +1639,7 @@ function boot() {
   // chạy trước nên chỉ cần một lỗi render là toàn bộ phần còn lại của init bị bỏ.
   try {
     applySettings()
-    renderReviews()
     applyStats()
-    renderProvinces('')
     applyFilters({ silent: true })
   } catch (e) {
     console.error('Lỗi khởi tạo trang chủ:', e)
