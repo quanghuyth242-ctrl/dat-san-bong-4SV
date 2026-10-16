@@ -306,7 +306,7 @@
         email: String(customer.email || '').trim().toLowerCase(),
         note: String(customer.note || raw.note || ''),
       },
-      paymentMethod: raw.paymentMethod === 'bank_transfer' ? 'bank_transfer' : 'at_court',
+      paymentMethod: raw.paymentMethod || 'at_court',
       paymentStatus:
         raw.paymentStatus ||
         (raw.paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid'),
@@ -315,6 +315,25 @@
       refundReason: String(raw.refundReason || ''),
       refundNote: String(raw.refundNote || ''),
       refundedAt: String(raw.refundedAt || ''),
+      type: String(raw.type || ''),
+      courtTotal: toPrice(raw.courtTotal),
+      serviceTotal: toPrice(raw.serviceTotal),
+      services: Array.isArray(raw.services)
+        ? raw.services.map(function (s) {
+            s = s || {}
+            return {
+              id: String(s.id || ''),
+              name: String(s.name || ''),
+              price: toPrice(s.price),
+              unit: String(s.unit || ''),
+              qty: Math.max(1, parseInt(s.qty, 10) || 1),
+            }
+          })
+        : [],
+      repeat: String(raw.repeat || 'none'),
+      repeatCount: Math.max(1, parseInt(raw.repeatCount, 10) || 1),
+      paid: raw.paid === true || raw.paymentStatus === 'paid',
+      paidAt: String(raw.paidAt || ''),
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
     }

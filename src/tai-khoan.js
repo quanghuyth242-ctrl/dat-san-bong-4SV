@@ -379,7 +379,8 @@ function init() {
     getBookings: () => readJson(BOOKING_KEY, []),
     getUser,
     onSearch: (intent) => stashIntentForHome(intent, { homeUrl: '../#tim-san' }),
-    onBook: (_venue, intent) => stashIntentForHome(intent, { homeUrl: '../#tim-san' }),
+    onBook: (venue, intent) =>
+      stashIntentForHome({ ...intent, venueId: venue?.id || '' }, { homeUrl: '../#tim-san' }),
   })
 }
 

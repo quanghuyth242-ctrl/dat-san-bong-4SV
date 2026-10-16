@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Thanh toán đơn đặt sân bóng đá 4SV.vn: kiểm tra thông tin đơn và chọn phương thức thanh toán phù hợp."
+    />
+    <title>Thanh toán đơn đặt sân · 4SV.vn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lexend:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container">
+        <nav class="nav-inner">
+          <a class="nav-brand" href="../">4SV<span>.vn</span></a>
+          <div class="nav-menu" id="navMenu">
+            <ul class="nav-links">
+              <li><a class="nav-link" href="../#tim-san">Tìm sân</a></li>
+              <li><a class="nav-link" href="../#san-noi-bat">Sân nổi bật</a></li>
+              <li><a class="nav-link" href="../project/pages/dashboard.html">Quản trị Admin</a></li>
+            </ul>
+
+            <div class="nav-actions">
+              <a href="auth.html#login" class="nav-link"
+                ><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a
+              >
+              <a href="auth.html#register" class="nav-link nav-register">Đăng ký</a>
+              <a href="../" class="btn-cta"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="pay-page">
+      <div class="container">
+        <nav class="pay-crumbs">
+          <a href="../"><i class="fa-solid fa-house"></i> Trang chủ</a>
+          <i class="fa-solid fa-angle-right"></i>
+          <span>Thanh toán</span>
+        </nav>
+
+        <header class="pay-head">
+          <span class="section-label"><i class="fa-solid fa-credit-card"></i> Bước cuối cùng</span>
+          <h1 class="section-title">Thanh toán đơn đặt sân</h1>
+          <p class="pay-sub">
+            Kiểm tra thông tin đơn rồi chọn phương thức thanh toán phù hợp với bạn.
+          </p>
+        </header>
+
+        <!-- Nội dung đơn hàng + phương thức thanh toán được vẽ bởi thanh-toan.js -->
+        <div class="pay-root" id="payRoot">
+          <div class="pay-card pay-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải đơn hàng...
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> 4SV.vn · Sân bóng đá giá rẻ cho mọi người.</p>
+      </div>
+    </footer>
+
+    <script src="/project/js/store.js"></script>
+    <script type="module" src="./thanh-toan.js"></script>
+  </body>
+</html>

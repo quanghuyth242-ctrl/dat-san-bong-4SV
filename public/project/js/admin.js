@@ -170,7 +170,7 @@ function formatCurrency(value) {
 function getStatusBadge(status, type) {
   const map = {
     field: {
-      active: { text: 'Đang hoạt động', cls: 'badge-success' },
+      active: { text: ' Hoạt động', cls: 'badge-success' },
       inactive: { text: 'Tạm ngưng', cls: 'badge-danger' }
     },
     booking: {
@@ -557,6 +557,7 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${Array.isArray(b.services) && b.services.length ? `<div class="detail-row"><div class="detail-label">Dịch vụ:</div><div class="detail-value">${b.services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</div></div>` : ''}
       ${
         b.discount > 0
           ? `<div class="detail-row"><div class="detail-label">Tạm tính:</div><div class="detail-value">${formatCurrency(b.subtotal || b.total + b.discount)}</div></div>
@@ -707,195 +708,93 @@ function toggleUserStatus(id) {
   });
 }
 
-// ==========================================
-// 1. QUẢN LÝ THU TIỀN & HOÀN TIỀN (CORE LOGIC)
-// ==========================================
+function initSettings() {
+  const settings = DataManager.getSettings();
 
-let thuTienData = [];
-let hoanTienData = [];
-let paymentsData = [];
-let currentCollectBookingId = null;
-let currentRefundBookingId = null;
+  const siteNameInput = document.getElementById('settingSiteName');
+  const primaryColorInput = document.getElementById('settingPrimaryColor');
+  const colorValueSpan = document.getElementById('colorValue');
+  const darkModeToggle = document.getElementById('settingDarkMode');
+  const logoInput = document.getElementById('settingLogo');
+  const logoPreview = document.getElementById('logoPreview');
 
-/**
- * Hàm cốt lõi: Ghi nhận thu tiền cho đơn đặt sân
- * - Chuyển đơn từ "Chờ xử lý" (pending) hoặc Chưa thanh toán (unpaid/awaiting_payment) -> Đã thanh toán (paid)
- * - Tự động xác nhận đơn (confirmed) nếu đang chờ xử lý
- * - Cập nhật phương thức thanh toán, số tiền đã thu, ngày giờ thu, ghi chú đối soát
- * - Đồng bộ và lưu vào LocalStorage/State
- * @param {string} id Mã đơn đặt sân (VD: 'DD001')
- * @param {object} options Các trường tùy chọn: paymentMethod, amount, note, paidAt
- * @returns {object} { ok: boolean, booking: object, error?: string }
- */
-function processCollectMoney(id, options = {}) {
-  const bookings = DataManager.getBookings();
-  const b = bookings.find(x => x.id === id);
-  if (!b) return { ok: false, error: 'Không tìm thấy đơn đặt sân!' };
+  const adminUsernameInput = document.getElementById('settingAdminUsername');
+  const adminPasswordInput = document.getElementById('settingAdminPassword');
 
-  const paymentMethod = options.paymentMethod || b.paymentMethod || 'at_court';
-  const amount = Number(options.amount) || Number(b.total) || 0;
-  const note = options.note || '';
-  const paidAt = options.paidAt || new Date().toLocaleString('vi-VN');
-
-  const patch = {
-    paymentStatus: 'paid',
-    paymentMethod: paymentMethod,
-    paidAmount: amount,
-    paymentNote: note,
-    paidAt: paidAt
-  };
-
-  if (b.status === 'pending') {
-    patch.status = 'confirmed';
+  if (siteNameInput) siteNameInput.value = settings.siteName;
+  if (primaryColorInput) {
+    primaryColorInput.value = settings.primaryColor;
+    if (colorValueSpan) colorValueSpan.textContent = settings.primaryColor;
   }
+  if (darkModeToggle) darkModeToggle.checked = settings.darkMode;
+  if (adminUsernameInput) adminUsernameInput.value = settings.adminUsername || 'admin';
+  if (adminPasswordInput) adminPasswordInput.value = '';
 
-  if (typeof SV.updateBooking === 'function') {
-    SV.updateBooking(id, patch);
-  } else {
-    SV.setPaymentStatus(id, 'paid', patch);
-    if (patch.status) SV.setBookingStatus(id, patch.status);
+  if (settings.logo && logoPreview) {
+    logoPreview.innerHTML = `<img src="${settings.logo}" alt="Logo">`;
   }
-
-  return { ok: true, booking: DataManager.getBookings().find(x => x.id === id) };
-}
-
-/**
- * Hàm cốt lõi: Xử lý hoàn tiền cho đơn đặt sân
- * - Xử lý các đơn bị hủy (status: 'cancelled') hoặc đơn khách yêu cầu hủy/hoàn tiền
- * - Cập nhật trạng thái hoàn tiền: paymentStatus: 'refunded', status: 'cancelled'
- * - Ghi nhận số tiền hoàn, lý do hoàn, ngày hoàn, ghi chú đối soát
- * - Đồng bộ LocalStorage và tự động giải phóng khung giờ sân cho khách khác đặt
- * @param {string} id Mã đơn đặt sân
- * @param {object} options Các trường tùy chọn: amount, reason, note, refundedAt
- * @returns {object} { ok: boolean, booking: object, error?: string }
- */
-function processRefundMoney(id, options = {}) {
-  const bookings = DataManager.getBookings();
-  const b = bookings.find(x => x.id === id);
-  if (!b) return { ok: false, error: 'Không tìm thấy đơn đặt sân!' };
-
-  const amount = Number(options.amount) || Number(b.paidAmount || b.total) || 0;
-  const reason = options.reason || 'Khách yêu cầu hủy đơn hợp lệ (báo trước quy định)';
-  const note = options.note || '';
-  const refundedAt = options.refundedAt || new Date().toLocaleString('vi-VN');
-
-  const patch = {
-    paymentStatus: 'refunded',
-    status: 'cancelled',
-    refundAmount: amount,
-    refundReason: reason,
-    refundNote: note,
-    refundedAt: refundedAt
-  };
-
-  if (typeof SV.updateBooking === 'function') {
-    SV.updateBooking(id, patch);
-  } else {
-    SV.setPaymentStatus(id, 'refunded', patch);
-    SV.setBookingStatus(id, 'cancelled');
-  }
-
-  return { ok: true, booking: DataManager.getBookings().find(x => x.id === id) };
-}
-
-// Gắn ra window để các file giao diện hoặc script ngoài có thể dễ dàng gọi
-window.processCollectMoney = processCollectMoney;
-window.processRefundMoney = processRefundMoney;
-
-// ==========================================
-// 2. GIAO DIỆN QUẢN LÝ THU TIỀN (THU-TIEN.HTML)
-// ==========================================
-
-function initThuTien() {
-  thuTienData = DataManager.getBookings();
-  renderThuTienStats();
-  filterThuTien();
-
-  document.getElementById('searchThuTien')?.addEventListener('input', filterThuTien);
-  document.getElementById('filterThuTienMethod')?.addEventListener('change', filterThuTien);
-  document.getElementById('filterThuTienStatus')?.addEventListener('change', filterThuTien);
-  document.getElementById('btnRefreshThuTien')?.addEventListener('click', () => {
-    thuTienData = DataManager.getBookings();
-    renderThuTienStats();
-    filterThuTien();
-    showToast('Đã làm mới danh sách thu tiền!');
+  primaryColorInput?.addEventListener('input', (e) => {
+    if (colorValueSpan) colorValueSpan.textContent = e.target.value;
   });
+  logoInput?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  document.getElementById('btnSubmitCollect')?.addEventListener('click', submitCollectMoneyAction);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (logoPreview) {
+        logoPreview.innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('settingsForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveSettings();
+  });
 }
 
-function renderThuTienStats() {
-  const all = DataManager.getBookings();
+async function saveSettings() {
+  const settings = DataManager.getSettings();
 
-  const paidBookings = all.filter(b => b.paymentStatus === 'paid');
-  const paidRev = paidBookings.reduce((sum, b) => sum + (Number(b.paidAmount || b.total) || 0), 0);
+  settings.siteName = document.getElementById('settingSiteName')?.value.trim() || settings.siteName;
+  settings.primaryColor = document.getElementById('settingPrimaryColor')?.value || settings.primaryColor;
+  settings.darkMode = document.getElementById('settingDarkMode')?.checked || false;
+  const newUsername = document.getElementById('settingAdminUsername')?.value.trim();
+  const newPassword = document.getElementById('settingAdminPassword')?.value.trim();
+  if (newUsername) {
+    settings.adminUsername = newUsername;
+  }
+  if (newPassword) {
+    if (newPassword.length < 6) {
+      showToast('Mật khẩu phải có ít nhất 6 ký tự.', 'danger');
+      return;
+    }
+    settings.adminPassword = await hashPassword(newPassword);
+  }
+  const logoImg = document.querySelector('#logoPreview img');
+  if (logoImg) {
+    settings.logo = logoImg.src;
+  }
 
-  const pendingBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
-  const pendingRev = pendingBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
-
-  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid');
-  const unpaidRev = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
-
-  const pendingOrderCount = all.filter(b => b.status === 'pending').length;
-
-  const elPaidRev = document.getElementById('statThuTienPaidRev');
-  const elPaidCnt = document.getElementById('statThuTienPaidCount');
-  if (elPaidRev) elPaidRev.textContent = formatCurrency(paidRev);
-  if (elPaidCnt) elPaidCnt.textContent = `${paidBookings.length} đơn`;
-
-  const elPendingRev = document.getElementById('statThuTienPendingRev');
-  const elPendingCnt = document.getElementById('statThuTienPendingCount');
-  if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingRev);
-  if (elPendingCnt) elPendingCnt.textContent = `${pendingBookings.length} đơn cần duyệt`;
-
-  const elUnpaidRev = document.getElementById('statThuTienUnpaidRev');
-  const elUnpaidCnt = document.getElementById('statThuTienUnpaidCount');
-  if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRev);
-  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn tại sân`;
-
-  const elOrderPending = document.getElementById('statThuTienPendingBookingCount');
-  if (elOrderPending) elOrderPending.textContent = `${pendingOrderCount} đơn`;
+  DataManager.saveSettings(settings);
+  applySettings();
+  showToast('Đã lưu cài đặt giao diện!');
 }
 
-function filterThuTien() {
-  thuTienData = DataManager.getBookings();
-  const keyword = (document.getElementById('searchThuTien')?.value || '').toLowerCase().trim();
-  const methodFilter = document.getElementById('filterThuTienMethod')?.value;
-  const statusFilter = document.getElementById('filterThuTienStatus')?.value;
-
-  let filtered = thuTienData.slice();
-
-  if (!statusFilter) {
-    filtered = filtered.filter(b => b.paymentStatus !== 'refunded');
-  }
-
-  if (keyword) {
-    filtered = filtered.filter(b =>
-      String(b.id || '').toLowerCase().includes(keyword) ||
-      String(b.userName || '').toLowerCase().includes(keyword) ||
-      String(b.customer?.phone || '').includes(keyword) ||
-      String(b.fieldName || '').toLowerCase().includes(keyword)
-    );
-  }
-
-  if (methodFilter) {
-    filtered = filtered.filter(b => b.paymentMethod === methodFilter);
-  }
-
-  if (statusFilter) {
-    filtered = filtered.filter(b => b.paymentStatus === statusFilter);
-  }
-
-  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
-
-  const totalEl = document.getElementById('thuTienTotalRecords');
-  if (totalEl) totalEl.textContent = filtered.length;
-
-  renderThuTienTable(filtered);
+function initProcessing() {
+  renderPendingBookings();
+  renderLockedUsers();
+  renderInactiveFields();
 }
 
-function renderThuTienTable(data) {
-  const tbody = document.getElementById('thuTienTableBody');
+function renderPendingBookings() {
+  const bookings = DataManager.getBookings();
+  const pending = bookings.filter(b => b.status === 'pending');
+
+  animateCounter(document.getElementById('pendingCount'), 0, pending.length, 600);
+
+  const tbody = document.getElementById('pendingBookingsBody');
   if (!tbody) return;
 
   if (data.length === 0) {
