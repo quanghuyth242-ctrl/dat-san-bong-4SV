@@ -296,11 +296,21 @@
         : [],
       repeat: String(raw.repeat || 'none'),
       repeatCount: Math.max(1, parseInt(raw.repeatCount, 10) || 1),
-      // Trạng thái thanh toán: trang thanh toán ghi vào, các trang khác chỉ đọc.
+      // Trạng thái thanh toán: trang thanh toán/ tài khoản ghi vào, các trang khác chỉ đọc.
       paid: raw.paid === true || raw.paymentStatus === 'paid',
-      paymentStatus: raw.paymentStatus === 'paid' ? 'paid' : raw.paymentStatus === 'at_venue' ? 'at_venue' : 'unpaid',
+      paymentStatus: (function (value) {
+        if (value === 'paid' || raw.paid === true) return 'paid'
+        if (value === 'at_venue') return 'at_venue'
+        // Đơn huỷ mà đã đóng tiền được đánh dấu hoàn tiền, giữ nguyên trên mọi trang.
+        if (value === 'refunded') return 'refunded'
+        return 'unpaid'
+      })(raw.paymentStatus),
       paymentMethod: String(raw.paymentMethod || ''),
       paidAt: String(raw.paidAt || ''),
+      // Mốc thời gian của vòng đời đơn: các trang ghi, trang khác đọc lại đủ.
+      completedAt: String(raw.completedAt || ''),
+      cancelledAt: String(raw.cancelledAt || ''),
+      refundAt: String(raw.refundAt || ''),
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
     }

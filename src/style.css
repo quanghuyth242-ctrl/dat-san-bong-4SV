@@ -426,3 +426,76 @@ html.dark .nav-user-head strong { color: #f9fafb; }
 .bk-success-actions { display: flex; flex-direction: column; gap: 10px; }
 .bk-success-actions .btn-book { margin-top: 0; }
 @media (max-width: 860px) { .pay-grid { grid-template-columns: 1fr; } .pay-methods { grid-template-columns: 1fr; } .pay-actions-center { flex-direction: column; } }
+
+/* ======================= TÀI KHOẢN: hồ sơ, lịch sử, thanh toán ======================= */
+.account-page { background: var(--grey-50); min-height: 72vh; padding: 22px 0 44px; }
+.account-crumbs { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--grey-600); margin-bottom: 16px; }
+.account-crumbs a:hover { color: var(--green-primary); }
+.account-card { background: #fff; border: 1px solid var(--grey-100); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 20px; }
+#profileCard { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+.account-avatar { width: 66px; height: 66px; flex: none; border-radius: 50%; background: var(--green-primary); color: #fff; font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.account-id { min-width: 0; flex: 1; }
+.account-name { font-family: var(--font-display); font-size: 1.15rem; color: var(--grey-900); }
+.account-mail { color: var(--grey-600); font-size: .85rem; word-break: break-all; }
+.account-role { display: inline-flex; margin-top: 6px; padding: 3px 10px; border-radius: 999px; background: var(--green-light); color: var(--green-dark); font-size: .74rem; font-weight: 700; }
+.account-meta { display: flex; gap: 22px; flex-wrap: wrap; }
+.account-meta dt { font-size: .7rem; color: var(--grey-600); text-transform: uppercase; letter-spacing: .04em; }
+.account-meta dd { font-size: .9rem; font-weight: 600; color: var(--grey-900); }
+.hist-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.hist-stat { background: #fff; border: 1px solid var(--grey-100); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 2px; }
+.hist-stat strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--grey-900); }
+.hist-stat span { font-size: .76rem; color: var(--grey-600); }
+.account-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.account-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.account-card-head h2 { font-family: var(--font-display); font-size: 1rem; color: var(--grey-900); display: inline-flex; align-items: center; gap: 8px; }
+.account-card-head h2 i { color: var(--green-primary); }
+.acc-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.acc-chip { border: 1px solid var(--grey-200); background: #fff; color: var(--grey-700); font-size: .76rem; font-weight: 600; padding: 5px 11px; border-radius: 999px; cursor: pointer; transition: .15s; }
+.acc-chip:hover { border-color: var(--green-primary); color: var(--green-dark); }
+.acc-chip.is-active { background: var(--green-primary); border-color: var(--green-primary); color: #fff; }
+.hist-list { display: flex; flex-direction: column; gap: 12px; }
+.hist-item { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 14px; border: 1px solid var(--grey-100); border-radius: 16px; padding: 12px; background: #fff; align-items: center; }
+.hist-thumb { width: 92px; height: 76px; border-radius: 12px; overflow: hidden; background: var(--grey-100); }
+.hist-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.hist-main { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hist-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hist-name { font-family: var(--font-display); font-size: .95rem; color: var(--grey-900); }
+.hist-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: .7rem; font-weight: 700; white-space: nowrap; }
+.hist-badge.is-pending { background: #fef3c7; color: #b45309; }
+.hist-badge.is-confirmed { background: #dbeafe; color: #1d4ed8; }
+.hist-badge.is-completed { background: var(--green-light); color: var(--green-dark); }
+.hist-badge.is-cancelled { background: #fee2e2; color: #b91c1c; }
+.hist-badge.is-paid { background: var(--green-light); color: var(--green-dark); }
+.hist-badge.is-unpaid { background: #fee2e2; color: #b91c1c; }
+.hist-badge.is-at-venue { background: #fef3c7; color: #b45309; }
+.hist-badge.is-refunded { background: #ede9fe; color: #6d28d9; }
+.hist-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--grey-600); }
+.hist-meta i { color: var(--green-primary); width: 14px; text-align: center; }
+.hist-code { font-size: .76rem; color: var(--grey-600); }
+.hist-code b { color: var(--grey-900); }
+.hist-pay-note { font-size: .76rem; color: var(--grey-600); display: inline-flex; gap: 6px; align-items: center; }
+.hist-pay-note i { color: var(--green-primary); }
+.hist-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.hist-price { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--green-dark); white-space: nowrap; }
+.hist-pay-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--green-primary); color: #fff; font-size: .78rem; font-weight: 700; padding: 7px 12px; border-radius: 10px; white-space: nowrap; transition: .15s; }
+.hist-pay-btn:hover { background: var(--green-dark); }
+.hist-cancel { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #fecaca; color: #b91c1c; font-size: .78rem; font-weight: 700; padding: 6px 12px; border-radius: 10px; cursor: pointer; transition: .15s; }
+.hist-cancel:hover { background: #fef2f2; }
+.hist-empty { text-align: center; padding: 34px 18px; border: 1px dashed var(--grey-200); border-radius: 16px; color: var(--grey-600); }
+.hist-empty h3 { font-family: var(--font-display); font-size: 1rem; color: var(--grey-900); margin: 10px 0 4px; }
+.hist-empty p { font-size: .84rem; margin-bottom: 14px; }
+.empty-icon-4sv { width: 54px; height: 54px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.acc-form { display: flex; flex-direction: column; gap: 12px; }
+.acc-field label { display: block; font-size: .78rem; font-weight: 600; color: var(--grey-700); margin-bottom: 5px; }
+.acc-field input { width: 100%; padding: 10px 12px; border: 1px solid var(--grey-200); border-radius: 10px; font-size: .88rem; color: var(--grey-900); background: #fff; }
+.acc-field input:focus { outline: none; border-color: var(--green-primary); box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+.acc-field input:disabled { background: var(--grey-50); color: var(--grey-600); }
+.acc-field.invalid input { border-color: #dc2626; }
+.acc-err { display: block; min-height: 14px; font-size: .72rem; color: #dc2626; margin-top: 4px; }
+.acc-check { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--grey-700); cursor: pointer; }
+.acc-submit { align-self: flex-start; }
+.acc-links { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--grey-100); font-size: .82rem; }
+.acc-links a, .acc-links button { background: none; border: 0; color: var(--grey-700); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 0; }
+.acc-links a:hover, .acc-links button:hover { color: var(--green-primary); }
+@media (max-width: 960px) { .account-grid { grid-template-columns: 1fr; } .hist-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .hist-item { grid-template-columns: 1fr; } .hist-thumb { width: 100%; height: 150px; } .hist-side { align-items: stretch; } .hist-pay-btn, .hist-cancel { justify-content: center; } }

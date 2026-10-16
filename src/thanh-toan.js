@@ -13,7 +13,7 @@
 const SV = window.SV
 
 const HOME_URL = '../'
-const ACCOUNT_URL = 'auth.html#profile'
+const ACCOUNT_URL = 'tai-khoan.html'
 
 /** Các phương thức thanh toán trang này hỗ trợ. */
 const METHODS = [
@@ -194,7 +194,7 @@ function formHtml(b) {
           <button type="button" class="btn-book pay-btn-main" id="payNow">
             <i class="fa-solid fa-lock"></i> Thanh toán ${money(b.total)}
           </button>
-          <a class="btn-book btn-book-ghost pay-btn-main" href="${HOME_URL}">Để thanh toán sau</a>
+          <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payLater">Để thanh toán sau</button>
         </div>
         <p class="pay-note">
           <i class="fa-solid fa-shield-halved"></i>
@@ -236,6 +236,28 @@ function atVenueHtml(b) {
       <div class="pay-actions pay-actions-center">
         <a class="btn-book pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
         <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payAgain">Thanh toán online</button>
+      </div>
+    </section>`
+}
+
+/**
+ * Khách chọn "Để thanh toán sau": đơn giữ nguyên trạng thái Chưa thanh toán,
+ * trang hướng dẫn cách đóng tiền sau từ trang Tài khoản trước giờ đá.
+ */
+function deferredHtml(b) {
+  return `
+    <section class="pay-card pay-done">
+      <div class="pay-done-icon pay-done-icon-wait"><i class="fa-solid fa-clock"></i></div>
+      <h2>Đơn đã được giữ, bạn có thể thanh toán sau</h2>
+      <p>
+        Đơn <b>${esc(b.id)}</b> đang ở trạng thái <b>Chưa thanh toán</b>. Bạn đóng tiền sau được,
+        miễn là trước giờ đá: vào <b>Tài khoản</b> → mục <b>Chưa thanh toán</b> rồi bấm
+        <b>Thanh toán ngay</b>.
+      </p>
+      ${summaryHtml(b, { showContact: false })}
+      <div class="pay-actions pay-actions-center">
+        <a class="btn-book pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
+        <a class="btn-book btn-book-ghost pay-btn-main" href="${ACCOUNT_URL}"><i class="fa-solid fa-receipt"></i> Xem đơn của tôi</a>
       </div>
     </section>`
 }
@@ -322,6 +344,13 @@ function bindForm(b) {
       return
     }
     confirmPayment(b, methodById(selectedMethod))
+  })
+
+  // Để thanh toán sau: không đổi trạng thái đơn (vốn là Chưa thanh toán),
+  // chỉ chuyển sang màn hướng dẫn để khách biết đóng tiền ở đâu.
+  document.getElementById('payLater')?.addEventListener('click', () => {
+    const el = root()
+    if (el) el.innerHTML = deferredHtml(b)
   })
 }
 
