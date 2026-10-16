@@ -20,56 +20,16 @@ function parsePitchType(value) {
   return PITCH_TYPES.includes(match?.[0]) ? match[0] : '7'
 }
 
-// Ảnh cho mục "Sân nổi bật". Có sẵn 44 ảnh bóng đá (sân vận động, mặt cỏ, trận
-// đấu) để mỗi sân hiển thị một ảnh khác nhau. Nguồn: Wikimedia Commons (CC).
+// Ảnh mặc định cho sân bóng đá theo loại sân
 const FIELD_IMAGES = [
-  // Sân vận động
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Allianz_arena_daylight_Richard_Bartz.jpg/960px-Allianz_arena_daylight_Richard_Bartz.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Olympiastadion_at_dusk.JPG/960px-Olympiastadion_at_dusk.JPG',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Santiagobernabeupanoramav45.JPG/960px-Santiagobernabeupanoramav45.JPG',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Anfield_Football_Stadium_-_geograph.org.uk_-_6297559.jpg/960px-Anfield_Football_Stadium_-_geograph.org.uk_-_6297559.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/SydneyFootballStadium_Aug2022_Pre-open.jpg/960px-SydneyFootballStadium_Aug2022_Pre-open.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Huntington_Bank_Stadium_Aerial.jpg/960px-Huntington_Bank_Stadium_Aerial.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Petrovskiy_football_stadium_in_SPB.jpg/960px-Petrovskiy_football_stadium_in_SPB.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/TEDA_Football_Stadium_2.jpg/960px-TEDA_Football_Stadium_2.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Olympic_Stadium_Munich_-_Rows_of_Seats%2C_April_2019_-04.jpg/960px-Olympic_Stadium_Munich_-_Rows_of_Seats%2C_April_2019_-04.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Petrovskiy_Football_Stadium_SPB.jpg/960px-Petrovskiy_Football_Stadium_SPB.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Football_and_athletics_stadium%2C_Doln%C3%BD_Kub%C3%ADn%2C_Slovakia.jpg/960px-Football_and_athletics_stadium%2C_Doln%C3%BD_Kub%C3%ADn%2C_Slovakia.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Football_stadium_Za_Lu%C5%BE%C3%A1nkami_Brno_Panorama_2010.jpg/960px-Football_stadium_Za_Lu%C5%BE%C3%A1nkami_Brno_Panorama_2010.jpg',
-  // Sân bóng / mặt cỏ
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Floating_Pitch%2C_Frankfurt_am_Main_%281X7A5564%29.jpg/960px-Floating_Pitch%2C_Frankfurt_am_Main_%281X7A5564%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Football_pitch_in_Gspon%2C_Staldenried.jpg/960px-Football_pitch_in_Gspon%2C_Staldenried.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Football_pitch_in_Shurskol_settlement.jpg/960px-Football_pitch_in_Shurskol_settlement.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Football_pitch_-_geograph.org.uk_-_2679895.jpg/960px-Football_pitch_-_geograph.org.uk_-_2679895.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/Football_pitch_-_geograph.org.uk_-_2681293.jpg/960px-Football_pitch_-_geograph.org.uk_-_2681293.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Football_pitch_and_Charlton_Court_-_geograph.org.uk_-_3682477.jpg/960px-Football_pitch_and_Charlton_Court_-_geograph.org.uk_-_3682477.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Football_pitch%2C_Ebonyi_State_University_Abakaliki.jpg/960px-Football_pitch%2C_Ebonyi_State_University_Abakaliki.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Football_Pitch%2C_Hampden_Park_sports_park_-_geograph.org.uk_-_4453952.jpg/960px-Football_Pitch%2C_Hampden_Park_sports_park_-_geograph.org.uk_-_4453952.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Football_pitch%2C_Iona_-_geograph.org.uk_-_4762347.jpg/960px-Football_pitch%2C_Iona_-_geograph.org.uk_-_4762347.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Football_Pitch%2C_Naphill_-_geograph.org.uk_-_5211535.jpg/960px-Football_Pitch%2C_Naphill_-_geograph.org.uk_-_5211535.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Football_pitch%2C_Sheringham_-_geograph.org.uk_-_5311969.jpg/960px-Football_pitch%2C_Sheringham_-_geograph.org.uk_-_5311969.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Bangor_City_Football_Club_training_pitch_-_geograph.org.uk_-_5319039.jpg/960px-Bangor_City_Football_Club_training_pitch_-_geograph.org.uk_-_5319039.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Football_pitch%2C_Meadowbank_Recreation_Ground%2C_Dorking_Surrey.jpg/960px-Football_pitch%2C_Meadowbank_Recreation_Ground%2C_Dorking_Surrey.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Football_pitch%2C_Ralegh_Crescent_Recreation_%26_Play_Park%2C_Witney%2C_Oxon_-_geograph.org.uk_-_5692545.jpg/960px-Football_pitch%2C_Ralegh_Crescent_Recreation_%26_Play_Park%2C_Witney%2C_Oxon_-_geograph.org.uk_-_5692545.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Football_pitch%2C_Farmers%27_Showfield_-_geograph.org.uk_-_5708398.jpg/960px-Football_pitch%2C_Farmers%27_Showfield_-_geograph.org.uk_-_5708398.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Five-a-side_pitch_at_Plantation_Park_Football_Ground_-_geograph.org.uk_-_5832811.jpg/960px-Five-a-side_pitch_at_Plantation_Park_Football_Ground_-_geograph.org.uk_-_5832811.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Football_pitch%2C_Normandy_Common%2C_Hunts_Hill_Road%2C_Normandy%2C_Surrey.jpg/960px-Football_pitch%2C_Normandy_Common%2C_Hunts_Hill_Road%2C_Normandy%2C_Surrey.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Football_pitch%2C_Shieldaig_-_geograph.org.uk_-_7300278.jpg/960px-Football_pitch%2C_Shieldaig_-_geograph.org.uk_-_7300278.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Soccer_pitch_at_Bentham_Sports_Club_-_geograph.org.uk_-_8348344.jpg/960px-Soccer_pitch_at_Bentham_Sports_Club_-_geograph.org.uk_-_8348344.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Overview_of_soccer_field_near_Veleslav%C3%ADnova_street_in_Jarom%C4%9B%C5%99ice_nad_Rokytnou%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg/960px-Overview_of_soccer_field_near_Veleslav%C3%ADnova_street_in_Jarom%C4%9B%C5%99ice_nad_Rokytnou%2C_T%C5%99eb%C3%AD%C4%8D_District.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/June_2007%2C_soccer_field_in_Mexico_City.jpg/960px-June_2007%2C_soccer_field_in_Mexico_City.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/June_2007%2C_soccer_field_in_Mexico_City_3.jpg/960px-June_2007%2C_soccer_field_in_Mexico_City_3.jpg',
-  // Trận đấu / cầu thủ
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/20191002_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Olympique_Lyonnais_by_Stepro_StP_0064-2.jpg/960px-20191002_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Olympique_Lyonnais_by_Stepro_StP_0064-2.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Germany_and_Argentina_face_off_in_the_final_of_the_World_Cup_2014_-2014-07-13_%285%29.jpg/960px-Germany_and_Argentina_face_off_in_the_final_of_the_World_Cup_2014_-2014-07-13_%285%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/David_Villa_-_01.jpg/960px-David_Villa_-_01.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Beitar_Jerusalem_FC_vs._MTK_Budapest_FC_2016-06-18_%28016%29.jpg/960px-Beitar_Jerusalem_FC_vs._MTK_Budapest_FC_2016-06-18_%28016%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Ryan_Valentine_scores.jpg/960px-Ryan_Valentine_scores.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Christian_Mendes_-_SC_Austria_Lustenau_%2808%29.jpg/960px-Christian_Mendes_-_SC_Austria_Lustenau_%2808%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Alg%C3%A9rie_-_Arm%C3%A9nie_-_20140531_-_Yacine_Brahimi_%28Alg%29_face_%C3%A0_Taron_Voskanyan_%28Arm%29.jpg/960px-Alg%C3%A9rie_-_Arm%C3%A9nie_-_20140531_-_Yacine_Brahimi_%28Alg%29_face_%C3%A0_Taron_Voskanyan_%28Arm%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/1alessandromartinelli2015.jpg/960px-1alessandromartinelli2015.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Hertha_BSC_vs._West_Ham_United_20190731_%28032%29.jpg/960px-Hertha_BSC_vs._West_Ham_United_20190731_%28032%29.jpg',
-  'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Milan_Baro%C5%A13%2C_FCB-SLAVIA_30092018.jpg/960px-Milan_Baro%C5%A13%2C_FCB-SLAVIA_30092018.jpg',
+  'https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&q=75',
+  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&q=75',
+  'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&q=75',
+  'https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&q=75',
+  'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&q=75',
+  'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400&q=75',
+  'https://images.unsplash.com/photo-1579952363873-27f3bfad9c0d?w=400&q=75',
+  'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=400&q=75',
 ]
 
 // Sân demo KHÔNG khai ở trang chủ nữa: sân lấy hoàn toàn từ store chung
@@ -137,28 +97,20 @@ function esc(value) {
 function normalizeVenue(v, idx = 0) {
   const open = toHour(v.hours?.open, DEFAULT_OPEN)
   const close = toHour(v.hours?.close, DEFAULT_CLOSE)
-  const sports = Array.isArray(v.sports) && v.sports.length
-    ? v.sports
-    : (v.sport ? [v.sport] : ['Bóng đá'])
-  const sport = v.sport || sports[0] || 'Bóng đá'
   return {
     id: String(v.id ?? 'san-' + (idx + 1)),
     name: String(v.name || 'Sân chưa đặt tên'),
-    sport,
-    sports,
+    sport: SPORT,
     type: parsePitchType(v.type),
     addr: String(v.addr || v.address || ''),
     price: toPriceNumber(v.price),
-    per: v.per || ' đ/giờ',
+    per: v.per || '/tiếng',
     courts: Math.max(1, parseInt(v.courts, 10) || 1),
     hours: { open, close: close > open ? close : open + 1 },
     lat: toCoord(v.lat),
     lng: toCoord(v.lng),
     img: v.img || FIELD_IMAGES[idx % FIELD_IMAGES.length],
-    badge: v.badge || (sports.length > 1 ? `${sports.length} môn thể thao` : '1 môn thể thao'),
-    rating: v.rating || 4.9,
-    reviewCount: v.reviewCount || 150,
-    icon: sport.includes('Pickleball') ? '🏓' : (sport.includes('Cầu lông') ? '🏸' : '⚽'),
+    icon: '⚽',
   }
 }
 
@@ -170,6 +122,9 @@ function typeLabel(type) {
 /**
  * Sân lấy thẳng từ store dùng chung: sửa sân ở trang quản trị là trang chủ
  * đổi theo, kể cả khi đang mở trang chủ ở một tab khác.
+ *
+ * Không fallback về dữ liệu mẫu: admin khoá hết sân thì trang chủ phải
+ * hiện 0 sân chứ không tự bật lại sân demo.
  */
 function loadVenues() {
   return SV.fields()
@@ -179,8 +134,6 @@ function loadVenues() {
 
 let VENUES = loadVenues()
 
-const PROVINCES = ['Hà Nội','TP. Hồ Chí Minh','Đà Nẵng','Hải Phòng','Cần Thơ','Bình Dương','Đồng Nai','Khánh Hòa','Nghệ An','Thanh Hóa','Huế','Quảng Ninh','Bà Rịa - Vũng Tàu','Lâm Đồng','Kiên Giang','Bắc Ninh','Hải Dương','Hưng Yên','Nam Định','Thái Nguyên','Quảng Nam','Bình Định','Gia Lai','Đắk Lắk','Long An','Tiền Giang','Vĩnh Long','An Giang','Bình Thuận','Ninh Thuận','Phú Yên','Quảng Ngãi','Bình Phước','Tây Ninh']
-
 /**
  * Quy mô nền tảng dùng cho footer. Đây là số liệu quảng bá, KHÔNG phải số đếm
  * từ dữ liệu. Phần tìm sân và hero dùng số thật từ VENUES (xem datasetStats()).
@@ -189,6 +142,7 @@ const PLATFORM = { venues: 629, courts: 858 }
 
 // ================================ CHUẨN HOÁ TIẾNG VIỆT ================================
 
+/** Bỏ dấu + lowercase. "Hồ Chí Minh" -> "ho chi minh", "Đà Nẵng" -> "da nang". */
 function deaccent(str) {
   return str
     .normalize('NFD')
@@ -197,6 +151,7 @@ function deaccent(str) {
     .replace(/Đ/g, 'D')
 }
 
+/** Chuẩn hoá để so khớp: bỏ dấu, hạ chữ thường, gộp khoảng trắng, bỏ dấu phẩy/chấm. */
 function norm(str) {
   return deaccent(String(str || ''))
     .toLowerCase()
@@ -205,6 +160,8 @@ function norm(str) {
     .trim()
 }
 
+// Cách viết tắt thường gặp -> dạng đầy đủ. Áp dụng cho cả dữ liệu lẫn từ khoá người dùng.
+// Lưu ý: norm() đã đổi dấu chấm thành khoảng trắng, nên "TP.HCM" tới đây là "tp hcm".
 const ABBREVIATIONS = [
   [/\btp\s*ho\s*chi\s*minh\b|\btp\s*hcm\b|\btphcm\b|\bho\s*chi\s*minh\b/g, 'tp ho chi minh'],
   [/\btp\s*ha\s*noi\b|\btp\s*hn\b|\bthanh\s*pho\b|\bha\s*noi\b/g, 'ha noi'],
@@ -220,15 +177,16 @@ const ABBREVIATIONS = [
   [/\bq\.?\s*dn\b/g, 'dong nai'],
 ]
 
+/** Mở rộng viết tắt để "q.10" và "quận 10" không khác nhau. */
 function expand(str) {
   let out = norm(str)
   for (const [re, to] of ABBREVIATIONS) out = out.replace(re, to)
   return out
 }
 
+/** Chuỗi để tìm kiếm của một sân: tên + địa chỉ + loại sân, đã chuẩn hoá. */
 function haystack(v) {
-  const sportsStr = (v.sports || [v.sport]).join(' ')
-  return expand(`${v.name} ${v.addr} ${typeLabel(v.type)} ${sportsStr}`)
+  return expand(`${v.name} ${v.addr} ${typeLabel(v.type)}`)
 }
 
 // ================================ LỌC ================================
@@ -244,6 +202,7 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** "YYYY-MM-DDTHH:MM" theo giờ địa phương, làm giá trị min cho input datetime-local. */
 function nowLocalInput() {
   const d = new Date()
   const hh = String(d.getHours()).padStart(2, '0')
@@ -251,6 +210,7 @@ function nowLocalInput() {
   return `${todayStr()}T${hh}:${mm}`
 }
 
+/** Đọc giờ từ input datetime-local ("2026-05-01T18:30") hoặc date ("2026-05-01"). */
 function parseWhen(value) {
   if (!value) return null
   const m = value.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -260,6 +220,7 @@ function parseWhen(value) {
   return { date, hour, hasTime: m[2] !== undefined }
 }
 
+/** Khoảng giờ sân còn phục vụ tại giờ đã chọn. */
 function isOpenAt(v, when) {
   if (!when || when.hour === null) return true
   return when.hour >= v.hours.open && when.hour < v.hours.close
@@ -271,33 +232,13 @@ function isPastSlot(date, hour) {
   return hour < now.getHours() + now.getMinutes() / 60
 }
 
-let activeSportFilter = 'all'
-
 function matches(v, filters) {
-  const { loc, type, when, sport } = filters
+  const { loc, type, when } = filters
 
-  if (sport && sport !== 'all') {
-    const sNorm = norm(sport)
-    const hasSport = (v.sports || [v.sport]).some((s) => norm(s).includes(sNorm))
-    if (!hasSport) return false
-  }
-
-  if (type) {
-    if (['5', '7', '11'].includes(type)) {
-      if (v.type !== type) return false
-    } else if (type === 'caulong') {
-      const has = (v.sports || [v.sport]).some((s) => norm(s).includes('cau long'))
-      if (!has) return false
-    } else if (type === 'pickleball') {
-      const has = (v.sports || [v.sport]).some((s) => norm(s).includes('pickleball'))
-      if (!has) return false
-    } else if (v.type !== type) {
-      return false
-    }
-  }
-
+  if (type && v.type !== type) return false
   if (loc) {
     const hay = haystack(v)
+    // Mọi từ trong từ khoá đều phải xuất hiện -> "sân 7 hà nội" hoạt động
     if (!loc.split(' ').every((t) => hay.includes(t))) return false
   }
   if (when && !isOpenAt(v, when)) return false
@@ -310,17 +251,15 @@ function readFilters() {
     loc: expand(document.getElementById('qLocation')?.value || ''),
     type: document.getElementById('qType')?.value || '',
     when: parseWhen(document.getElementById('qDate')?.value || ''),
-    sport: activeSportFilter,
   }
 }
 
 function hasAnyFilter(f) {
-  return Boolean(f.loc || f.type || f.when || (f.sport && f.sport !== 'all'))
+  return Boolean(f.loc || f.type || f.when)
 }
 
 function describeFilters(f) {
   const bits = []
-  if (f.sport && f.sport !== 'all') bits.push(`môn ${f.sport}`)
   if (f.type) bits.push(typeLabel(f.type))
   if (f.loc) bits.push(`tại "${f.loc}"`)
   if (f.when?.hasTime) bits.push(`${f.when.date} lúc ${timeLabel(f.when.hour)}`)
@@ -334,6 +273,12 @@ function loadBookings() {
   return SV.bookings()
 }
 
+/**
+ * Khoá so khớp duy nhất cho một sân. Ba nguồn từng dùng ba kiểu mã khác nhau:
+ * sân demo trang chủ 'demo-N', sân trang danh sách 'san-N', sân admin tạo
+ * 'SAN003'. Store đã chuẩn hoá mã khi ghi nhưng đơn cũ vẫn còn trong máy
+ * người dùng, nên vẫn cần quy về cùng một khuôn khi so khớp.
+ */
 function courtKey(id) {
   const raw = String(id)
   const digits = raw.replace(/^san-/, '')
@@ -341,6 +286,8 @@ function courtKey(id) {
 }
 
 function isSlotTaken(venueId, date, startHour, duration) {
+  // Nhờ store quyết định để đơn đã huỷ không còn chiếm slot và không lệch
+  // với trang đặt sân / trang quản trị.
   return SV.isSlotTaken(venueId, date, startHour, duration)
 }
 
@@ -453,17 +400,6 @@ function toast(msg, type = 'success') {
   }, type === 'error' ? 4000 : 2500)
 }
 
-/**
- * Ảnh cho từng thẻ ở mục "Sân nổi bật": lấy theo vị trí của sân trong danh sách
- * chung nên mỗi sân một ảnh khác nhau và giữ nguyên ảnh dù đang lọc theo tỉnh,
- * loại sân hay giờ.
- */
-function featuredImage(v) {
-  const i = VENUES.findIndex((x) => x.id === v.id)
-  const idx = i >= 0 ? i : Math.abs(String(v.id).length)
-  return FIELD_IMAGES[idx % FIELD_IMAGES.length]
-}
-
 function renderVenues(list, filters) {
   const grid = document.getElementById('featuredGrid')
   const empty = document.getElementById('venueEmpty')
@@ -495,47 +431,33 @@ function renderVenues(list, filters) {
   if (empty) empty.style.display = 'none'
 
   grid.innerHTML = list
-.map((v) => {
-      const tagsHtml = (v.sports || [v.sport || 'Bóng đá'])
-        .map((s) => `<span class="tag green">${esc(s)}</span>`)
-        .join('')
-
-      return `
-      <div class="col-md-6 col-lg-4 field-col">
-        <article class="field-card">
-          <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" class="field-thumb" style="display:block;text-decoration:none;">
-            <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
-            <span class="field-badge">${esc(v.badge || '1 môn thể thao')}</span>
-          </a>
-          <div class="field-body">
-            <h3 class="field-name">
-              <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" class="text-decoration-none text-reset">
-                ${esc(v.name)}
-              </a>
-            </h3>
-            <p class="field-loc">
-              <i class="bi bi-geo-alt-fill"></i> ${esc(v.addr)}
-            </p>
-            <div class="field-tags">
-              ${tagsHtml}
-            </div>
-            <div class="field-foot">
-              <div class="field-price">
-                <strong>từ ${v.price.toLocaleString('vi-VN')} đ/giờ</strong>
-                <div class="field-rating">
-                  <i class="bi bi-star-fill"></i> ${v.rating || '4.9'} · ${v.reviewCount || 150} đánh giá
-                </div>
-              </div>
-              <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}&book=1" class="btn btn-primary-grad">
-                Đặt sân
-              </a>
-            </div>
-          </div>
-        </article>
+    .map((v) => `
+    <div class="court-card">
+      <div class="court-img-wrap">
+        <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
+        <span class="court-badge">${v.icon} ${esc(typeLabel(v.type))}</span>
       </div>
-      `
-    })
+      <div class="court-body">
+        <div class="court-name">${esc(v.name)}</div>
+        <div class="court-addr"><i class="fa-solid fa-location-dot"></i><span>${esc(v.addr)}</span></div>
+        <div class="court-hours"><i class="fa-regular fa-clock"></i> ${timeLabel(v.hours.open)} – ${timeLabel(v.hours.close)}</div>
+        <div class="court-meta">
+          <div class="court-price">${formatPriceShort(v.price)} <small>${esc(v.per)}</small></div>
+          <div class="court-courts">${v.courts} sân</div>
+        </div>
+        <a href="#" class="btn-book" data-book="${esc(v.id)}">Đặt sân</a>
+      </div>
+    </div>
+  `)
     .join('')
+
+  grid.querySelectorAll('[data-book]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault()
+      const venue = VENUES.find((x) => String(x.id) === a.dataset.book)
+      if (venue) openBook(venue)
+    })
+  })
 }
 
 function renderNearby(list) {
@@ -552,14 +474,12 @@ function renderNearby(list) {
     .map(
       (v) => `
     <li>
-      <a href="project/pages/chi-tiet-san.html?id=${esc(v.id)}" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;width:100%;">
-        <img class="nearby-thumb" src="${esc(v.img)}" alt="">
-        <div style="flex:1;">
-          <div class="nearby-name">${esc(v.name)}</div>
-          <div class="nearby-addr">${esc(v.addr)}</div>
-        </div>
-        <span class="nearby-price">${formatPriceShort(v.price)}</span>
-      </a>
+      <img class="nearby-thumb" src="${esc(v.img)}" alt="">
+      <div>
+        <div class="nearby-name">${esc(v.name)}</div>
+        <div class="nearby-addr">${esc(v.addr)}</div>
+      </div>
+      <span class="nearby-price">${formatPriceShort(v.price)}</span>
     </li>
   `
     )
@@ -675,7 +595,6 @@ function shakeField(fieldId) {
 function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
-  bookState.selectedHour = null
   bookState.services = {}
   // Mở từ thẻ sân bình thường thì không mở lại khung chat khi đóng form.
   bookFromChat = false
@@ -686,34 +605,25 @@ function openBook(venue, preset = {}) {
 
   const body = document.getElementById('bookBody')
   if (body) {
-    const sports = venue.sports || [venue.sport || 'Bóng đá']
-    const sportPicksHtml = sports.map((s, idx) => `
-      <button type="button" class="sport-pick ${idx === 0 ? 'selected' : ''}" data-sport="${esc(s)}">${esc(s)}</button>
-    `).join('')
-
     body.innerHTML = `
-      <div class="booking-thumb">
+      <div class="bk-info">
         <img src="${esc(venue.img)}" alt="${esc(venue.name)}" />
-        <div class="booking-thumb-overlay">
-          <h4>${esc(venue.name)}</h4>
+        <div>
+          <div class="bk-name">${esc(venue.name)}</div>
+          <div class="bk-sub">${venue.icon} ${esc(typeLabel(venue.type))} · ${formatPriceShort(venue.price)}${esc(venue.per)} · ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</div>
         </div>
-      </div>
-      <div class="booking-meta-row">
-        <span><i class="bi bi-geo-alt-fill"></i> ${esc(venue.addr)}</span>
-        <span><i class="bi bi-star-fill" style="color:var(--accent)"></i> ${venue.rating || '4.9'} (${venue.reviewCount || 150} đánh giá)</span>
-        <span><i class="bi bi-clock"></i> ${timeLabel(venue.hours.open)} – ${timeLabel(venue.hours.close)}</span>
       </div>
       <form id="bookForm" novalidate>
-        <div class="sb-label">MÔN THỂ THAO</div>
-        <div class="sport-pick-list" id="bkSportList">
-          ${sportPicksHtml}
-        </div>
-
         <div class="bk-grid">
           <div class="bk-field" id="f-date">
-            <label for="bkDate">Ngày chơi <span style="color:#dc2626">*</span></label>
+            <label for="bkDate">Ngày <span style="color:#dc2626">*</span></label>
             <input type="date" id="bkDate" required />
             <span class="bk-err">Vui lòng chọn ngày không ở quá khứ.</span>
+          </div>
+          <div class="bk-field" id="f-time">
+            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
+            <select id="bkTime" required></select>
+            <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
           </div>
           <div class="bk-field" id="f-duration">
             <label for="bkDuration">Thời lượng</label>
@@ -724,16 +634,6 @@ function openBook(venue, preset = {}) {
               <option value="3">3 giờ</option>
             </select>
           </div>
-        </div>
-
-        <div class="slot-section" id="f-time">
-          <label class="sb-label">CHỌN KHUNG GIỜ TRỐNG <span style="color:#dc2626">*</span></label>
-          <div class="slot-grid" id="bkSlotGrid"></div>
-          <select id="bkTime" style="display:none;" required></select>
-          <span class="bk-err" style="margin-top:6px;">Vui lòng chọn một khung giờ trống.</span>
-        </div>
-
-        <div class="bk-grid">
           <div class="bk-field" id="f-name">
             <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
             <input type="text" id="bkName" placeholder="VD: Nguyễn Văn A" autocomplete="name" value="${esc(defaultName)}" required />
@@ -742,7 +642,7 @@ function openBook(venue, preset = {}) {
           <div class="bk-field" id="f-phone">
             <label for="bkPhone">Số điện thoại <span style="color:#dc2626">*</span></label>
             <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" value="${esc(defaultPhone)}" required />
-            <span class="bk-err">Số điện thoại không hợp lệ (10 số).</span>
+            <span class="bk-err">Số điện thoại không hợp lệ (VD: 0912345678).</span>
           </div>
           <div class="bk-field full" id="f-services">
             <label>Dịch vụ đi kèm <span class="bk-hint">(tuỳ chọn · ✓ chọn 1 · +/− chọn số lượng)</span></label>
@@ -773,75 +673,12 @@ function openBook(venue, preset = {}) {
             <input type="text" id="bkVoucher" placeholder="VD: WELCOME4SV" autocomplete="off" />
             <span class="bk-err">Mã giảm giá không dùng được với đơn này.</span>
           </div>
-        </div>
-
-        <div class="pay-summary">
-          <div class="pay-row">
-            <span>Đơn giá thuê sân:</span>
-            <span>${venue.price.toLocaleString('vi-VN')} đ/giờ</span>
-          </div>
-          <div class="pay-row">
-            <span>Thời lượng thuê:</span>
-            <span id="payDuration">1 giờ</span>
-          </div>
-          <div class="pay-total">
-            <span>Tổng thanh toán:</span>
-            <strong id="bkTotal">0đ</strong>
+          <div class="bk-field" id="f-total">
+            <label>Tổng tiền</label>
+            <div class="bk-total" id="bkTotal">0đ</div>
           </div>
         </div>
-
-        <!-- PHƯƠNG THỨC THANH TOÁN (YÊU CẦU 2) -->
-        <div class="bk-payment-section" style="margin-top:14px; padding-top:12px; border-top:1px dashed #e2e8f0;">
-          <label style="display:block; font-size:13px; font-weight:700; color:#1e293b; margin-bottom:8px;">
-            <i class="fa-solid fa-credit-card"></i> Phương thức thanh toán <span style="color:#dc2626">*</span>
-          </label>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-            <label class="bk-pay-opt active" id="lblHomePayBank" style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; border:2px solid #8b1e1e; background:#fff5f5; cursor:pointer;">
-              <input type="radio" name="homePaymentMethod" value="bank_transfer" checked style="accent-color:#8b1e1e;" />
-              <div>
-                <strong style="display:block; font-size:13px; color:#1e293b;"><i class="fa-solid fa-qrcode"></i> Chuyển khoản MB</strong>
-                <span style="font-size:11px; color:#64748b;">Quét VietQR chính chủ</span>
-              </div>
-            </label>
-            <label class="bk-pay-opt" id="lblHomePayCourt" style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; border:2px solid #e2e8f0; background:#f8fafc; cursor:pointer;">
-              <input type="radio" name="homePaymentMethod" value="at_court" style="accent-color:#8b1e1e;" />
-              <div>
-                <strong style="display:block; font-size:13px; color:#1e293b;"><i class="fa-solid fa-hand-holding-dollar"></i> Thanh toán tại sân</strong>
-                <span style="font-size:11px; color:#64748b;">Tiền mặt khi nhận sân</span>
-              </div>
-            </label>
-          </div>
-
-          <!-- BOX CHUYỂN KHOẢN NGÂN HÀNG CHÍNH CHỦ -->
-          <div id="homeBankBox" style="background:#fff; border:1.5px solid #fecdd3; border-radius:8px; padding:12px; margin-bottom:12px; display:flex; gap:14px; align-items:center;">
-            <img src="/project/images/qr-bank.png" onerror="this.onerror=null;this.src='/images/qr-bank.png';" alt="Mã QR MBBank LE THANH LONG" style="width:110px; height:auto; border-radius:6px; border:1px solid #e2e8f0; object-fit:contain; box-shadow:0 2px 6px rgba(0,0,0,0.08);" />
-            <div style="font-size:12.5px; line-height:1.45; color:#334155; flex:1;">
-              <div>Ngân hàng: <b>MB (Ngân hàng TMCP Quân Đội)</b></div>
-              <div>Chủ tài khoản: <b>LE THANH LONG</b></div>
-              <div>Số tài khoản: <b style="color:#8b1e1e; font-size:13.5px; font-family:monospace;">207987</b></div>
-              <div>Số tiền: <b style="color:#8b1e1e; font-size:13px;" id="homePayAmount">0đ</b></div>
-              <div>Nội dung CK: <b style="color:#8b1e1e; font-family:monospace;" id="homeTransferMemo">4SV DATSAN</b></div>
-              <small style="color:#64748b; display:block; margin-top:4px;"><i class="fa-solid fa-mobile-screen"></i> Quét mã bằng app ngân hàng bất kỳ (VietQR / Napas 247).</small>
-              <small style="color:#dc2626; display:block; margin-top:2px;">* Nhấn “Tôi đã chuyển khoản” để gửi yêu cầu (Trạng thái: Chờ xác nhận thanh toán).</small>
-            </div>
-          </div>
-
-          <!-- BOX THANH TOÁN TRỰC TIẾP TẠI SÂN -->
-          <div id="homeCourtBox" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:12px; font-size:12.5px; line-height:1.45; color:#334155;">
-            <div style="font-weight:600; color:#1e293b; margin-bottom:4px;"><i class="fa-solid fa-hand-holding-dollar" style="color:#8b1e1e;"></i> Thanh toán trực tiếp tại sân</div>
-            <p style="margin:0; font-size:12px; color:#475569;">Quý khách vui lòng thanh toán tiền mặt hoặc chuyển khoản tại quầy lễ tân khi đến nhận sân. Hệ thống ghi nhận đơn ở trạng thái <b>Chờ xác nhận</b> và thanh toán <b>Chưa thanh toán</b>.</p>
-          </div>
-
-          <!-- THÔNG BÁO GIỚI HẠN KỸ THUẬT LOCALSTORAGE -->
-          <div style="font-size:11px; color:#64748b; background:#f1f5f9; padding:6px 10px; border-radius:6px; margin-bottom:12px; line-height:1.4;">
-            <i class="fa-solid fa-circle-exclamation"></i> <i>Lưu ý kỹ thuật: Hệ thống lưu trên trình duyệt hiện tại. Đặt sân trên thiết bị khác nhau cần máy chủ backend dùng chung để đồng bộ thời gian thực.</i>
-          </div>
-        </div>
-
-        <button type="submit" class="btn-book-main" id="btnConfirmBook">
-          <i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản
-        </button>
-        <p class="booking-secure"><i class="bi bi-shield-check"></i> Thanh toán an toàn · Xác nhận tức thì</p>
+        <button type="submit" class="btn-book btn-book-full" id="btnConfirmBook"><i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân</button>
       </form>
     `
   }
@@ -850,124 +687,22 @@ function openBook(venue, preset = {}) {
   dateInput.min = todayStr()
   dateInput.value = todayStr()
 
-  // Gợi ý mã chuyển khoản theo mã đơn kế tiếp
-  const nextId = window.SV?.nextBookingId ? window.SV.nextBookingId() : 'BK-NEW'
-  const memoEl = document.getElementById('homeTransferMemo')
-  if (memoEl) memoEl.textContent = `4SV ${nextId}`
-
-  // Xử lý chuyển đổi phương thức thanh toán
-  const payRadios = document.querySelectorAll('input[name="homePaymentMethod"]')
-  const homeBankBox = document.getElementById('homeBankBox')
-  const homeCourtBox = document.getElementById('homeCourtBox')
-  const btnConfirm = document.getElementById('btnConfirmBook')
-  const lblBank = document.getElementById('lblHomePayBank')
-  const lblCourt = document.getElementById('lblHomePayCourt')
-
-  payRadios.forEach((radio) => {
-    radio.addEventListener('change', () => {
-      const isBank = radio.value === 'bank_transfer'
-      if (homeBankBox) homeBankBox.style.display = isBank ? 'flex' : 'none'
-      if (homeCourtBox) homeCourtBox.style.display = isBank ? 'none' : 'block'
-      if (lblBank) {
-        lblBank.style.borderColor = isBank ? '#8b1e1e' : '#e2e8f0'
-        lblBank.style.background = isBank ? '#fff5f5' : '#f8fafc'
-      }
-      if (lblCourt) {
-        lblCourt.style.borderColor = !isBank ? '#8b1e1e' : '#e2e8f0'
-        lblCourt.style.background = !isBank ? '#fff5f5' : '#f8fafc'
-      }
-      if (btnConfirm) {
-        btnConfirm.innerHTML = isBank
-          ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản'
-          : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
-      }
-    })
-  })
-
-  // Handle Sport Picks click
-  document.querySelectorAll('#bkSportList .sport-pick').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#bkSportList .sport-pick').forEach((b) => b.classList.remove('selected'))
-      btn.classList.add('selected')
-    })
-  })
-
-  const refreshSlots = () => {
+  const refresh = () => {
     const date = dateInput.value
-    const grid = document.getElementById('bkSlotGrid')
     const sel = document.getElementById('bkTime')
-    if (!grid || !sel) return
-
     if (!date) {
-      grid.innerHTML = '<p class="text-muted small">Vui lòng chọn ngày trước</p>'
-      sel.innerHTML = '<option value="">-- Chọn ngày --</option>'
+      sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
       return
     }
-
-    const duration = bookState.duration
-    let hasAvailable = false
-    let gridHtml = ''
-    let selHtml = ''
-
-    for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
-      if (h + duration > venue.hours.close) continue
-      const isPast = isPastSlot(date, h)
-      const isTaken = isSlotTaken(venue.id, date, h, duration)
-      if (isPast || isTaken) continue // Ẩn hoàn toàn khung giờ đã hết sân hoặc quá giờ
-
-      hasAvailable = true
-      const label = `${timeLabel(h)} - ${timeLabel(h + duration)}`
-      const isSelected = bookState.selectedHour === h
-      gridHtml += `
-        <button type="button" class="time-slot ${isSelected ? 'selected' : ''}" data-hour="${h}">
-          ${label}
-        </button>
-      `
-      selHtml += `<option value="${h}" ${isSelected ? 'selected' : ''}>${label}</option>`
-    }
-
-    // Nếu khung giờ đã chọn trước đó không còn khả dụng thì hủy chọn
-    if (bookState.selectedHour !== null && isSlotTaken(venue.id, date, bookState.selectedHour, duration)) {
-      bookState.selectedHour = null
-      sel.value = ''
-    }
-
-    if (!hasAvailable) {
-      grid.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;grid-column:1/-1;">Đã kín lịch trong ngày này.</p>'
-      sel.innerHTML = '<option value="">-- Kín lịch --</option>'
-      bookState.selectedHour = null
-    } else {
-      grid.innerHTML = gridHtml
-      sel.innerHTML = selHtml
-
-      grid.querySelectorAll('.time-slot').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          grid.querySelectorAll('.time-slot').forEach((b) => b.classList.remove('selected'))
-          btn.classList.add('selected')
-          bookState.selectedHour = parseFloat(btn.dataset.hour)
-          sel.value = String(bookState.selectedHour)
-          const fTime = document.getElementById('f-time')
-          if (fTime) fTime.classList.remove('invalid')
-        })
-      })
-
-      // Auto-select first available if none selected
-      if (bookState.selectedHour === null || !sel.querySelector(`option[value="${bookState.selectedHour}"]`)) {
-        const firstBtn = grid.querySelector('.time-slot')
-        if (firstBtn) {
-          firstBtn.classList.add('selected')
-          bookState.selectedHour = parseFloat(firstBtn.dataset.hour)
-          sel.value = String(bookState.selectedHour)
-        }
-      }
-    }
+    const html = buildTimeOptions(bookState.venue || venue, date, bookState.duration)
+    sel.innerHTML = html || '<option value="">-- Đã kín lịch --</option>'
   }
 
   const updateTotal = () => {
     bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
     const current = bookState.venue || venue
     const courtSub = Math.round((Number(current.price) || 0) * bookState.duration)
-    const servicePer = typeof serviceCostPerSession === 'function' ? serviceCostPerSession() : 0
+    const servicePer = serviceCostPerSession()
     const subtotal = courtSub + servicePer
 
     const code = (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase()
@@ -976,26 +711,16 @@ function openBook(venue, preset = {}) {
 
     document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
 
-    const durEl = document.getElementById('payDuration')
-    if (durEl) durEl.textContent = `${bookState.duration} giờ`
-
-    const finalPrice = usable ? (subtotal - voucher.discount) : subtotal
-
+    const total = usable ? subtotal - voucher.discount : subtotal
     const parts = []
     if (servicePer > 0) parts.push(`sân ${courtSub.toLocaleString('vi-VN')}đ + DV ${servicePer.toLocaleString('vi-VN')}đ`)
     if (usable) parts.push(`-${voucher.discount.toLocaleString('vi-VN')}đ`)
 
     const el = document.getElementById('bkTotal')
-    if (el) {
-      el.innerHTML = parts.length
-        ? `${finalPrice.toLocaleString('vi-VN')}đ <small style="opacity:.75">(${parts.join(' · ')})</small>`
-        : `${finalPrice.toLocaleString('vi-VN')}đ`
-    }
-
-    const payAmt = document.getElementById('homePayAmount')
-    if (payAmt) payAmt.textContent = `${finalPrice.toLocaleString('vi-VN')}đ`
-
-    refreshSlots()
+    el.innerHTML = parts.length
+      ? `${total.toLocaleString('vi-VN')}đ <small style="opacity:.75">(${parts.join(' · ')})</small>`
+      : `${total.toLocaleString('vi-VN')}đ`
+    refresh()
   }
 
   // Dịch vụ đi kèm: ± số lượng, hoặc ✓ toggle cho loại max 1 (trọng tài/VAR)
@@ -1026,10 +751,9 @@ function openBook(venue, preset = {}) {
 
   bookState.refresh = updateTotal
 
-  dateInput.addEventListener('change', refreshSlots)
+  dateInput.addEventListener('change', refresh)
   document.getElementById('bkDuration').addEventListener('change', updateTotal)
-  document.getElementById('bkVoucher')?.addEventListener('input', updateTotal)
-
+  document.getElementById('bkVoucher').addEventListener('input', updateTotal)
   document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
     if (el.id === 'bkVoucher') return
     const clearErr = () => {
@@ -1068,7 +792,6 @@ function openBook(venue, preset = {}) {
 
   openModal('bookModal')
 }
-
 
 function openModal(id) {
   const m = document.getElementById(id)
@@ -1140,21 +863,12 @@ function submitBooking(venue) {
     toast('Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)', 'error')
     return
   }
-  // BẮT BUỘC KIỂM TRA LẠI TÌNH TRẠNG SÂN TRƯỚC KHI ĐẶT (YÊU CẦU 1)
-  if (!timeOk || isSlotTaken(venue.id, date, startHour, duration)) {
+  if (!timeOk) {
     timeInput?.focus()
     shakeField('f-time')
-    toast('Khung giờ này đã hết sân, vui lòng chọn khung giờ khác', 'error')
-    if (bookState.refresh) bookState.refresh()
+    toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
     return
   }
-
-  // PHƯƠNG THỨC THANH TOÁN & TRẠNG THÁI (YÊU CẦU 2 & 3)
-  const payRadio = document.querySelector('input[name="homePaymentMethod"]:checked')
-  const paymentMethod = payRadio ? payRadio.value : 'bank_transfer'
-  const isBank = paymentMethod === 'bank_transfer'
-  // Phân biệt rõ trạng thái thanh toán: Chuyển khoản -> 'awaiting_payment' (Chờ xác nhận thanh toán), Tại sân -> 'unpaid'
-  const paymentStatus = isBank ? 'awaiting_payment' : 'unpaid'
 
   const btn = document.getElementById('btnConfirmBook')
   if (btn) {
@@ -1168,7 +882,7 @@ function submitBooking(venue) {
       toast('Hệ thống dữ liệu chưa sẵn sàng. Vui lòng tải lại trang.', 'error')
       if (btn) {
         btn.disabled = false
-        btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
       }
       return
     }
@@ -1202,16 +916,14 @@ function submitBooking(venue) {
       userId: currentUser?.id || '',
       userName: name,
       customer: { name, phone, email: currentUser?.email || '' },
-      paymentMethod,
-      paymentStatus,
-      status: 'pending', // Trạng thái đặt sân: Chờ xác nhận
+      status: 'pending',
     })
 
     if (!result || !result.ok) {
       toast(result?.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
       if (btn) {
         btn.disabled = false
-        btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+        btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
       }
       return
     }
@@ -1230,7 +942,7 @@ function submitBooking(venue) {
         <div class="bk-success">
           <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
           <h3>Đặt sân thành công!</h3>
-          <p>Mã đơn <b>${booking.id}</b> · Đơn đang ở trạng thái <b>${isBank ? 'Chờ xác nhận thanh toán' : 'Chờ xác nhận'}</b>.</p>
+          <p>Mã đơn <b>${booking.id}</b> · Đang mở trang thanh toán...</p>
           <dl class="bk-summary">
             <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
             ${venue.type ? `<div><dt>Loại sân</dt><dd>${esc(typeLabel(venue.type))}</dd></div>` : ''}
@@ -1244,38 +956,10 @@ function submitBooking(venue) {
                 ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
                    <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
                    <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
-                : `<div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
+                : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
             }
-            <div>
-              <dt>Phương thức thanh toán</dt>
-              <dd>
-                <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:6px; font-weight:600; font-size:12px; background:${isBank ? '#eff6ff' : '#f1f5f9'}; color:${isBank ? '#1d4ed8' : '#475569'};">
-                  <i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i>
-                  ${isBank ? 'Chuyển khoản ngân hàng (MB)' : 'Thanh toán trực tiếp tại sân'}
-                </span>
-              </dd>
-            </div>
-            <div>
-              <dt>Trạng thái thanh toán</dt>
-              <dd>
-                <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:6px; font-weight:600; font-size:12px; background:${isBank ? '#fffbeb' : '#f8fafc'}; color:${isBank ? '#b45309' : '#64748b'}; border:1px solid ${isBank ? '#fde68a' : '#cbd5e1'};">
-                  <i class="fa-solid ${isBank ? 'fa-clock' : 'fa-receipt'}"></i>
-                  ${isBank ? 'Chờ xác nhận thanh toán' : 'Chưa thanh toán (Tại sân)'}
-                </span>
-              </dd>
-            </div>
             <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
           </dl>
-          ${
-            isBank
-              ? `<div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 12px; font-size:12px; color:#92400e; margin:12px 0; text-align:left; line-height:1.45;">
-                   <i class="fa-solid fa-circle-info"></i> <b>Lưu ý chuyển khoản:</b> Nhân viên 4SV sẽ đối soát biến động số dư tài khoản MBBank <b>207987</b> và kích hoạt đơn cho quý khách.
-                 </div>`
-              : `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:12px; color:#475569; margin:12px 0; text-align:left; line-height:1.45;">
-                   <i class="fa-solid fa-circle-info"></i> Quý khách vui lòng thanh toán trực tiếp tại sân khi nhận sân.
-                 </div>`
-          }
-
           <div class="bk-success-actions">
             <button type="button" class="btn-book btn-book-full" id="bkPayNow"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</button>
             <button type="button" class="btn-book btn-book-full btn-book-ghost" id="bkLater">Để thanh toán sau</button>
@@ -1302,7 +986,7 @@ function submitBooking(venue) {
     toast('Đã có lỗi xảy ra khi đặt sân: ' + (err.message || 'vui lòng thử lại'), 'error')
     if (btn) {
       btn.disabled = false
-      btn.innerHTML = isBank ? '<i class="fa-solid fa-check-double"></i> Tôi đã chuyển khoản' : '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
     }
   }
 }
@@ -1476,8 +1160,8 @@ function applySettings() {
   }
   // Trang giao diện admin đặt ở --primary, trang chủ dùng --4sv-primary (mà
   // các biến xanh trong style.css dẫn xuất từ nó): ghi cả hai cho nhất quán.
-  document.documentElement.style.setProperty('--primary', s.primaryColor || '#8b1e1e')
-  document.documentElement.style.setProperty('--4sv-primary', s.primaryColor || '#8b1e1e')
+  document.documentElement.style.setProperty('--primary', s.primaryColor || '#16a34a')
+  document.documentElement.style.setProperty('--4sv-primary', s.primaryColor || '#16a34a')
   document.documentElement.classList.toggle('dark', !!s.darkMode)
   document.body.classList.toggle('dark-mode', !!s.darkMode)
   document.querySelectorAll('img[data-site-logo]').forEach((el) => {
@@ -1529,7 +1213,7 @@ function watchStore() {
 window.handleSearch = handleSearch
 window.locateMe = locateMe
 
-function boot() {
+document.addEventListener('DOMContentLoaded', () => {
   const y = document.getElementById('year')
   if (y) y.textContent = String(new Date().getFullYear())
 
@@ -1538,7 +1222,6 @@ function boot() {
   // Ô tìm kiếm: lọc ngay khi gõ để không phải bấm nút
   const locInput = document.getElementById('qLocation')
   locInput?.addEventListener('input', () => applyFilters({ silent: true }))
-  locInput?.addEventListener('change', () => applyFilters({ silent: true }))
 
   const searchForm = document.getElementById('searchForm')
   if (searchForm) searchForm.addEventListener('submit', handleSearch)
@@ -1547,10 +1230,8 @@ function boot() {
   typeSelect?.addEventListener('change', () => applyFilters({ scroll: true }))
 
   const dateInput = document.getElementById('qDate')
-  if (dateInput) {
-    dateInput.min = todayStr()
-    if (!dateInput.value) dateInput.value = todayStr()
-  }
+  // Không cho chọn ngày giờ trong quá khứ (ngoài ra JS vẫn kiểm tra lại khi lọc).
+  if (dateInput) dateInput.min = nowLocalInput()
   dateInput?.addEventListener('change', () => applyFilters({ scroll: true }))
 
   document.getElementById('venueEmptyReset')?.addEventListener('click', clearFilters)
@@ -1653,13 +1334,7 @@ function boot() {
   // Trợ lý đặt sân: hiểu yêu cầu tiếng Việt, lọc sân và mở form đặt sân.
   assistant = mountAssistant(assistantHandlers())
   applyStashedIntent()
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot)
-} else {
-  boot()
-}
+})
 
 // ================================ TÀI KHOẢN ĐANG ĐĂNG NHẬP ================================
 
@@ -1681,13 +1356,11 @@ function initAuthNav() {
 
   function render() {
     const user = SV.currentUser()
-    // Ẩn/hiện triệt để theo data-auth kết hợp thuộc tính hidden và inline style display
+    // Ẩn/hiện theo data-auth nên không phải nhớ 2 nút riêng.
     document.querySelectorAll('[data-auth="login"], [data-auth="register"]').forEach((el) => {
       el.hidden = !!user
-      el.style.display = user ? 'none' : ''
     })
     box.hidden = !user
-    box.style.display = user ? 'inline-flex' : 'none'
     if (!user) {
       closeMenu()
       return
@@ -1707,8 +1380,8 @@ function initAuthNav() {
   function avatarFor(initial) {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56">' +
-      '<rect width="56" height="56" rx="28" fill="#fee2e2"/>' +
-      '<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Be Vietnam Pro,sans-serif" font-size="24" font-weight="700" fill="#8b1e1e">' +
+      '<rect width="56" height="56" rx="28" fill="#dcfce7"/>' +
+      '<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Be Vietnam Pro,sans-serif" font-size="24" font-weight="700" fill="#16a34a">' +
       esc(initial) +
       '</text></svg>'
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
@@ -1716,45 +1389,34 @@ function initAuthNav() {
 
   function openMenu() {
     menu.hidden = false
-    menu.style.display = 'block'
     btn.setAttribute('aria-expanded', 'true')
   }
   function closeMenu() {
     menu.hidden = true
-    menu.style.display = 'none'
     btn.setAttribute('aria-expanded', 'false')
   }
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation()
-    if (menu.hidden || menu.style.display === 'none') openMenu()
+    if (menu.hidden) openMenu()
     else closeMenu()
   })
   document.addEventListener('click', (e) => {
-    if ((!menu.hidden || menu.style.display === 'block') && !box.contains(e.target)) closeMenu()
+    if (!menu.hidden && !box.contains(e.target)) closeMenu()
   })
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeMenu()
   })
 
-  logout?.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản 4SV.com?')) {
-      SV.signOut()
-      closeMenu()
-      render()
-    }
+  logout?.addEventListener('click', () => {
+    SV.signOut()
+    closeMenu()
+    render()
   })
 
   // Tab khác đăng nhập/đăng xuất, hoặc admin khoá chính tài khoản này.
   SV.on((key) => {
     if (key === 'auth' || key === 'users' || key === '*') render()
-  })
-  window.addEventListener('storage', (e) => {
-    if (!e.key || e.key.includes('auth') || e.key.includes('users')) {
-      render()
-    }
   })
 
   render()
@@ -1763,9 +1425,4 @@ function initAuthNav() {
 // Cho trang khác (danh sách sân) dùng lại: đăng nhập xong thì về trang trước.
 window.svSignOut = () => {
   SV.signOut()
-}
-
-// Chạy khởi tạo auth nav ngay lập tức nếu DOM đã có sẵn
-if (document.querySelector('[data-auth="user"]')) {
-  initAuthNav()
 }
