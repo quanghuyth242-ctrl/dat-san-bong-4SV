@@ -306,10 +306,22 @@
         email: String(customer.email || '').trim().toLowerCase(),
         note: String(customer.note || raw.note || ''),
       },
-      paymentMethod: raw.paymentMethod || 'at_court',
-      paymentStatus:
-        raw.paymentStatus ||
-        (raw.paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid'),
+      paymentMethod: (function(m) {
+        // Chuẩn hoá các giá trị từ trang thanh toán về 2 giá trị chuẩn
+        if (m === 'bank' || m === 'momo' || m === 'zalopay' || m === 'vnpay') return 'bank_transfer'
+        if (m === 'cash' || m === 'at_venue') return 'at_court'
+        return m || 'at_court'
+      })(raw.paymentMethod),
+      paymentStatus: (function(ps, pm) {
+        if (ps) {
+          // Chuẩn hoá trạng thái cũ
+          if (ps === 'at_venue') return 'unpaid'
+          return ps
+        }
+        // Mặc định theo phương thức
+        return (pm === 'bank_transfer' || pm === 'bank' || pm === 'momo' || pm === 'zalopay' || pm === 'vnpay')
+          ? 'awaiting_payment' : 'unpaid'
+      })(raw.paymentStatus, raw.paymentMethod),
       status: raw.status || 'pending',
       refundAmount: raw.refundAmount ? toPrice(raw.refundAmount) : 0,
       refundReason: String(raw.refundReason || ''),
@@ -1158,6 +1170,52 @@
       if (SV.isSlotTaken(booking.fieldId, booking.date, booking.startHour, booking.duration, booking.id)) {
         return { ok: false, error: 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác' }
       }
+
+      // Đồng bộ thông tin khách hàng vào danh sách người dùng (Quản lý người dùng)
+      try {
+        var users = collection('users').slice()
+        var customer = booking.customer || {}
+        var cPhone = String(customer.phone || '').replace(/\D/g, '')
+        var cEmail = String(customer.email || '').trim().toLowerCase()
+        var cName = String(booking.userName || customer.name || '').trim()
+
+        var existingUser = null
+        if (booking.userId) {
+          existingUser = users.find(function(u) { return u.id === booking.userId })
+        }
+        if (!existingUser && (cPhone || cEmail)) {
+          existingUser = users.find(function(u) {
+            var uPhone = String(u.phone || '').replace(/\D/g, '')
+            var uEmail = String(u.email || '').trim().toLowerCase()
+            return (cPhone && uPhone === cPhone) || (cEmail && uEmail === cEmail)
+          })
+        }
+
+        if (existingUser) {
+          booking.userId = existingUser.id
+          var updated = false
+          if (!existingUser.phone && cPhone) { existingUser.phone = cPhone; updated = true; }
+          if ((!existingUser.name || existingUser.name === 'Người dùng') && cName) { existingUser.name = cName; updated = true; }
+          if (updated) store('users', users)
+        } else if (cName || cPhone || cEmail) {
+          var newUserId = nextId('user', users)
+          var newUser = normUser({
+            id: newUserId,
+            name: cName || 'Khách đặt sân',
+            phone: cPhone,
+            email: cEmail,
+            role: 'player',
+            status: 'active',
+            createdAt: todayStr()
+          }, users.length)
+          users.push(newUser)
+          store('users', users)
+          booking.userId = newUserId
+        }
+      } catch (err) {
+        console.warn('[SV] Không thể đồng bộ user từ đơn đặt sân:', err)
+      }
+
       list.push(booking)
       store('bookings', list)
       // Chỉ trừ lượt dùng sau khi đơn đã ghi thành công.

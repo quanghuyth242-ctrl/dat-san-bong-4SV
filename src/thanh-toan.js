@@ -96,7 +96,11 @@ function isPaid(b) {
 }
 
 function isAtVenue(b) {
-  return b.paymentStatus === 'at_venue'
+  return b.paymentStatus === 'at_venue' || b.paymentStatus === 'unpaid'
+}
+
+function isAwaitingPayment(b) {
+  return b.paymentStatus === 'awaiting_payment'
 }
 
 // ================================ LƯU TRẠNG THÁI ================================
@@ -235,7 +239,42 @@ function atVenueHtml(b) {
       ${summaryHtml(b, { showContact: false })}
       <div class="pay-actions pay-actions-center">
         <a class="btn-book pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
-        <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payAgain">Thanh toán online</button>
+        <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payAgain">Chọn phương thức khác</button>
+      </div>
+    </section>`
+}
+
+function awaitingPaymentHtml(b) {
+  const bankConfig = window.SV?.bankConfig ? window.SV.bankConfig() : {}
+  const bankName = bankConfig.bankName || 'MB (Ngân hàng TMCP Quân Đội - MBBank)'
+  const accountNumber = bankConfig.accountNumber || '207987'
+  const accountHolder = bankConfig.accountHolder || 'LE THANH LONG'
+  const qrImage = bankConfig.qrImage || '/project/images/qr-bank.png'
+
+  return `
+    <section class="pay-card pay-done">
+      <div class="pay-done-icon pay-done-icon-wait"><i class="fa-solid fa-clock"></i></div>
+      <h2>Chờ xác nhận thanh toán</h2>
+      <p>
+        Bạn đã chọn chuyển khoản. Vui lòng chuyển đúng <b>${money(b.total)}</b>
+        với nội dung <b>DATSAN ${esc(b.id)}</b>. Admin sẽ xác nhận trong thời gian sớm nhất.
+      </p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:16px 0;">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+          <img src="${esc(qrImage)}" alt="QR chuyển khoản" style="width:120px;height:120px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" onerror="this.style.display='none'">
+          <div>
+            <div style="font-weight:700;margin-bottom:6px;">🏦 ${esc(bankName)}</div>
+            <div style="margin-bottom:4px;">Số TK: <strong>${esc(accountNumber)}</strong></div>
+            <div style="margin-bottom:4px;">Chủ TK: <strong>${esc(accountHolder)}</strong></div>
+            <div style="margin-bottom:4px;">Số tiền: <strong style="color:#dc2626;">${money(b.total)}</strong></div>
+            <div>Nội dung: <strong style="background:#e0f2fe;padding:2px 6px;border-radius:4px;font-family:monospace;">DATSAN ${esc(b.id)}</strong></div>
+          </div>
+        </div>
+      </div>
+      ${summaryHtml(b, { showContact: false })}
+      <div class="pay-actions pay-actions-center">
+        <a class="btn-book pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
+        <a class="btn-book btn-book-ghost pay-btn-main" href="${ACCOUNT_URL}"><i class="fa-solid fa-receipt"></i> Xem đơn của tôi</a>
       </div>
     </section>`
 }
@@ -278,10 +317,16 @@ function render() {
     el.innerHTML = paidHtml(b, methodById(b.paymentMethod))
     return
   }
+  // Đơn chờ xác nhận chuyển khoản
+  if (isAwaitingPayment(b)) {
+    el.innerHTML = awaitingPaymentHtml(b)
+    return
+  }
+  // Đơn chọn thanh toán tại sân
   if (isAtVenue(b)) {
     el.innerHTML = atVenueHtml(b)
     document.getElementById('payAgain')?.addEventListener('click', () => {
-      savePayment(b.id, { paymentStatus: 'unpaid', paymentMethod: '' })
+      savePayment(b.id, { paymentStatus: 'pending', paymentMethod: '' })
       render()
     })
     return
@@ -339,13 +384,29 @@ function confirmPayment(b, method) {
   setTimeout(() => {
     const stamp = new Date().toLocaleString('vi-VN')
     if (method.id === 'cash') {
-      savePayment(b.id, { paymentStatus: 'at_venue', paymentMethod: 'cash', paid: false, paidAt: '' })
-    } else {
+      // Thanh toán tại sân: giữ đơn, chờ thu tiền tại quầy
       savePayment(b.id, {
-        paid: true,
-        paymentStatus: 'paid',
-        paymentMethod: method.id,
-        paidAt: stamp,
+        paymentStatus: 'unpaid',
+        paymentMethod: 'at_court',
+        paid: false,
+        paidAt: ''
+      })
+    } else if (method.id === 'bank') {
+      // Chuyển khoản ngân hàng: chờ Admin xác nhận đã nhận tiền
+      savePayment(b.id, {
+        paymentStatus: 'awaiting_payment',
+        paymentMethod: 'bank_transfer',
+        paid: false,
+        paidAt: ''
+      })
+    } else {
+      // Ví điện tử (momo/zalopay/vnpay): không có API xác minh thực tế,
+      // lưu thành awaiting_payment để Admin xác nhận thủ công.
+      savePayment(b.id, {
+        paymentStatus: 'awaiting_payment',
+        paymentMethod: 'bank_transfer',
+        paid: false,
+        paidAt: ''
       })
     }
     render()

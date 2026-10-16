@@ -131,6 +131,21 @@ function bookingCard(b) {
   const endHour = Number(b.endHour) > startHour ? Number(b.endHour) : startHour + (Number(b.duration) || 1)
   const contact = [b.customer?.name, b.customer?.phone].filter(Boolean).join(' · ')
 
+  let payBadge = ''
+  if (b.paymentStatus === 'paid') {
+    payBadge = '<span class="hist-badge" style="background:#dcfce7;color:#166534;margin-left:6px;"><i class="fa-solid fa-check"></i> Đã thanh toán</span>'
+  } else if (b.paymentStatus === 'awaiting_payment') {
+    payBadge = '<span class="hist-badge" style="background:#fef3c7;color:#92400e;margin-left:6px;"><i class="fa-solid fa-clock"></i> Chờ duyệt CK</span>'
+  } else if (b.paymentStatus === 'refunded') {
+    payBadge = '<span class="hist-badge" style="background:#fee2e2;color:#991b1b;margin-left:6px;"><i class="fa-solid fa-rotate-left"></i> Đã hoàn tiền</span>'
+  } else {
+    payBadge = '<span class="hist-badge" style="background:#e0f2fe;color:#075985;margin-left:6px;"><i class="fa-solid fa-money-bill-wave"></i> TT tại sân</span>'
+  }
+
+  const payLink = (b.paymentStatus === 'awaiting_payment' || b.paymentStatus === 'unpaid') && b.status !== 'cancelled'
+    ? `<div style="margin-top:6px;"><a href="/src/thanh-toan.html?ma=${encodeURIComponent(b.id || '')}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;"><i class="fa-solid fa-qrcode"></i> Xem mã QR / Thanh toán</a></div>`
+    : ''
+
   return `
     <article class="hist-item">
       <div class="hist-thumb">
@@ -139,7 +154,10 @@ function bookingCard(b) {
       <div class="hist-main">
         <div class="hist-head">
           <h3 class="hist-name">${escapeHtml(court)}</h3>
-          <span class="hist-badge ${st.cls}">${st.text}</span>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+            <span class="hist-badge ${st.cls}">${st.text}</span>
+            ${payBadge}
+          </div>
         </div>
         <div class="hist-meta">
           <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}</span>
@@ -150,6 +168,7 @@ function bookingCard(b) {
         <div class="hist-code">
           Mã đơn <b>${escapeHtml(b.id || '')}</b>${contact ? ` · ${escapeHtml(contact)}` : ''}
         </div>
+        ${payLink}
       </div>
       <div class="hist-side">
         <div class="hist-price">${(Number(b.total) || 0).toLocaleString('vi-VN')}đ</div>

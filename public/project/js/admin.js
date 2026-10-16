@@ -460,6 +460,16 @@ function deleteField(id) {
   const field = fieldsData.find(f => f.id === id);
   if (!field) return;
 
+  const activeBookings = DataManager.getBookings().filter(b =>
+    (b.fieldId === id || b.courtId === id) &&
+    b.status !== 'cancelled' &&
+    b.status !== 'refunded'
+  );
+  if (activeBookings.length > 0) {
+    showToast(`Không thể xóa sân "${field.name}" vì đang có ${activeBookings.length} đơn đặt sân đang hoạt động! Bạn có thể chuyển trạng thái sang Tạm dừng.`, 'warning');
+    return;
+  }
+
   showConfirm('Xóa sân bóng', `Bạn có chắc muốn xóa "${field.name}"?`, () => {
     fieldsData = fieldsData.filter(f => f.id !== id);
     DataManager.saveFields(fieldsData);
@@ -469,6 +479,11 @@ function deleteField(id) {
 }
 
 let bookingsData = [];
+let thuTienData = [];
+let hoanTienData = [];
+let paymentsData = [];
+let currentCollectBookingId = null;
+let currentRefundBookingId = null;
 
 function initBookings() {
   bindBookingListeners();
@@ -507,20 +522,25 @@ function renderBookings(data) {
   if (!tbody) return;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Không tìm thấy đơn đặt nào</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Không tìm thấy đơn đặt nào</div></div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = data.map(b => {
-    let actions = `<button class="btn btn-sm btn-outline" onclick="viewBooking('${b.id}')" title="Xem">👁️</button>`;
+    let actions = `<button class="btn btn-sm btn-outline" onclick="viewBooking('${b.id}')" title="Xem chi tiết">👁️</button>`;
+
+    if (b.paymentStatus === 'awaiting_payment') {
+      actions += ` <button class="btn btn-sm btn-success" onclick="adminCollectPayment('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
+    } else if (b.paymentStatus === 'unpaid' && b.status !== 'cancelled') {
+      actions += ` <button class="btn btn-sm btn-primary" onclick="adminCollectPayment('${b.id}')" title="Thu tiền tại sân">💵 Thu tiền</button>`;
+    }
 
     if (b.status === 'pending') {
-      actions += ` <button class="btn btn-sm btn-success" onclick="confirmBooking('${b.id}')" title="Xác nhận">✓</button>`;
-      actions += ` <button class="btn btn-sm btn-danger" onclick="cancelBooking('${b.id}')" title="Hủy">✕</button>`;
-    }
-    if (b.status === 'confirmed') {
-      actions += ` <button class="btn btn-sm btn-primary" onclick="completeBooking('${b.id}')" title="Hoàn thành">✓✓</button>`;
-      actions += ` <button class="btn btn-sm btn-danger" onclick="cancelBooking('${b.id}')" title="Hủy">✕</button>`;
+      actions += ` <button class="btn btn-sm btn-success" onclick="confirmBooking('${b.id}')" title="Xác nhận đơn">✓</button>`;
+      actions += ` <button class="btn btn-sm btn-danger" onclick="cancelBooking('${b.id}')" title="Hủy đơn">✕</button>`;
+    } else if (b.status === 'confirmed') {
+      actions += ` <button class="btn btn-sm btn-primary" onclick="completeBooking('${b.id}')" title="Hoàn thành đơn">✓✓</button>`;
+      actions += ` <button class="btn btn-sm btn-danger" onclick="cancelBooking('${b.id}')" title="Hủy đơn">✕</button>`;
     }
 
     return `
@@ -569,6 +589,7 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Hình thức TT:</div><div class="detail-value">${getStatusBadge(b.paymentMethod || 'at_court', 'paymentMethod')}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái TT:</div><div class="detail-value">${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái đơn:</div><div class="detail-value">${getStatusBadge(b.status, 'booking')}</div></div>
+      ${b.paidAt ? `<div class="detail-row"><div class="detail-label">Thời gian TT:</div><div class="detail-value" style="color:#16a34a; font-weight:600;">✓ ${b.paidAt}</div></div>` : ''}
       ${
         b.paymentStatus === 'refunded'
           ? `<div class="detail-row"><div class="detail-label">Số tiền đã hoàn:</div><div class="detail-value" style="color:#ef4444; font-weight:700;">${formatCurrency(b.refundAmount || b.total)}</div></div>
@@ -578,7 +599,52 @@ function viewBooking(id) {
       }
     `;
   }
+
+  const footer = document.getElementById('bookingDetailFooter');
+  if (footer) {
+    let footerBtns = '';
+    if (b.status === 'pending') {
+      footerBtns += `<button class="btn btn-success" onclick="confirmBooking('${b.id}'); closeModal('bookingDetailModal');">✓ Xác nhận đơn</button>`;
+    }
+    if (b.paymentStatus !== 'paid' && b.paymentStatus !== 'refunded' && b.status !== 'cancelled') {
+      const btnTitle = b.paymentMethod === 'bank_transfer' ? '✓ Duyệt tiền chuyển khoản' : '💵 Xác nhận thu tiền';
+      footerBtns += ` <button class="btn btn-primary" onclick="adminCollectPayment('${b.id}'); closeModal('bookingDetailModal');">${btnTitle}</button>`;
+    }
+    if (b.status !== 'cancelled' && b.status !== 'completed') {
+      footerBtns += ` <button class="btn btn-danger" onclick="cancelBooking('${b.id}'); closeModal('bookingDetailModal');">✕ Hủy đơn</button>`;
+    }
+    footerBtns += ` <button class="btn btn-outline modal-close">Đóng</button>`;
+    footer.innerHTML = footerBtns;
+  }
+
   openModal('bookingDetailModal');
+}
+
+function adminCollectPayment(id) {
+  const b = bookingsData.find(x => x.id === id) || DataManager.getBookings().find(x => x.id === id);
+  if (!b) return;
+
+  const isBank = b.paymentMethod === 'bank_transfer';
+  const methodText = isBank ? 'chuyển khoản MBBank' : 'tiền mặt tại quầy';
+
+  showConfirm(
+    'Xác nhận thu tiền',
+    `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã nhận tiền thực tế qua ${methodText}? Đơn hàng sẽ được chuyển sang Đã thanh toán và Đã xác nhận.`,
+    () => {
+      const res = processCollectMoney(id, {
+        paymentMethod: b.paymentMethod || 'at_court',
+        amount: b.total,
+        note: `Admin xác nhận thu tiền ${methodText}`
+      });
+      if (res.ok) {
+        bookingsData = DataManager.getBookings();
+        filterBookings();
+        showToast(`Đã ghi nhận thanh toán thành công cho đơn ${b.id}!`);
+      } else {
+        showToast(res.error || 'Có lỗi xảy ra', 'danger');
+      }
+    }
+  );
 }
 
 function confirmBooking(id) {
@@ -797,12 +863,12 @@ function renderPendingBookings() {
   const tbody = document.getElementById('pendingBookingsBody');
   if (!tbody) return;
 
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">💵</div><div class="empty-text">Không tìm thấy giao dịch thu tiền nào</div></div></td></tr>`;
+  if (pending.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Không có đơn đặt chờ xử lý</div></div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = data.map(b => {
+  tbody.innerHTML = pending.map(b => {
     let actions = `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetail('${b.id}')" title="Xem chi tiết giao dịch">👁️</button>`;
 
     if (b.paymentStatus === 'awaiting_payment') {
@@ -918,6 +984,217 @@ function confirmCollectMoneyAction(id) {
       showToast(`Đã ghi nhận thanh toán thành công cho đơn ${b.id}!`);
     }
   );
+}
+
+// ==========================================
+// 2. GIAO DIỆN THU TIỀN (THU-TIEN.HTML)
+// ==========================================
+
+function initThuTien() {
+  thuTienData = DataManager.getBookings();
+  renderThuTienStats();
+  filterThuTien();
+
+  document.getElementById('searchThuTien')?.addEventListener('input', filterThuTien);
+  document.getElementById('filterThuTienMethod')?.addEventListener('change', filterThuTien);
+  document.getElementById('filterThuTienStatus')?.addEventListener('change', filterThuTien);
+  document.getElementById('btnRefreshThuTien')?.addEventListener('click', () => {
+    thuTienData = DataManager.getBookings();
+    renderThuTienStats();
+    filterThuTien();
+    showToast('Đã làm mới danh sách thu tiền!');
+  });
+
+  document.getElementById('btnSubmitCollect')?.addEventListener('click', submitCollectMoneyAction);
+}
+
+function renderThuTienStats() {
+  const all = DataManager.getBookings();
+
+  const paidBookings = all.filter(b => b.paymentStatus === 'paid');
+  const paidRev = paidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const pendingCKBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
+  const pendingCKRev = pendingCKBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue');
+  const unpaidRev = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+
+  const pendingOrderCount = all.filter(b => b.status === 'pending').length;
+
+  const elPaidRev = document.getElementById('statThuTienPaidRev');
+  const elPaidCnt = document.getElementById('statThuTienPaidCount');
+  if (elPaidRev) elPaidRev.textContent = formatCurrency(paidRev);
+  if (elPaidCnt) elPaidCnt.textContent = `${paidBookings.length} đơn`;
+
+  const elPendingRev = document.getElementById('statThuTienPendingRev');
+  const elPendingCnt = document.getElementById('statThuTienPendingCount');
+  if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingCKRev);
+  if (elPendingCnt) elPendingCnt.textContent = `${pendingCKBookings.length} đơn cần duyệt`;
+
+  const elUnpaidRev = document.getElementById('statThuTienUnpaidRev');
+  const elUnpaidCnt = document.getElementById('statThuTienUnpaidCount');
+  if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRev);
+  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn tại sân`;
+
+  const elPendingOrder = document.getElementById('statThuTienPendingBookingCount');
+  if (elPendingOrder) elPendingOrder.textContent = pendingOrderCount;
+}
+
+function filterThuTien() {
+  thuTienData = DataManager.getBookings();
+  const keyword = (document.getElementById('searchThuTien')?.value || '').toLowerCase().trim();
+  const methodFilter = document.getElementById('filterThuTienMethod')?.value;
+  const statusFilter = document.getElementById('filterThuTienStatus')?.value;
+
+  // Trang thu tiền hiển thị các đơn chưa paid hoặc đã paid (không hiện đã hủy/hoàn)
+  let filtered = thuTienData.filter(b =>
+    b.status !== 'refunded' && b.paymentStatus !== 'refunded'
+  );
+
+  if (methodFilter) {
+    filtered = filtered.filter(b => {
+      const method = b.paymentMethod || 'at_court';
+      if (methodFilter === 'bank_transfer') {
+        return method === 'bank_transfer' || method === 'bank' || method === 'momo' || method === 'zalopay' || method === 'vnpay';
+      }
+      return method === methodFilter || method === 'at_court' || method === 'cash' || method === 'at_venue';
+    });
+  }
+
+  if (statusFilter) {
+    filtered = filtered.filter(b => {
+      if (statusFilter === 'awaiting_payment') return b.paymentStatus === 'awaiting_payment';
+      if (statusFilter === 'unpaid') return b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue';
+      if (statusFilter === 'paid') return b.paymentStatus === 'paid';
+      return true;
+    });
+  }
+
+  if (keyword) {
+    filtered = filtered.filter(b =>
+      String(b.id || '').toLowerCase().includes(keyword) ||
+      String(b.userName || '').toLowerCase().includes(keyword) ||
+      String(b.customer?.phone || '').includes(keyword) ||
+      String(b.fieldName || '').toLowerCase().includes(keyword)
+    );
+  }
+
+  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
+
+  const totalEl = document.getElementById('thuTienTotalRecords');
+  if (totalEl) totalEl.textContent = filtered.length;
+
+  renderThuTienTable(filtered);
+}
+
+function renderThuTienTable(data) {
+  const tbody = document.getElementById('thuTienTableBody');
+  if (!tbody) return;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">💵</div><div class="empty-text">Không tìm thấy giao dịch thu tiền nào</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(b => {
+    let actions = `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetail('${b.id}')" title="Xem chi tiết giao dịch">👁️</button>`;
+
+    if (b.paymentStatus === 'awaiting_payment') {
+      actions += ` <button class="btn btn-sm btn-success" onclick="confirmCollectMoneyAction('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
+    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
+      actions += ` <button class="btn btn-sm btn-primary" onclick="openCollectModal('${b.id}')" title="Thu tiền đơn đặt sân">💵 Thu tiền</button>`;
+    } else if (b.paymentStatus === 'paid') {
+      actions += ` <button class="btn btn-sm btn-outline" style="color: #16a34a; border-color: #86efac;" onclick="viewPaymentDetail('${b.id}')" title="Xem phiếu thu">✓ Đã thu</button>`;
+    }
+
+    const phoneStr = b.customer?.phone ? `<br><small style="color:#64748b;">📞 ${b.customer.phone}</small>` : '';
+
+    return `
+      <tr>
+        <td><strong>${b.id}</strong></td>
+        <td>
+          <div style="font-weight: 600;">${b.userName}</div>
+          ${phoneStr}
+        </td>
+        <td>
+          <div style="font-weight: 500;">${b.fieldName}</div>
+          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #1e293b;">${formatCurrency(b.total)}</div>
+          ${b.discount > 0 ? `<small style="color: #16a34a;">Giảm ${formatCurrency(b.discount)}</small>` : ''}
+        </td>
+        <td>${getStatusBadge(b.paymentMethod || 'at_court', 'paymentMethod')}</td>
+        <td>${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</td>
+        <td>${getStatusBadge(b.status, 'booking')}</td>
+        <td><div class="action-btns">${actions}</div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/**
+ * Xử lý thu tiền: ghi nhận thanh toán thực tế và cập nhật trạng thái đơn.
+ * Chỉ gọi sau khi Admin xác nhận đã nhận được tiền thực tế.
+ */
+function processCollectMoney(id, { paymentMethod, amount, note }) {
+  const list = SV.bookings();
+  const idx = list.findIndex(b => b.id === String(id));
+  if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' };
+
+  const b = list[idx];
+  const now = new Date().toLocaleString('vi-VN');
+
+  // Chuẩn hoá phương thức thanh toán về 2 giá trị admin dùng
+  let normalizedMethod = paymentMethod;
+  if (paymentMethod === 'bank' || paymentMethod === 'momo' || paymentMethod === 'zalopay' || paymentMethod === 'vnpay') {
+    normalizedMethod = 'bank_transfer';
+  } else if (paymentMethod === 'cash' || paymentMethod === 'at_venue') {
+    normalizedMethod = 'at_court';
+  }
+
+  list[idx] = Object.assign({}, b, {
+    paymentStatus: 'paid',
+    paymentMethod: normalizedMethod,
+    paid: true,
+    paidAt: now,
+    paidAmount: amount || b.total,
+    collectNote: note || '',
+    // Tự động xác nhận đơn khi thu tiền (nếu đang pending)
+    status: b.status === 'pending' ? 'confirmed' : b.status,
+  });
+
+  SV.saveBookings(list);
+  return { ok: true, booking: list[idx] };
+}
+
+/**
+ * Xử lý hoàn tiền: chỉ gọi sau khi Admin xác nhận đã hoàn tiền cho khách.
+ */
+function processRefundMoney(id, { amount, reason, note }) {
+  const list = SV.bookings();
+  const idx = list.findIndex(b => b.id === String(id));
+  if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' };
+
+  const b = list[idx];
+  if (b.paymentStatus !== 'paid') {
+    return { ok: false, error: 'Chỉ có thể hoàn tiền với đơn đã thanh toán' };
+  }
+
+  const now = new Date().toLocaleString('vi-VN');
+
+  list[idx] = Object.assign({}, b, {
+    paymentStatus: 'refunded',
+    status: 'refunded',
+    refundAmount: amount || b.total,
+    refundReason: reason || 'Khách yêu cầu hủy đơn',
+    refundNote: note || '',
+    refundedAt: now,
+  });
+
+  SV.saveBookings(list);
+  return { ok: true, booking: list[idx] };
 }
 
 // ==========================================

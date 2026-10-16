@@ -931,7 +931,7 @@ function submitBooking(venue) {
     const booking = result.booking
     // Đặt xong thì không mở lại khung chat nữa; khách chọn hoặc tự động sang trang thanh toán.
     bookFromChat = false
-    const payUrl = `src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
+    const payUrl = `/src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
     const serviceLine = services.length
       ? `<div><dt>Dịch vụ</dt><dd>${services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</dd></div>
          <div><dt>Tiền dịch vụ</dt><dd>${servicePer.toLocaleString('vi-VN')}đ</dd></div>`

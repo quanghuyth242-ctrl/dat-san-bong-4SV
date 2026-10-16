@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Quản lý sân bóng đá - Thêm, sửa, xóa, tìm kiếm sân">
+  <title>Quản lý sân - 4SV.vn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body data-page="fields">
+
+  <div class="admin-layout">
+    <div class="sidebar-overlay"></div>
+
+    
+    <aside class="sidebar">
+      <a href="../../index.html" class="sidebar-brand" style="text-decoration: none; color: inherit;">
+        <div class="brand-icon">⚽</div>
+        <div class="brand-text">4SV.vn</div>
+      </a>
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a></li>
+          <li class="nav-item"><a href="san-bong.html" class="nav-link active"><span class="nav-icon">🏟️</span><span>Quản lý sân</span></a></li>
+          <li class="nav-item"><a href="don-dat.html" class="nav-link"><span class="nav-icon">📋</span><span>Quản lý đơn đặt</span></a></li>
+          <li class="nav-item"><a href="nguoi-dung.html" class="nav-link"><span class="nav-icon">👥</span><span>Quản lý người dùng</span></a></li>
+          <li class="nav-item"><a href="thu-tien.html" class="nav-link"><span class="nav-icon">💵</span><span>Thu tiền</span></a></li>
+          <li class="nav-item"><a href="hoan-tien.html" class="nav-link"><span class="nav-icon">↩️</span><span>Hoàn tiền</span></a></li>
+          <li class="nav-item"><a href="danh-gia.html" class="nav-link"><span class="nav-icon">⭐</span><span>Đánh giá & Bình luận</span></a></li>
+          <li class="nav-item"><a href="ma-giam-gia.html" class="nav-link"><span class="nav-icon">🎟️</span><span>Mã giảm giá</span></a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    
+    <div class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <button class="btn-menu-toggle" aria-label="Toggle menu">☰</button>
+          <h1 class="page-title">Quản lý sân bóng</h1>
+        </div>
+        <div class="header-right">
+          <a href="../../index.html" class="btn btn-outline" style="height: 32px; padding: 0 12px; font-size: 13px; text-decoration: none;">🏠 Trang chủ web</a>
+          <div class="admin-info">
+            <span>Admin</span>
+            <div class="admin-avatar">A</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchField" placeholder="Tìm kiếm sân bóng...">
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" id="btnAddField">+ Thêm sân</button>
+          </div>
+        </div>
+
+        
+        <div class="card">
+          <div class="card-body" style="padding: 0;">
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã sân</th>
+                    <th>Tên sân</th>
+                    <th>Địa chỉ</th>
+                    <th>Loại sân</th>
+                    <th>Giá thuê</th>
+                    <th>Trên bản đồ</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="fieldsTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="modal-overlay" id="fieldModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="fieldModalTitle">Thêm sân bóng</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="fieldForm">
+        <div class="modal-body">
+          <input type="hidden" id="fieldId">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fieldCode">Mã sân</label>
+              <input type="text" id="fieldCode" readonly>
+            </div>
+            <div class="form-group">
+              <label for="fieldName">Tên sân *</label>
+              <input type="text" id="fieldName" required placeholder="Nhập tên sân">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldAddress">Địa chỉ *</label>
+            <input type="text" id="fieldAddress" required placeholder="Nhập địa chỉ sân">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fieldType">Loại sân</label>
+              <select id="fieldType">
+                <option value="Sân 5">Sân 5</option>
+                <option value="Sân 7">Sân 7</option>
+                <option value="Sân 11">Sân 11</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="fieldPrice">Giá thuê (VNĐ/giờ) *</label>
+              <input type="number" id="fieldPrice" required min="0" placeholder="VD: 300000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fieldCourts">Số sân trong khu</label>
+              <input type="number" id="fieldCourts" min="1" value="1">
+            </div>
+            <div class="form-group">
+              <label for="fieldOpen">Giờ mở cửa</label>
+              <input type="number" id="fieldOpen" min="0" max="24" step="0.5" value="6">
+            </div>
+            <div class="form-group">
+              <label for="fieldClose">Giờ đóng cửa</label>
+              <input type="number" id="fieldClose" min="0" max="24" step="0.5" value="22">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldLat">Toạ độ (vào bản đồ ở trang chủ)</label>
+            <div class="form-row">
+              <div class="form-group" style="margin:0">
+                <input type="number" id="fieldLat" step="any" placeholder="Vĩ độ (21.0285)">
+              </div>
+              <div class="form-group" style="margin:0">
+                <input type="number" id="fieldLng" step="any" placeholder="Kinh độ (105.8542)">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldImg">Ảnh sân (URL)</label>
+            <input type="url" id="fieldImg" placeholder="Để trống để dùng ảnh mặc định">
+          </div>
+          <div class="form-group">
+            <label for="fieldDesc">Mô tả</label>
+            <textarea id="fieldDesc" rows="2" placeholder="Mô tả ngắn về sân"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="fieldStatus">Trạng thái</label>
+            <select id="fieldStatus">
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Tạm ngưng</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline modal-close">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/store.js"></script>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>
