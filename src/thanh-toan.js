@@ -13,7 +13,7 @@
 const SV = window.SV
 
 const HOME_URL = '../'
-const ACCOUNT_URL = 'auth.html#profile'
+const ACCOUNT_URL = 'tai-khoan.html'
 
 /** Các phương thức thanh toán trang này hỗ trợ. */
 const METHODS = [
@@ -380,6 +380,9 @@ function render() {
     return
   }
 
+  // Vẽ lại form: bỏ chọn phương thức cũ để nút Thanh toán không giữ trạng thái
+  // từ màn hình trước (vd: khách chọn "Thanh toán sau" rồi quay lại chọn khác).
+  selectedMethod = null
   el.innerHTML = formHtml(b)
   bindForm(b)
 }
@@ -412,7 +415,9 @@ function bindForm(b) {
     }
   })
 
-  // Nút phụ: giữ đơn và trả tiền sau (khách không cần chọn phương thức).
+  // Nút phụ "Để thanh toán sau": ghi trạng thái pay_later rồi chuyển màn xác nhận.
+  // (Nhánh origin/AI từng gắn thêm 1 listener nữa cho nút này -> 2 handler chạy song
+  // song làm màn hình bị ghi đè, đã gộp về một nơi duy nhất.)
   document.getElementById('payLater')?.addEventListener('click', () => {
     confirmPayment(b, methodById('later'))
   })

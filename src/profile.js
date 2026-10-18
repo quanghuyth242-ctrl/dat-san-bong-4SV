@@ -55,10 +55,51 @@ function isUpcoming(b) {
   return Number(b.startHour || 0) >= new Date().getHours()
 }
 
-/** Đơn coi như đã thanh toán: có cờ paid/paymentStatus hoặc đã hoàn thành. */
+/**
+ * Đơn đã thanh toán: chỉ tính theo cờ do trang thanh-toan.html ghi vào
+ * (paid/paymentStatus). Đơn "để thanh toán sau" giữ nguyên Chưa thanh toán
+ * cho tới khi người dùng thực sự đóng tiền, kể cả sau khi buổi đá hoàn thành.
+ */
 function isPaid(b) {
-  if (b.paid === true || b.paymentStatus === 'paid') return true
-  return b.status === 'completed'
+  return b.paid === true || b.paymentStatus === 'paid'
+}
+
+/** Trạng thái thanh toán hiển thị trên đơn: đã đóng, chưa đóng, chờ duyệt, trả tại quầy, hoàn tiền. */
+const PAYMENT_STATUS = {
+  paid: { text: 'Đã thanh toán', cls: 'is-paid', icon: 'fa-circle-check' },
+  unpaid: { text: 'Chưa thanh toán', cls: 'is-unpaid', icon: 'fa-clock' },
+  awaiting_payment: { text: 'Chờ xác nhận CK', cls: 'is-at-venue', icon: 'fa-clock' },
+  pay_later: { text: 'Thanh toán sau', cls: 'is-at-venue', icon: 'fa-calendar-clock' },
+  at_venue: { text: 'Trả tại quầy', cls: 'is-at-venue', icon: 'fa-shop' },
+  refunded: { text: 'Đã hoàn tiền', cls: 'is-refunded', icon: 'fa-arrow-rotate-left' },
+}
+
+/** Mã phương thức do trang thanh toán lưu, đổi sang tên người dùng đọc được. */
+const PAYMENT_METHODS = {
+  momo: 'Ví MoMo',
+  zalopay: 'Ví ZaloPay',
+  vnpay: 'VNPay',
+  bank: 'Chuyển khoản ngân hàng',
+  bank_transfer: 'Chuyển khoản ngân hàng',
+  cash: 'Tiền mặt tại quầy',
+  at_court: 'Tại sân',
+  pay_later: 'Để thanh toán sau',
+}
+
+function paymentState(b) {
+  if (b.paymentStatus === 'refunded') return PAYMENT_STATUS.refunded
+  if (isPaid(b)) return PAYMENT_STATUS.paid
+  return PAYMENT_STATUS[b.paymentStatus] || PAYMENT_STATUS.unpaid
+}
+
+/** Dòng mô tả dưới mã đơn: phương thức + thời điểm thanh toán, hoặc thời điểm hoàn tiền. */
+function paymentNote(b) {
+  if (b.paymentStatus === 'refunded') {
+    return b.refundAt ? `Hoàn tiền ${b.refundAt}` : 'Đã hoàn tiền'
+  }
+  if (!isPaid(b) || !b.paidAt) return ''
+  const method = PAYMENT_METHODS[b.paymentMethod] || 'Ví điện tử'
+  return `${method} · ${b.paidAt}`
 }
 
 function timeLabel(hour) {
@@ -160,11 +201,10 @@ function cardHtml(b) {
   const duration = Math.max(1, Math.round((end - start) * 10) / 10)
   const canCancel = CANCELLED_BY_USER.includes(b.status)
   const paid = isPaid(b)
-  const payLater = b.paymentStatus === 'pay_later'
-  const unpaidNotCancelled =
-    !paid &&
-    b.status !== 'cancelled' &&
-    ['pay_later', 'unpaid', 'awaiting_payment'].includes(b.paymentStatus)
+  const pay = paymentState(b)
+  const payNote = paymentNote(b)
+  // Đơn để thanh toán sau (hoặc chọn trả tại quầy) vẫn đóng tiền online được.
+  const canPay = Boolean(b.id) && b.status !== 'cancelled' && !paid && b.paymentStatus !== 'refunded'
   const discount = Number(b.discount) || 0
   const total = Number(b.total) || 0
   const contact = [b.customer?.name, b.customer?.phone].filter(Boolean).join(' · ')
@@ -189,21 +229,23 @@ function cardHtml(b) {
           Mã đơn <b>${esc(b.id)}</b>${contact ? ` · ${esc(contact)}` : ''}
           ${b.voucherCode ? ` · Voucher <b>${esc(b.voucherCode)}</b>` : ''}
         </div>
+        ${payNote ? `<div class="acc-item-paynote"><i class="fa-solid fa-receipt"></i> ${esc(payNote)}</div>` : ''}
       </div>
       <div class="acc-item-side">
         <div class="acc-item-price">
           ${total.toLocaleString('vi-VN')}đ
           ${discount > 0 ? `<small>-${discount.toLocaleString('vi-VN')}đ</small>` : ''}
         </div>
-        <span class="acc-item-pay ${paid ? 'is-paid' : 'is-unpaid'}">
-          <i class="fa-solid ${paid ? 'fa-circle-check' : 'fa-clock'}"></i>
-          ${paid ? 'Đã thanh toán' : payLater ? 'Thanh toán sau' : 'Chưa thanh toán'}
+        <span class="acc-item-pay ${pay.cls}">
+          <i class="fa-solid ${pay.icon}"></i> ${pay.text}
         </span>
         <div class="acc-item-actions">
           ${
-            unpaidNotCancelled
-              ? `<a class="acc-rebook" href="./thanh-toan.html?ma=${esc(b.id)}">
-                   <i class="fa-solid fa-credit-card"></i> Thanh toán
+            canPay
+              ? `<a class="acc-pay" href="thanh-toan.html?ma=${encodeURIComponent(b.id)}">
+                   <i class="fa-solid fa-wallet"></i> ${
+                     b.paymentStatus === 'at_venue' ? 'Thanh toán online' : 'Thanh toán ngay'
+                   }
                  </a>`
               : ''
           }

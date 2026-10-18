@@ -184,6 +184,9 @@ function getStatusBadge(status, type) {
       paid: { text: 'Đã thanh toán', cls: 'badge-success' },
       awaiting_payment: { text: 'Chờ xác nhận CK', cls: 'badge-warning' },
       pay_later: { text: 'Thanh toán sau', cls: 'badge-warning' },
+      // Đơn khách bấm "Chọn phương thức khác" trên trang thanh toán sẽ lật về 'pending'
+      // (chưa chọn cách trả) -> hiển thị như đơn chưa thu tiền, không hiện chữ 'pending'.
+      pending: { text: 'Chưa chọn phương thức', cls: 'badge-secondary' },
       unpaid: { text: 'Chưa thanh toán (Tại sân)', cls: 'badge-secondary' },
       refunded: { text: 'Đã hoàn tiền', cls: 'badge-danger' }
     },
@@ -533,7 +536,7 @@ function renderBookings(data) {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="adminCollectPayment('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if ((b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later') && b.status !== 'cancelled') {
+    } else if ((b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later' || b.paymentStatus === 'pending') && b.status !== 'cancelled') {
       actions += ` <button class="btn btn-sm btn-primary" onclick="adminCollectPayment('${b.id}')" title="Thu tiền tại sân">💵 Thu tiền</button>`;
     }
 
@@ -1539,7 +1542,7 @@ function renderPaymentsTable(data) {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="confirmPaymentReceived('${b.id}')" title="Xác nhận đã nhận tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later') {
+    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later' || b.paymentStatus === 'pending') {
       actions += ` <button class="btn btn-sm btn-primary" onclick="confirmPaymentReceived('${b.id}')" title="Xác nhận thu tiền tại sân">💵 Thu tiền</button>`;
     }
 

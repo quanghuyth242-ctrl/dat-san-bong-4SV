@@ -1619,13 +1619,35 @@
   background: #fff7ed;
   color: #c2410c;
 }
+.acc-item-pay.is-at-venue {
+  background: #fef3c7;
+  color: #b45309;
+}
+.acc-item-pay.is-refunded {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.acc-item-paynote {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 0.69rem;
+  color: var(--grey-600);
+}
+.acc-item-paynote i {
+  color: var(--green-primary);
+}
 .acc-item-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .acc-cancel,
-.acc-rebook {
+.acc-rebook,
+.acc-pay {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1655,6 +1677,17 @@
 }
 .acc-rebook:hover {
   background: var(--green-primary);
+  color: var(--white);
+}
+/* Nút thanh toán cho đơn "để thanh toán sau": nổi bật hơn nút phụ. */
+.acc-pay {
+  border: 1px solid var(--green-primary);
+  background: var(--green-primary);
+  color: var(--white);
+}
+.acc-pay:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
   color: var(--white);
 }
 
@@ -1765,7 +1798,12 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     width: 100%;
+  }
+  .acc-item-actions {
+    margin-left: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {

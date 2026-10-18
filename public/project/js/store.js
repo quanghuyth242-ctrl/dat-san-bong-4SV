@@ -344,8 +344,15 @@
         : [],
       repeat: String(raw.repeat || 'none'),
       repeatCount: Math.max(1, parseInt(raw.repeatCount, 10) || 1),
+      // Trạng thái thanh toán: trang thanh toán/ tài khoản ghi vào, các trang khác chỉ đọc.
+      // GIỮ khối chuẩn hoá paymentStatus/paymentMethod ở trên (không dùng whitelist
+      // paid/at_venue/refunded/unpaid) để không xoá mất 'awaiting_payment' và 'pay_later'.
       paid: raw.paid === true || raw.paymentStatus === 'paid',
       paidAt: String(raw.paidAt || ''),
+      // Mốc thời gian của vòng đời đơn: các trang ghi, trang khác đọc lại đủ.
+      completedAt: String(raw.completedAt || ''),
+      cancelledAt: String(raw.cancelledAt || ''),
+      refundAt: String(raw.refundAt || ''),
       createdAt: raw.createdAt || todayStr(),
       _source: raw._source || 'public',
     }

@@ -16,6 +16,48 @@ const BOOKING_STATUS = {
   cancelled: { text: 'Đã hủy', cls: 'is-cancelled' },
 }
 
+/** Trạng thái thanh toán: trang thanh-toan.html ghi vào đơn, trang này hiển thị. */
+const PAYMENT_STATUS = {
+  paid: { text: 'Đã thanh toán', cls: 'is-paid', icon: 'fa-circle-check' },
+  unpaid: { text: 'Chưa thanh toán', cls: 'is-unpaid', icon: 'fa-clock' },
+  awaiting_payment: { text: 'Chờ xác nhận CK', cls: 'is-at-venue', icon: 'fa-clock' },
+  pay_later: { text: 'Thanh toán sau', cls: 'is-at-venue', icon: 'fa-calendar-clock' },
+  at_venue: { text: 'Trả tại quầy', cls: 'is-at-venue', icon: 'fa-shop' },
+  refunded: { text: 'Đã hoàn tiền', cls: 'is-refunded', icon: 'fa-arrow-rotate-left' },
+}
+
+/** Mã phương thức do trang thanh toán lưu, đổi sang tên người dùng đọc được. */
+const PAYMENT_METHODS = {
+  momo: 'Ví MoMo',
+  zalopay: 'Ví ZaloPay',
+  vnpay: 'VNPay',
+  bank: 'Chuyển khoản ngân hàng',
+  bank_transfer: 'Chuyển khoản ngân hàng',
+  cash: 'Tiền mặt tại quầy',
+  at_court: 'Tại sân',
+  pay_later: 'Để thanh toán sau',
+}
+
+function isPaid(b) {
+  return b.paid === true || b.paymentStatus === 'paid'
+}
+
+function paymentState(b) {
+  if (b.paymentStatus === 'refunded') return PAYMENT_STATUS.refunded
+  if (isPaid(b)) return PAYMENT_STATUS.paid
+  return PAYMENT_STATUS[b.paymentStatus] || PAYMENT_STATUS.unpaid
+}
+
+/** Dòng mô tả dưới mã đơn: phương thức + thời điểm thanh toán, hoặc thời điểm hoàn tiền. */
+function paymentNote(b) {
+  if (b.paymentStatus === 'refunded') {
+    return b.refundAt ? `Hoàn tiền ${b.refundAt}` : 'Đã hoàn tiền'
+  }
+  if (!isPaid(b) || !b.paidAt) return ''
+  const method = PAYMENT_METHODS[b.paymentMethod] || 'Ví điện tử'
+  return `${method} · ${b.paidAt}`
+}
+
 /** Danh sách sân để lấy ảnh/địa chỉ hiển thị cho đơn đã đặt. */
 
 const $ = (sel) => document.querySelector(sel)
@@ -117,7 +159,7 @@ function myBookings(user, record) {
 }
 
 function isUpcoming(b) {
-  if (b.status === 'cancelled' || !b.date) return false
+  if (b.status === 'cancelled' || b.status === 'completed' || !b.date) return false
   if (b.date > todayStr()) return true
   if (b.date < todayStr()) return false
   return Number(b.startHour ?? 0) >= new Date().getHours()
@@ -125,32 +167,17 @@ function isUpcoming(b) {
 
 function bookingCard(b) {
   const st = BOOKING_STATUS[b.status] || BOOKING_STATUS.pending
+  const pay = paymentState(b)
+  const payNote = paymentNote(b)
   const court = venueName(b)
   const addr = venueAddr(b)
   const startHour = Number(b.startHour) || 0
   const endHour = Number(b.endHour) > startHour ? Number(b.endHour) : startHour + (Number(b.duration) || 1)
   const contact = [b.customer?.name, b.customer?.phone].filter(Boolean).join(' · ')
-
-  let payBadge = ''
-  if (b.paymentStatus === 'paid') {
-    payBadge = '<span class="hist-badge" style="background:#dcfce7;color:#166534;margin-left:6px;"><i class="fa-solid fa-check"></i> Đã thanh toán</span>'
-  } else if (b.paymentStatus === 'awaiting_payment') {
-    payBadge = '<span class="hist-badge" style="background:#fef3c7;color:#92400e;margin-left:6px;"><i class="fa-solid fa-clock"></i> Chờ duyệt CK</span>'
-  } else if (b.paymentStatus === 'refunded') {
-    payBadge = '<span class="hist-badge" style="background:#fee2e2;color:#991b1b;margin-left:6px;"><i class="fa-solid fa-rotate-left"></i> Đã hoàn tiền</span>'
-  } else if (b.paymentStatus === 'pay_later') {
-    payBadge = '<span class="hist-badge" style="background:#fef3c7;color:#92400e;margin-left:6px;"><i class="fa-solid fa-calendar-clock"></i> Thanh toán sau</span>'
-  } else {
-    payBadge = '<span class="hist-badge" style="background:#e0f2fe;color:#075985;margin-left:6px;"><i class="fa-solid fa-money-bill-wave"></i> TT tại sân</span>'
-  }
-
-  const payLink =
-    (b.paymentStatus === 'awaiting_payment' ||
-      b.paymentStatus === 'unpaid' ||
-      b.paymentStatus === 'pay_later') &&
-    b.status !== 'cancelled'
-      ? `<div style="margin-top:6px;"><a href="/src/thanh-toan.html?ma=${encodeURIComponent(b.id || '')}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;"><i class="fa-solid fa-qrcode"></i> Xem mã QR / Thanh toán</a></div>`
-      : ''
+  const code = b.id || ''
+  // Đơn chưa đóng tiền (hoặc chọn trả tại quầy) thì vẫn thanh toán online được.
+  const canPay = code && b.status !== 'cancelled' && !isPaid(b) && b.paymentStatus !== 'refunded'
+  const canCancel = ['pending', 'confirmed'].includes(b.status)
 
   return `
     <article class="hist-item">
@@ -160,10 +187,10 @@ function bookingCard(b) {
       <div class="hist-main">
         <div class="hist-head">
           <h3 class="hist-name">${escapeHtml(court)}</h3>
-          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-            <span class="hist-badge ${st.cls}">${st.text}</span>
-            ${payBadge}
-          </div>
+          <span class="hist-badge ${st.cls}">${st.text}</span>
+          <span class="hist-badge ${pay.cls}">
+            <i class="fa-solid ${pay.icon}"></i> ${pay.text}
+          </span>
         </div>
         <div class="hist-meta">
           <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}</span>
@@ -172,15 +199,24 @@ function bookingCard(b) {
           ${addr ? `<span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(addr)}</span>` : ''}
         </div>
         <div class="hist-code">
-          Mã đơn <b>${escapeHtml(b.id || '')}</b>${contact ? ` · ${escapeHtml(contact)}` : ''}
+          Mã đơn <b>${escapeHtml(code)}</b>${contact ? ` · ${escapeHtml(contact)}` : ''}
         </div>
-        ${payLink}
+        ${payNote ? `<div class="hist-pay-note"><i class="fa-solid fa-receipt"></i> ${escapeHtml(payNote)}</div>` : ''}
       </div>
       <div class="hist-side">
         <div class="hist-price">${(Number(b.total) || 0).toLocaleString('vi-VN')}đ</div>
         ${
-          b.status === 'pending'
-            ? `<button type="button" class="hist-cancel" data-cancel="${escapeHtml(b.id || '')}">
+          canPay
+            ? `<a class="hist-pay-btn" href="thanh-toan.html?ma=${encodeURIComponent(code)}">
+                 <i class="fa-solid fa-wallet"></i> ${
+                   b.paymentStatus === 'at_venue' ? 'Thanh toán online' : 'Thanh toán ngay'
+                 }
+               </a>`
+            : ''
+        }
+        ${
+          canCancel
+            ? `<button type="button" class="hist-cancel" data-cancel="${escapeHtml(code)}">
                  <i class="fa-solid fa-xmark"></i> Huỷ đặt sân
                </button>`
             : ''
@@ -199,7 +235,12 @@ function visibleBookings() {
   })
   if (state.filter === 'upcoming') return list.filter(isUpcoming)
   if (state.filter === 'pending') return list.filter((b) => b.status === 'pending')
+  if (state.filter === 'completed') return list.filter((b) => b.status === 'completed')
   if (state.filter === 'cancelled') return list.filter((b) => b.status === 'cancelled')
+  if (state.filter === 'paid') return list.filter(isPaid)
+  if (state.filter === 'unpaid')
+    return list.filter((b) => !isPaid(b) && b.status !== 'cancelled' && b.paymentStatus !== 'refunded')
+  if (state.filter === 'refunded') return list.filter((b) => b.paymentStatus === 'refunded')
   return list
 }
 
@@ -228,14 +269,48 @@ function renderProfile() {
 
 function renderStats() {
   const list = state.bookings
-  const spent = list
-    .filter((b) => b.status !== 'cancelled')
-    .reduce((sum, b) => sum + (Number(b.total) || 0), 0)
+  // Tổng chi tiêu là số tiền ĐÃ đóng: đơn huỷ (kể cả đã hoàn tiền) không tính.
+  const spent = list.filter(isPaid).reduce((sum, b) => sum + (Number(b.total) || 0), 0)
 
   $('#accTotal').textContent = String(list.length)
   $('#accUpcoming').textContent = String(list.filter(isUpcoming).length)
   $('#accDone').textContent = String(list.filter((b) => b.status === 'completed').length)
   $('#accSpent').textContent = spent.toLocaleString('vi-VN') + 'đ'
+}
+
+/**
+ * Đơn đã xác nhận mà qua giờ đá thì tự chuyển sang "Đã hoàn thành", người dùng
+ * không phải chờ chủ sân bấm xác nhận sau buổi đá. Chỉ chạm tới đơn của chính
+ * người đang đăng nhập và ghi lại vào localStorage chung để trang quản trị
+ * thấy cùng trạng thái.
+ */
+function syncCompleted() {
+  const today = todayStr()
+  const nowHour = new Date().getHours() + new Date().getMinutes() / 60
+  let changed = false
+
+  state.bookings.forEach((b) => {
+    if (b.status !== 'confirmed' || !b.date) return
+    const end =
+      Number(b.endHour) > 0 ? Number(b.endHour) : (Number(b.startHour) || 0) + (Number(b.duration) || 1)
+    const past = b.date < today || (b.date === today && end <= nowHour)
+    if (!past) return
+    b.status = 'completed'
+    b.completedAt = new Date().toISOString()
+    changed = true
+  })
+
+  if (!changed) return
+  const all = readJson(BOOKING_KEY, [])
+  if (!Array.isArray(all)) return
+  state.bookings.forEach((done) => {
+    const hit = all.find((b) => b.id === done.id)
+    if (hit) {
+      hit.status = done.status
+      hit.completedAt = done.completedAt
+    }
+  })
+  if (writeJson(BOOKING_KEY, all)) toast('Có đơn đã qua giờ đá nên được đánh dấu Đã hoàn thành.')
 }
 
 function renderHistory() {
@@ -320,17 +395,31 @@ function cancelBooking(id) {
   if (!Array.isArray(list)) return
   const idx = list.findIndex((b) => b.id === id)
   if (idx === -1) return
-  if (list[idx].status !== 'pending') {
-    toast('Chỉ huỷ được đơn đang chờ xử lý.', 'error')
+  const booking = list[idx]
+  if (!['pending', 'confirmed'].includes(booking.status)) {
+    toast('Chỉ huỷ được đơn đang chờ xử lý hoặc đã xác nhận.', 'error')
     return
   }
-  list[idx].status = 'cancelled'
-  list[idx].cancelledAt = new Date().toISOString()
+
+  const wasPaid = isPaid(booking)
+  booking.status = 'cancelled'
+  booking.cancelledAt = new Date().toISOString()
+  // Đơn đã đóng tiền mà bị huỷ thì chuyển sang trạng thái hoàn tiền cho rõ ràng.
+  if (wasPaid) {
+    booking.paid = false
+    booking.paymentStatus = 'refunded'
+    booking.refundAt = new Date().toLocaleString('vi-VN')
+  }
+
   if (!writeJson(BOOKING_KEY, list)) return
   state.bookings = myBookings(state.user, state.record)
   renderStats()
   renderHistory()
-  toast(`Đã huỷ đơn ${id}`)
+  toast(
+    wasPaid
+      ? `Đã huỷ đơn ${id}, ${(Number(booking.total) || 0).toLocaleString('vi-VN')}đ sẽ được hoàn tiền.`
+      : `Đã huỷ đơn ${id}`,
+  )
 }
 
 function init() {
@@ -348,6 +437,7 @@ function init() {
   state.user = user
   state.record = profileRecord(user.email)
   state.bookings = myBookings(user, state.record)
+  syncCompleted()
   refresh()
 
   $('#profileForm').addEventListener('submit', saveProfile)
