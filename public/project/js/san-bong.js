@@ -175,7 +175,7 @@ function renderGrid() {
     .map(
       (c) => `
       <article class="san-card" data-id="${esc(c.id)}">
-        <a href="chi-tiet-san.html?id=${encodeURIComponent(c.id)}" class="san-card-img" style="display:block;text-decoration:none;">
+        <a href="../../src/chi-tiet.html?id=${encodeURIComponent(c.id)}" class="san-card-img" style="display:block;text-decoration:none;">
           <img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'"/>
           <span class="san-badge badge-status ${c.status}">
             <i class="fa-solid ${c.status === 'trong' ? 'fa-circle-check' : c.status === 'da-dat' ? 'fa-circle-xmark' : 'fa-triangle-exclamation'}"></i>
@@ -185,7 +185,7 @@ function renderGrid() {
         </a>
         <div class="san-card-body">
           <h3 class="san-name">
-            <a href="chi-tiet-san.html?id=${encodeURIComponent(c.id)}" style="color:inherit;text-decoration:none;">
+            <a href="../../src/chi-tiet.html?id=${encodeURIComponent(c.id)}" style="color:inherit;text-decoration:none;">
               ${esc(c.name)}
             </a>
           </h3>
@@ -199,12 +199,12 @@ function renderGrid() {
             <span>/ giờ</span>
           </div>
           <div class="san-card-actions">
-            <a href="chi-tiet-san.html?id=${encodeURIComponent(c.id)}" class="btn-card btn-outline">
+            <a href="../../src/chi-tiet.html?id=${encodeURIComponent(c.id)}" class="btn-card btn-outline">
               <i class="fa-solid fa-eye"></i> Xem chi tiết
             </a>
-            <a href="chi-tiet-san.html?id=${encodeURIComponent(c.id)}&book=1" class="btn-card btn-solid ${c.status !== 'trong' ? 'disabled' : ''}">
+            <button type="button" class="btn-card btn-solid ${c.status !== 'trong' ? 'disabled' : ''}" data-open-book="${esc(c.id)}" ${c.status !== 'trong' ? 'disabled' : ''}>
               ${c.status === 'trong' ? '<i class="fa-solid fa-calendar-check"></i> Đặt sân' : '<i class="fa-solid fa-ban"></i> Không nhận đặt'}
-            </a>
+            </button>
           </div>
         </div>
       </article>`
@@ -328,6 +328,7 @@ function refreshTimeOptions() {
   if (!date) {
     sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>';
     sel.value = '';
+    refreshTimeSlots();
     return;
   }
 
@@ -344,6 +345,45 @@ function refreshTimeOptions() {
     } --</option>`;
     sel.value = '';
   }
+  refreshTimeSlots();
+}
+
+/**
+ * Lưới khung giờ cho modal đặt trực tiếp — hiển thị giống "Lịch trống hôm nay"
+ * trên trang chi tiết: khung xanh = còn trống (bấm để chọn), đỏ = đã có người
+ * đặt, xám = đã qua giờ. Ô select ẩn vẫn giữ giá trị cho validate/submit.
+ */
+function refreshTimeSlots() {
+  const grid = $('#timeSlotGrid');
+  const court = state.activeCourt;
+  const sel = $('#timeSelect');
+  if (!grid) return;
+  if (!court || !sel) {
+    grid.innerHTML = '';
+    return;
+  }
+  const date = $('#dateInput')?.value || '';
+  const duration = parseFloat($('#durationSelect')?.value) || 1;
+  if (!date) {
+    grid.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  for (let h = court.hours.open; h < court.hours.close; h++) {
+    if (h + duration > court.hours.close) continue;
+    const isPast = isPastSlot(date, h, h + duration, court.hours.close);
+    const isTaken = !isPast && isSlotTaken(court.id, date, h, duration);
+    const selected = !isPast && !isTaken && sel.value !== '' && parseFloat(sel.value) === h;
+    const cls = isPast ? 'is-past' : isTaken ? 'is-taken' : selected ? 'is-selected' : '';
+    const sub = isPast ? 'Đã quá giờ đặt' : isTaken ? 'Đã có người đặt' : selected ? 'Đã chọn' : 'Còn trống';
+    html += `<button type="button" class="bk-slot ${cls}" data-hour="${h}" ${
+      isPast || isTaken ? 'disabled' : ''
+    }>${timeLabel(h)} – ${timeLabel(h + duration)}<small>${sub}</small></button>`;
+  }
+  grid.innerHTML =
+    html ||
+    `<span class="bk-slot-empty"><i class="fa-solid fa-calendar-xmark"></i> Không còn khung giờ trống trong ngày</span>`;
 }
 
 // Dịch vụ đi kèm khi đặt sân (giá tính cho mỗi buổi)
@@ -764,11 +804,6 @@ function renderBookForm(court) {
           <input type="date" id="dateInput" required />
           <span class="error-msg">Vui lòng chọn ngày hợp lệ (không ở quá khứ).</span>
         </div>
-        <div class="form-field" id="f-time">
-          <label><i class="fa-regular fa-clock"></i> Chọn giờ</label>
-          <select id="timeSelect" required></select>
-          <span class="error-msg">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa. Vui lòng chọn khung khác.</span>
-        </div>
         <div class="form-field" id="f-duration">
           <label><i class="fa-solid fa-hourglass-half"></i> Thời lượng</label>
           <select id="durationSelect">
@@ -777,6 +812,12 @@ function renderBookForm(court) {
             <option value="2">2 giờ</option>
             <option value="3">3 giờ</option>
           </select>
+        </div>
+        <div class="form-field full" id="f-time">
+          <label><i class="fa-regular fa-clock"></i> Chọn giờ</label>
+          <select id="timeSelect" required style="display: none;"></select>
+          <div class="bk-slot-grid" id="timeSlotGrid"></div>
+          <span class="error-msg">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa. Vui lòng chọn khung khác.</span>
         </div>
         <div class="form-field" id="f-repeat">
           <label><i class="fa-solid fa-repeat"></i> Đặt định kỳ</label>
@@ -853,6 +894,16 @@ function renderBookForm(court) {
   });
   $('#timeSelect').addEventListener('change', (e) => {
     state.booking.time = e.target.value;
+  });
+  // Bấm khung giờ trong lưới: ghi vào select ẩn (các listener change/validation cũ giữ nguyên).
+  $('#timeSlotGrid').addEventListener('click', (e) => {
+    const chip = e.target.closest('.bk-slot');
+    if (!chip || chip.disabled) return;
+    const sel = $('#timeSelect');
+    sel.value = chip.dataset.hour;
+    sel.dispatchEvent(new Event('change'));
+    $('#f-time')?.classList.remove('invalid');
+    refreshTimeSlots();
   });
   $('#durationSelect').addEventListener('change', () => {
     updateTotal();
@@ -952,12 +1003,12 @@ function init() {
   // Reset
   $('#resetBtn').addEventListener('click', resetFilters);
 
-  // Link "Đặt sân" trên header: chuyển tới trang đặt sân của sân còn trống đầu tiên
+  // Link "Đặt sân" trên header: mở modal đặt sân ngay tại đây cho sân còn trống
   $('#navBook')?.addEventListener('click', (e) => {
     e.preventDefault();
-    const first = SAN_DATA.find((c) => c.status === 'trong') || SAN_DATA[0];
+    const first = SAN_DATA.find((c) => c.status === 'trong');
     if (first) {
-      window.location.href = `chi-tiet-san.html?id=${encodeURIComponent(first.id)}&book=1`;
+      openBook(first);
     } else {
       showToast('Hiện tại đã kín sân', 'Vui lòng quay lại sau');
     }
@@ -965,14 +1016,28 @@ function init() {
 
   // Grid delegation
   $('#sanGrid')?.addEventListener('click', (e) => {
+    // Nút "Đặt sân" trên thẻ: mở modal đặt trực tiếp, không qua trang chi tiết
+    const bookBtn = e.target.closest('[data-open-book]');
+    if (bookBtn) {
+      if (bookBtn.disabled) return;
+      const bookCourt = SAN_DATA.find((c) => c.id === bookBtn.dataset.openBook);
+      if (!bookCourt) return;
+      if (bookCourt.status !== 'trong') {
+        showToast('Không nhận đặt', 'Sân này hiện đã kín lịch, vui lòng chọn sân khác');
+        return;
+      }
+      openBook(bookCourt);
+      return;
+    }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const court = SAN_DATA.find((c) => c.id === btn.dataset.id);
     if (!court) return;
     if (btn.dataset.action === 'detail') {
-      window.location.href = `chi-tiet-san.html?id=${encodeURIComponent(court.id)}`;
+      window.location.href = `../../src/chi-tiet.html?id=${encodeURIComponent(court.id)}`;
     } else if (btn.dataset.action === 'book') {
-      window.location.href = `chi-tiet-san.html?id=${encodeURIComponent(court.id)}&book=1`;
+      if (court.status === 'trong') openBook(court);
+      else showToast('Không nhận đặt', 'Sân này hiện đã kín lịch, vui lòng chọn sân khác');
     }
   });
 
