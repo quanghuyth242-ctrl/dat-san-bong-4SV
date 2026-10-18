@@ -673,6 +673,15 @@ select {
   transition: all 0.2s ease;
 }
 
+/* Các nút này là thẻ <a>, trình duyệt vẽ gạch chân mặc định. */
+a.btn-card,
+a.btn-book,
+a.btn-pay,
+a.btn-again,
+a.btn-reset {
+  text-decoration: none;
+}
+
 .btn-outline {
   background: var(--white);
   color: var(--primary-dark);
@@ -1147,6 +1156,21 @@ select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+/* Form đặt sân FAG nằm trong cột hẹp: xếp dịch vụ 1 cột, tên không xuống dòng. */
+.booking-card-fag .service-list {
+  grid-template-columns: 1fr;
+}
+
+.booking-card-fag .service-item {
+  min-width: 0;
+}
+
+.booking-card-fag .service-item .svc-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .service-item {
@@ -2229,41 +2253,6 @@ select {
   justify-content: center;
 }
 
-/* SPORT PILLS */
-.sport-select-pills {
-  display: flex;
-  gap: 6px;
-}
-
-.sport-pill {
-  flex: 1;
-  padding: 8px 6px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1.5px solid var(--border);
-  color: #334155;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.sport-pill:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.sport-pill.active {
-  background: #fff5f5;
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
-}
-
 /* DATE INPUT & CHIPS */
 .date-input-wrap {
   position: relative;
@@ -2341,13 +2330,19 @@ select {
   color: var(--text-muted);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
 }
 
-.dot-free {
+.dot-free,
+.dot-taken,
+.dot-past {
+  display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.dot-free {
   background: #16a34a;
 }
 
@@ -2409,6 +2404,35 @@ select {
 .time-slot-btn.disabled span {
   color: #dc2626;
   font-weight: 700;
+}
+
+/* Khung giờ đã qua và khung giờ đã có người đặt: hiện đủ, chỉ không bấm được. */
+.time-slot-btn.is-past {
+  opacity: 0.7;
+}
+
+.time-slot-btn.is-past span {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.time-slot-btn.is-taken span {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.dot-taken {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+}
+
+.dot-past {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
 }
 
 /* SUMMARY BOX */

@@ -226,10 +226,20 @@ function isOpenAt(v, when) {
   return when.hour >= v.hours.open && when.hour < v.hours.close
 }
 
-function isPastSlot(date, hour) {
+/**
+ * Khung giờ đã qua giờ đặt chưa.
+ * - Khung thường: quá ngay khi đã qua giờ BẮT ĐẦU.
+ * - Khung cuối trong ngày (kết thúc đúng giờ đóng cửa): vẫn đặt được cho tới tận giờ đóng cửa.
+ * endHour/closeHour không truyền thì giữ luật cũ.
+ */
+function isPastSlot(date, hour, endHour, closeHour) {
   if (date !== todayStr() || hour === null) return false
   const now = new Date()
-  return hour < now.getHours() + now.getMinutes() / 60
+  const nowH = now.getHours() + now.getMinutes() / 60
+  if (Number.isFinite(endHour) && Number.isFinite(closeHour) && endHour >= closeHour) {
+    return nowH >= closeHour
+  }
+  return hour < nowH
 }
 
 function matches(v, filters) {
@@ -242,7 +252,7 @@ function matches(v, filters) {
     if (!loc.split(' ').every((t) => hay.includes(t))) return false
   }
   if (when && !isOpenAt(v, when)) return false
-  if (when && when.hasTime && isPastSlot(when.date, when.hour)) return false
+  if (when && when.hasTime && isPastSlot(when.date, when.hour, when.hour + 1, v.hours.close)) return false
   return true
 }
 
@@ -301,8 +311,8 @@ let lastCoords = null
 function hasFreeSlot(venue, date, hour, duration = 1) {
   const h = Math.ceil(hour)
   if (!date || !Number.isFinite(h)) return true
-  if (isPastSlot(date, h)) return false
   if (h < venue.hours.open || h + duration > venue.hours.close) return false
+  if (isPastSlot(date, h, h + duration, venue.hours.close)) return false
   return !isSlotTaken(venue.id, date, h, duration)
 }
 
@@ -375,11 +385,41 @@ function applyStashedIntent() {
   toast('Đã điền yêu cầu của bạn vào ô tìm kiếm')
 }
 
+/**
+ * Trang chi tiết sân (?book=id) đưa người dùng về đây và mở thẳng form đặt sân
+ * cho đúng sân họ vừa xem, không phải tìm lại trong danh sách.
+ */
+function openBookFromQuery() {
+  const params = new URLSearchParams(window.location.search)
+  const id = params.get('book')
+  if (!id) return
+  const venue = VENUES.find(
+    (v) => String(v.id) === id || SV.courtKey(v.id) === SV.courtKey(id),
+  )
+  if (!venue) return
+  // Dịch vụ đi kèm chọn ở trang chi tiết (?svc=nuoc-suoi:2,trong-tai:1).
+  const presetServices = {}
+  const svcParam = params.get('svc')
+  if (svcParam) {
+    svcParam.split(',').forEach((pair) => {
+      const [svcId, qty] = pair.split(':')
+      const n = parseInt(qty, 10)
+      if (svcId && n > 0) presetServices[svcId.trim()] = n
+    })
+  }
+  // Bỏ query khỏi thanh địa chỉ để F5 không mở lại modal lần nữa.
+  window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+  setTimeout(() => {
+    openBook(venue, { services: presetServices })
+    bookFromChat = true
+  }, 300)
+}
+
 function buildTimeOptions(venue, date, duration) {
   const out = []
   for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
     if (h + duration > venue.hours.close) continue
-    if (isPastSlot(date, h)) continue
+    if (isPastSlot(date, h, h + duration, venue.hours.close)) continue
     if (isSlotTaken(venue.id, date, h, duration)) continue
     out.push(`<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`)
   }
@@ -431,24 +471,31 @@ function renderVenues(list, filters) {
   if (empty) empty.style.display = 'none'
 
   grid.innerHTML = list
-    .map((v) => `
+    .map((v) => {
+      // Ảnh, tên và nút "Chi tiết" đều mở trang chi tiết của chính sân này.
+      const detail = `src/chi-tiet.html?id=${encodeURIComponent(v.id)}`
+      return `
     <div class="court-card">
-      <div class="court-img-wrap">
+      <a class="court-img-wrap" href="${detail}" aria-label="Xem chi tiết ${esc(v.name)}">
         <img src="${esc(v.img)}" alt="${esc(v.name)}" loading="lazy">
         <span class="court-badge">${v.icon} ${esc(typeLabel(v.type))}</span>
-      </div>
+      </a>
       <div class="court-body">
-        <div class="court-name">${esc(v.name)}</div>
+        <a class="court-name" href="${detail}">${esc(v.name)}</a>
         <div class="court-addr"><i class="fa-solid fa-location-dot"></i><span>${esc(v.addr)}</span></div>
         <div class="court-hours"><i class="fa-regular fa-clock"></i> ${timeLabel(v.hours.open)} – ${timeLabel(v.hours.close)}</div>
         <div class="court-meta">
           <div class="court-price">${formatPriceShort(v.price)} <small>${esc(v.per)}</small></div>
           <div class="court-courts">${v.courts} sân</div>
         </div>
-        <a href="#" class="btn-book" data-book="${esc(v.id)}">Đặt sân</a>
+        <div class="court-actions">
+          <a href="${detail}" class="btn-book btn-detail">Chi tiết</a>
+          <a href="#" class="btn-book" data-book="${esc(v.id)}">Đặt sân</a>
+        </div>
       </div>
     </div>
-  `)
+  `
+    })
     .join('')
 
   grid.querySelectorAll('[data-book]').forEach((a) => {
@@ -474,12 +521,14 @@ function renderNearby(list) {
     .map(
       (v) => `
     <li>
-      <img class="nearby-thumb" src="${esc(v.img)}" alt="">
-      <div>
-        <div class="nearby-name">${esc(v.name)}</div>
-        <div class="nearby-addr">${esc(v.addr)}</div>
-      </div>
-      <span class="nearby-price">${formatPriceShort(v.price)}</span>
+      <a class="nearby-link" href="src/chi-tiet.html?id=${encodeURIComponent(v.id)}">
+        <img class="nearby-thumb" src="${esc(v.img)}" alt="">
+        <div>
+          <div class="nearby-name">${esc(v.name)}</div>
+          <div class="nearby-addr">${esc(v.addr)}</div>
+        </div>
+        <span class="nearby-price">${formatPriceShort(v.price)}</span>
+      </a>
     </li>
   `
     )
@@ -596,6 +645,12 @@ function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
   bookState.services = {}
+  // Trang chi tiết gửi kèm dịch vụ người dùng đã chọn (?svc=nuoc-suoi:2,trong-tai:1).
+  Object.entries(preset.services || {}).forEach(([id, qty]) => {
+    const svc = SERVICES.find((s) => s.id === id)
+    const n = Math.floor(Number(qty))
+    if (svc && n > 0) bookState.services[id] = Math.min(svc.max ?? 99, n)
+  })
   // Mở từ thẻ sân bình thường thì không mở lại khung chat khi đóng form.
   bookFromChat = false
 
@@ -647,9 +702,11 @@ function openBook(venue, preset = {}) {
           <div class="bk-field full" id="f-services">
             <label>Dịch vụ đi kèm <span class="bk-hint">(tuỳ chọn · ✓ chọn 1 · +/− chọn số lượng)</span></label>
             <div class="service-list" id="serviceList">
-              ${SERVICES.map(
-                (s) => `
-                <div class="service-item" data-id="${s.id}">
+              ${SERVICES.map((s) => {
+                const q = bookState.services[s.id] || 0
+                const max = s.max ?? 99
+                return `
+                <div class="service-item ${q > 0 ? 'active' : ''}" data-id="${s.id}">
                   <i class="fa-solid ${s.icon} svc-icon"></i>
                   <div class="svc-info">
                     <div class="svc-name">${s.name}</div>
@@ -658,14 +715,14 @@ function openBook(venue, preset = {}) {
                   <div class="s-qty">
                     ${
                       s.max === 1
-                        ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="false" aria-label="Chọn ${s.name}"><i class="fa-solid fa-check"></i></button>`
+                        ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="${q > 0}" aria-label="Chọn ${s.name}"><i class="fa-solid fa-check"></i></button>`
                         : `<button type="button" class="qty-btn" data-act="dec" data-id="${s.id}" aria-label="Giảm">−</button>
-                    <span class="qty-val" id="qty-${s.id}">0</span>
-                    <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" aria-label="Tăng">+</button>`
+                    <span class="qty-val" id="qty-${s.id}">${q}</span>
+                    <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" ${q >= max ? 'disabled' : ''} aria-label="Tăng">+</button>`
                     }
                   </div>
                 </div>`
-              ).join('')}
+              }).join('')}
             </div>
           </div>
           <div class="bk-field" id="f-voucher">
@@ -834,7 +891,7 @@ function submitBooking(venue) {
     timeOk =
       startHour >= venue.hours.open &&
       startHour + duration <= venue.hours.close &&
-      !isPastSlot(date, startHour) &&
+      !isPastSlot(date, startHour, startHour + duration, venue.hours.close) &&
       !isSlotTaken(venue.id, date, startHour, duration)
   }
   const nameOk = name.length >= 2
@@ -1334,6 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Trợ lý đặt sân: hiểu yêu cầu tiếng Việt, lọc sân và mở form đặt sân.
   assistant = mountAssistant(assistantHandlers())
   applyStashedIntent()
+  openBookFromQuery()
 })
 
 // ================================ TÀI KHOẢN ĐANG ĐĂNG NHẬP ================================

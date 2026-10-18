@@ -9,6 +9,7 @@ export default defineConfig({
         auth: fileURLToPath(new URL('./src/auth.html', import.meta.url)),
         account: fileURLToPath(new URL('./src/tai-khoan.html', import.meta.url)),
         payment: fileURLToPath(new URL('./src/thanh-toan.html', import.meta.url)),
+        detail: fileURLToPath(new URL('./src/chi-tiet.html', import.meta.url)),
         // Các trang trong public/project/ (danh sách sân, quản trị) là HTML
         // tĩnh: Vite copy nguyên vẹn từ public/ sang dist/, không cần khai báo.
         // public/project/index.html chỉ là trang chuyển hướng về /index.html.
