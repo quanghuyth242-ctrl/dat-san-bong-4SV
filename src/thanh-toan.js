@@ -57,6 +57,14 @@ const METHODS = [
     note: 'Thanh toán trực tiếp khi tới sân. Đơn được giữ trong 30 phút trước giờ đá.',
     cta: 'Giữ đơn, thanh toán tại quầy',
   },
+  {
+    id: 'later',
+    name: 'Để thanh toán sau',
+    icon: 'fa-solid fa-calendar-clock',
+    color: '#f59e0b',
+    note: 'Giữ đơn trước, trả tiền sau trong trang Tài khoản hoặc tại quầy trước giờ đá.',
+    cta: 'Giữ đơn, thanh toán sau',
+  },
 ]
 
 // ================================ TIỆN ÍCH ================================
@@ -101,6 +109,11 @@ function isAtVenue(b) {
 
 function isAwaitingPayment(b) {
   return b.paymentStatus === 'awaiting_payment'
+}
+
+/** Khách chọn "Để thanh toán sau": đơn được giữ, tiền thu sau. */
+function isPayLater(b) {
+  return b.paymentStatus === 'pay_later'
 }
 
 // ================================ LƯU TRẠNG THÁI ================================
@@ -198,7 +211,9 @@ function formHtml(b) {
           <button type="button" class="btn-book pay-btn-main" id="payNow">
             <i class="fa-solid fa-lock"></i> Thanh toán ${money(b.total)}
           </button>
-          <a class="btn-book btn-book-ghost pay-btn-main" href="${HOME_URL}">Để thanh toán sau</a>
+          <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payLater">
+            <i class="fa-solid fa-calendar-clock"></i> Để thanh toán sau
+          </button>
         </div>
         <p class="pay-note">
           <i class="fa-solid fa-shield-halved"></i>
@@ -240,6 +255,30 @@ function atVenueHtml(b) {
       <div class="pay-actions pay-actions-center">
         <a class="btn-book pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
         <button type="button" class="btn-book btn-book-ghost pay-btn-main" id="payAgain">Chọn phương thức khác</button>
+      </div>
+    </section>`
+}
+
+/** Màn xác nhận khi khách chọn "Để thanh toán sau": đơn được giữ, hẹn trả tiền sau. */
+function payLaterHtml(b) {
+  return `
+    <section class="pay-card pay-done">
+      <div class="pay-done-icon pay-done-icon-wait"><i class="fa-solid fa-calendar-clock"></i></div>
+      <h2>Đơn được giữ – Thanh toán sau</h2>
+      <p>
+        Đơn <b>${esc(b.id)}</b> đã được giữ cho bạn. Bạn có thể thanh toán <b>${money(b.total)}</b>
+        sau trong trang <b>Tài khoản</b>, hoặc tại quầy của sân trước giờ đá
+        <b>${formatDate(b.date)} · ${timeLabel(b.startHour)}</b>.
+      </p>
+      ${summaryHtml(b, { showContact: false })}
+      <div class="pay-actions pay-actions-center">
+        <button type="button" class="btn-book pay-btn-main" id="payNowLater">
+          <i class="fa-solid fa-credit-card"></i> Thanh toán ngay
+        </button>
+        <a class="btn-book btn-book-ghost pay-btn-main" href="${ACCOUNT_URL}">
+          <i class="fa-solid fa-wallet"></i> Vào Tài khoản để trả tiền
+        </a>
+        <a class="btn-book btn-book-ghost pay-btn-main" href="${HOME_URL}"><i class="fa-solid fa-house"></i> Về trang chủ</a>
       </div>
     </section>`
 }
@@ -331,6 +370,15 @@ function render() {
     })
     return
   }
+  // Đơn khách chọn "Để thanh toán sau"
+  if (isPayLater(b)) {
+    el.innerHTML = payLaterHtml(b)
+    document.getElementById('payNowLater')?.addEventListener('click', () => {
+      savePayment(b.id, { paymentStatus: 'pending', paymentMethod: '' })
+      render()
+    })
+    return
+  }
 
   el.innerHTML = formHtml(b)
   bindForm(b)
@@ -348,12 +396,25 @@ function bindForm(b) {
     })
     const method = methodById(selectedMethod)
     if (detail && method) {
-      const qr = method.id === 'cash' ? '' : qrBox(method, b.total)
+      const qr = method.id === 'cash' || method.id === 'later' ? '' : qrBox(method, b.total)
       detail.innerHTML = `
         <p class="pay-detail-note"><i class="fa-solid fa-circle-info"></i> ${esc(method.note)}</p>
         ${qr}
       `
     }
+    // Hai lựa chọn giữ đơn (tại quầy / thanh toán sau) đổi nhãn nút chính cho đúng.
+    const payNow = document.getElementById('payNow')
+    if (payNow) {
+      payNow.innerHTML =
+        method.id === 'later' || method.id === 'cash'
+          ? `<i class="fa-solid fa-lock"></i> ${esc(method.cta)}`
+          : `<i class="fa-solid fa-lock"></i> Thanh toán ${money(b.total)}`
+    }
+  })
+
+  // Nút phụ: giữ đơn và trả tiền sau (khách không cần chọn phương thức).
+  document.getElementById('payLater')?.addEventListener('click', () => {
+    confirmPayment(b, methodById('later'))
   })
 
   document.getElementById('payNow')?.addEventListener('click', () => {
@@ -377,13 +438,21 @@ function confirmPayment(b, method) {
   el.innerHTML = `
     <section class="pay-card pay-loading">
       <i class="fa-solid fa-spinner fa-spin"></i>
-      <b>Đang xác nhận giao dịch...</b>
+      <b>${method.id === 'later' ? 'Đang giữ đơn cho bạn...' : 'Đang xác nhận giao dịch...'}</b>
       <span>${esc(method.name)} · ${money(b.total)}</span>
     </section>`
 
   setTimeout(() => {
     const stamp = new Date().toLocaleString('vi-VN')
-    if (method.id === 'cash') {
+    if (method.id === 'later') {
+      // Thanh toán sau: giữ đơn, khách trả tiền ở trang Tài khoản hoặc tại quầy
+      savePayment(b.id, {
+        paymentStatus: 'pay_later',
+        paymentMethod: 'pay_later',
+        paid: false,
+        paidAt: '',
+      })
+    } else if (method.id === 'cash') {
       // Thanh toán tại sân: giữ đơn, chờ thu tiền tại quầy
       savePayment(b.id, {
         paymentStatus: 'unpaid',

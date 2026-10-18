@@ -1818,16 +1818,18 @@ function initCourtDetail() {
     // Xử lý chuyển đổi phương thức thanh toán
     const switchPaymentMethod = (method) => {
       const isBank = method === 'bank_transfer';
+      const isLater = method === 'pay_later';
       if ($('#bankTransferBox')) $('#bankTransferBox').style.display = isBank ? 'grid' : 'none';
-      if ($('#atCourtBox')) $('#atCourtBox').style.display = isBank ? 'none' : 'block';
+      if ($('#atCourtBox')) $('#atCourtBox').style.display = !isBank && !isLater ? 'block' : 'none';
+      if ($('#payLaterBox')) $('#payLaterBox').style.display = isLater ? 'block' : 'none';
       $$('.payment-opt-card').forEach((card) => {
         const rad = card.querySelector('input[name="paymentMethod"]');
         card.classList.toggle('active', rad && rad.value === method);
       });
       const btnText = $('#btnFinalBookText');
       const btnIcon = $('#btnFinalBook i');
-      if (btnText) btnText.textContent = isBank ? 'Tôi đã chuyển khoản' : 'Xác nhận đặt sân';
-      if (btnIcon) btnIcon.className = isBank ? 'fa-solid fa-check-double' : 'fa-solid fa-calendar-check';
+      if (btnText) btnText.textContent = isBank ? 'Tôi đã chuyển khoản' : isLater ? 'Giữ đơn, thanh toán sau' : 'Xác nhận đặt sân';
+      if (btnIcon) btnIcon.className = isBank ? 'fa-solid fa-check-double' : isLater ? 'fa-solid fa-calendar-clock' : 'fa-solid fa-calendar-check';
     };
 
     $$('input[name="paymentMethod"]').forEach((rad) => {
@@ -1895,7 +1897,13 @@ function initCourtDetail() {
     // Phân biệt rõ trạng thái thanh toán và trạng thái đặt sân:
     // Chuyển khoản -> 'awaiting_payment' (Chờ xác nhận thanh toán)
     // Thanh toán tại sân -> 'unpaid' (Chưa thanh toán)
-    const paymentStatus = paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid';
+    // Để thanh toán sau -> 'pay_later' (Giữ đơn, thu tiền sau)
+    const paymentStatus =
+      paymentMethod === 'bank_transfer'
+        ? 'awaiting_payment'
+        : paymentMethod === 'pay_later'
+          ? 'pay_later'
+          : 'unpaid';
 
     const user = SV.currentUser();
     const res = SV.addBooking({
@@ -1935,6 +1943,19 @@ function initCourtDetail() {
       closeModal($('#confirmModal'));
 
       const isBank = res.booking.paymentMethod === 'bank_transfer';
+      const isLater = res.booking.paymentMethod === 'pay_later';
+      const pmIcon = isBank ? 'fa-qrcode' : isLater ? 'fa-calendar-clock' : 'fa-hand-holding-dollar';
+      const pmLabel = isBank
+        ? 'Chuyển khoản ngân hàng (MB)'
+        : isLater
+          ? 'Để thanh toán sau'
+          : 'Thanh toán trực tiếp tại sân';
+      const stIcon = isBank ? 'fa-clock' : isLater ? 'fa-calendar-clock' : 'fa-receipt';
+      const stLabel = isBank
+        ? 'Chờ xác nhận thanh toán'
+        : isLater
+          ? 'Thanh toán sau'
+          : 'Chưa thanh toán (Tại sân)';
 
       if ($('#succBookingId')) $('#succBookingId').textContent = res.booking.id;
       if ($('#succDetailsBox')) {
@@ -1953,15 +1974,15 @@ function initCourtDetail() {
           <div class="succ-row">
             <span>Phương thức thanh toán:</span>
             <span class="succ-badge ${isBank ? 'pay-bank' : 'pay-court'}">
-              <i class="fa-solid ${isBank ? 'fa-qrcode' : 'fa-hand-holding-dollar'}"></i>
-              ${isBank ? 'Chuyển khoản ngân hàng (MB)' : 'Thanh toán trực tiếp tại sân'}
+              <i class="fa-solid ${pmIcon}"></i>
+              ${pmLabel}
             </span>
           </div>
           <div class="succ-row">
             <span>Trạng thái thanh toán:</span>
             <span class="succ-badge ${isBank ? 'pay-status-awaiting' : 'pay-status-unpaid'}">
-              <i class="fa-solid ${isBank ? 'fa-clock' : 'fa-receipt'}"></i>
-              ${isBank ? 'Chờ xác nhận thanh toán' : 'Chưa thanh toán (Tại sân)'}
+              <i class="fa-solid ${stIcon}"></i>
+              ${stLabel}
             </span>
           </div>
           <div class="succ-row">
@@ -1974,7 +1995,9 @@ function initCourtDetail() {
             <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:5px;"></i>
             ${isBank
               ? `Hệ thống đã ghi nhận thông báo chuyển khoản của bạn với trạng thái <b>Chờ xác nhận thanh toán</b>. Ban quản lý sẽ đối soát sao kê ngân hàng MB theo mã đơn <b>${res.booking.id}</b> và cập nhật sang <b>Đã thanh toán</b>.`
-              : `Đơn đặt sân đã được gửi tới ban quản lý. Vui lòng có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán trực tiếp số tiền <b>${formatPrice(res.booking.total)}</b>.`}
+              : isLater
+                ? `Đơn <b>${res.booking.id}</b> đã được giữ cho bạn với trạng thái <b>Thanh toán sau</b>. Bạn có thể thanh toán <b>${formatPrice(res.booking.total)}</b> sau trong trang <b>Tài khoản</b>, hoặc tại quầy của sân trước giờ thi đấu.`
+                : `Đơn đặt sân đã được gửi tới ban quản lý. Vui lòng có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán trực tiếp số tiền <b>${formatPrice(res.booking.total)}</b>.`}
           </div>
         `;
       }

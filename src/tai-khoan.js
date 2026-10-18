@@ -138,13 +138,19 @@ function bookingCard(b) {
     payBadge = '<span class="hist-badge" style="background:#fef3c7;color:#92400e;margin-left:6px;"><i class="fa-solid fa-clock"></i> Chờ duyệt CK</span>'
   } else if (b.paymentStatus === 'refunded') {
     payBadge = '<span class="hist-badge" style="background:#fee2e2;color:#991b1b;margin-left:6px;"><i class="fa-solid fa-rotate-left"></i> Đã hoàn tiền</span>'
+  } else if (b.paymentStatus === 'pay_later') {
+    payBadge = '<span class="hist-badge" style="background:#fef3c7;color:#92400e;margin-left:6px;"><i class="fa-solid fa-calendar-clock"></i> Thanh toán sau</span>'
   } else {
     payBadge = '<span class="hist-badge" style="background:#e0f2fe;color:#075985;margin-left:6px;"><i class="fa-solid fa-money-bill-wave"></i> TT tại sân</span>'
   }
 
-  const payLink = (b.paymentStatus === 'awaiting_payment' || b.paymentStatus === 'unpaid') && b.status !== 'cancelled'
-    ? `<div style="margin-top:6px;"><a href="/src/thanh-toan.html?ma=${encodeURIComponent(b.id || '')}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;"><i class="fa-solid fa-qrcode"></i> Xem mã QR / Thanh toán</a></div>`
-    : ''
+  const payLink =
+    (b.paymentStatus === 'awaiting_payment' ||
+      b.paymentStatus === 'unpaid' ||
+      b.paymentStatus === 'pay_later') &&
+    b.status !== 'cancelled'
+      ? `<div style="margin-top:6px;"><a href="/src/thanh-toan.html?ma=${encodeURIComponent(b.id || '')}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;"><i class="fa-solid fa-qrcode"></i> Xem mã QR / Thanh toán</a></div>`
+      : ''
 
   return `
     <article class="hist-item">

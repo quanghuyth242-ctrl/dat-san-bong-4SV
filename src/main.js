@@ -1033,6 +1033,13 @@ function submitBooking(venue) {
       })
       document.getElementById('bkLater')?.addEventListener('click', () => {
         clearTimeout(timer)
+        // Ghi nhận khách chọn "thanh toán sau" để trang Tài khoản và admin thấy đúng trạng thái.
+        const list = SV.bookings()
+        const idx = list.findIndex((x) => String(x.id) === String(booking.id))
+        if (idx > -1) {
+          list[idx] = { ...list[idx], paymentStatus: 'pay_later', paymentMethod: 'pay_later' }
+          SV.saveBookings(list)
+        }
         closeModal('bookModal')
         toast('Đơn đã được giữ. Bạn có thể thanh toán sau trong trang Tài khoản.')
       })

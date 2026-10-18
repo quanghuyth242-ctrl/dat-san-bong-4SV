@@ -465,6 +465,17 @@
                     <span class="payment-opt-desc">Thanh toán trực tiếp khi đến nhận sân thi đấu</span>
                   </div>
                 </label>
+
+                <label class="payment-opt-card" for="pmLater">
+                  <input type="radio" name="paymentMethod" id="pmLater" value="pay_later" />
+                  <div class="payment-opt-content">
+                    <div class="payment-opt-head">
+                      <i class="fa-solid fa-calendar-clock"></i>
+                      <strong>Để thanh toán sau</strong>
+                    </div>
+                    <span class="payment-opt-desc">Giữ đơn trước, trả tiền sau ở trang Tài khoản hoặc tại sân</span>
+                  </div>
+                </label>
               </div>
 
               <!-- KHỐI QR THANH TOÁN NGÂN HÀNG CHÍNH CHỦ (MB - LE THANH LONG) -->
@@ -515,6 +526,19 @@
                     <strong>Thanh toán trực tiếp tại sân</strong>
                     <p style="margin: 4px 0 0; font-size: 0.88rem; color: var(--text-sub);">
                       Bạn chỉ cần có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán tiền mặt trực tiếp cho ban quản lý. Trạng thái thanh toán: <em>Chưa thanh toán (Thanh toán tại sân)</em>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI HƯỚNG DẪN THANH TOÁN SAU -->
+              <div class="at-court-box" id="payLaterBox" style="display: none;">
+                <div class="at-court-note">
+                  <i class="fa-solid fa-calendar-clock" style="color: #f59e0b; font-size: 1.3rem;"></i>
+                  <div>
+                    <strong>Để thanh toán sau</strong>
+                    <p style="margin: 4px 0 0; font-size: 0.88rem; color: var(--text-sub);">
+                      Đơn được giữ ngay cho bạn. Bạn có thể thanh toán sau trong trang <b>Tài khoản</b>, hoặc tại quầy của sân trước giờ đá. Trạng thái thanh toán: <em>Thanh toán sau</em>.
                     </p>
                   </div>
                 </div>

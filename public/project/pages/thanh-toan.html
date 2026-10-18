@@ -210,7 +210,7 @@
             </div>
             <div class="payment-stat-value" id="statUnpaidRevenue">0đ</div>
             <div class="payment-stat-sub text-muted">
-              <span class="badge badge-secondary" id="statUnpaidCount">0 đơn tại sân</span>
+              <span class="badge badge-secondary" id="statUnpaidCount">0 đơn chưa thu</span>
             </div>
           </div>
 
@@ -237,12 +237,14 @@
               <option value="">Tất cả hình thức</option>
               <option value="bank_transfer">Chuyển khoản MBBank QR</option>
               <option value="at_court">Thanh toán tại sân</option>
+              <option value="pay_later">Để thanh toán sau</option>
             </select>
 
             <select class="form-select" id="filterPaymentStatus">
               <option value="">Tất cả trạng thái thanh toán</option>
               <option value="paid">Đã thanh toán (Thực thu)</option>
               <option value="awaiting_payment">Chờ xác nhận CK</option>
+              <option value="pay_later">Thanh toán sau</option>
               <option value="unpaid">Chưa thanh toán (Tại sân)</option>
               <option value="refunded">Đã hoàn tiền</option>
             </select>

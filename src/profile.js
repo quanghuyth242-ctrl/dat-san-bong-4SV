@@ -160,6 +160,11 @@ function cardHtml(b) {
   const duration = Math.max(1, Math.round((end - start) * 10) / 10)
   const canCancel = CANCELLED_BY_USER.includes(b.status)
   const paid = isPaid(b)
+  const payLater = b.paymentStatus === 'pay_later'
+  const unpaidNotCancelled =
+    !paid &&
+    b.status !== 'cancelled' &&
+    ['pay_later', 'unpaid', 'awaiting_payment'].includes(b.paymentStatus)
   const discount = Number(b.discount) || 0
   const total = Number(b.total) || 0
   const contact = [b.customer?.name, b.customer?.phone].filter(Boolean).join(' · ')
@@ -192,9 +197,16 @@ function cardHtml(b) {
         </div>
         <span class="acc-item-pay ${paid ? 'is-paid' : 'is-unpaid'}">
           <i class="fa-solid ${paid ? 'fa-circle-check' : 'fa-clock'}"></i>
-          ${paid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+          ${paid ? 'Đã thanh toán' : payLater ? 'Thanh toán sau' : 'Chưa thanh toán'}
         </span>
         <div class="acc-item-actions">
+          ${
+            unpaidNotCancelled
+              ? `<a class="acc-rebook" href="./thanh-toan.html?ma=${esc(b.id)}">
+                   <i class="fa-solid fa-credit-card"></i> Thanh toán
+                 </a>`
+              : ''
+          }
           ${
             canCancel
               ? `<button type="button" class="acc-cancel" data-cancel="${esc(b.id)}">

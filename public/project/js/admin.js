@@ -183,11 +183,13 @@ function getStatusBadge(status, type) {
     payment: {
       paid: { text: 'Đã thanh toán', cls: 'badge-success' },
       awaiting_payment: { text: 'Chờ xác nhận CK', cls: 'badge-warning' },
+      pay_later: { text: 'Thanh toán sau', cls: 'badge-warning' },
       unpaid: { text: 'Chưa thanh toán (Tại sân)', cls: 'badge-secondary' },
       refunded: { text: 'Đã hoàn tiền', cls: 'badge-danger' }
     },
     paymentMethod: {
       bank_transfer: { text: 'MBBank (QR)', cls: 'badge-info' },
+      pay_later: { text: 'Thanh toán sau', cls: 'badge-warning' },
       at_court: { text: 'Tại sân', cls: 'badge-secondary' }
     },
     user: {
@@ -531,7 +533,7 @@ function renderBookings(data) {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="adminCollectPayment('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if (b.paymentStatus === 'unpaid' && b.status !== 'cancelled') {
+    } else if ((b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later') && b.status !== 'cancelled') {
       actions += ` <button class="btn btn-sm btn-primary" onclick="adminCollectPayment('${b.id}')" title="Thu tiền tại sân">💵 Thu tiền</button>`;
     }
 
@@ -873,7 +875,7 @@ function renderPendingBookings() {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="confirmCollectMoneyAction('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if (b.paymentStatus === 'unpaid' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
+    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
       actions += ` <button class="btn btn-sm btn-primary" onclick="openCollectModal('${b.id}')" title="Thu tiền đơn đặt sân">💵 Thu tiền</button>`;
     } else if (b.paymentStatus === 'paid') {
       actions += ` <button class="btn btn-sm btn-outline" style="color: #16a34a; border-color: #86efac;" onclick="viewPaymentDetail('${b.id}')" title="Xem phiếu thu">✓ Đã thu</button>`;
@@ -1017,7 +1019,7 @@ function renderThuTienStats() {
   const pendingCKBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
   const pendingCKRev = pendingCKBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
-  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue');
+  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || b.paymentStatus === 'pay_later');
   const unpaidRev = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
   const pendingOrderCount = all.filter(b => b.status === 'pending').length;
@@ -1035,7 +1037,7 @@ function renderThuTienStats() {
   const elUnpaidRev = document.getElementById('statThuTienUnpaidRev');
   const elUnpaidCnt = document.getElementById('statThuTienUnpaidCount');
   if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRev);
-  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn tại sân`;
+  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn chưa thu`;
 
   const elPendingOrder = document.getElementById('statThuTienPendingBookingCount');
   if (elPendingOrder) elPendingOrder.textContent = pendingOrderCount;
@@ -1065,6 +1067,7 @@ function filterThuTien() {
   if (statusFilter) {
     filtered = filtered.filter(b => {
       if (statusFilter === 'awaiting_payment') return b.paymentStatus === 'awaiting_payment';
+      if (statusFilter === 'pay_later') return b.paymentStatus === 'pay_later';
       if (statusFilter === 'unpaid') return b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue';
       if (statusFilter === 'paid') return b.paymentStatus === 'paid';
       return true;
@@ -1102,7 +1105,7 @@ function renderThuTienTable(data) {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="confirmCollectMoneyAction('${b.id}')" title="Duyệt tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
+    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || b.paymentStatus === 'pay_later' || (b.status === 'pending' && b.paymentStatus !== 'paid')) {
       actions += ` <button class="btn btn-sm btn-primary" onclick="openCollectModal('${b.id}')" title="Thu tiền đơn đặt sân">💵 Thu tiền</button>`;
     } else if (b.paymentStatus === 'paid') {
       actions += ` <button class="btn btn-sm btn-outline" style="color: #16a34a; border-color: #86efac;" onclick="viewPaymentDetail('${b.id}')" title="Xem phiếu thu">✓ Đã thu</button>`;
@@ -1462,7 +1465,7 @@ function renderPaymentStats() {
   const pendingBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
   const pendingRevenue = pendingBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
-  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid');
+  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later');
   const unpaidRevenue = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
 
   const refundedBookings = all.filter(b => b.paymentStatus === 'refunded');
@@ -1481,7 +1484,7 @@ function renderPaymentStats() {
   const elUnpaidRev = document.getElementById('statUnpaidRevenue');
   const elUnpaidCnt = document.getElementById('statUnpaidCount');
   if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRevenue);
-  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn tại sân`;
+  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn chưa thu`;
 
   const elRefundedRev = document.getElementById('statRefundedRevenue');
   const elRefundedCnt = document.getElementById('statRefundedCount');
@@ -1536,7 +1539,7 @@ function renderPaymentsTable(data) {
 
     if (b.paymentStatus === 'awaiting_payment') {
       actions += ` <button class="btn btn-sm btn-success" onclick="confirmPaymentReceived('${b.id}')" title="Xác nhận đã nhận tiền chuyển khoản">✓ Duyệt tiền</button>`;
-    } else if (b.paymentStatus === 'unpaid') {
+    } else if (b.paymentStatus === 'unpaid' || b.paymentStatus === 'pay_later') {
       actions += ` <button class="btn btn-sm btn-primary" onclick="confirmPaymentReceived('${b.id}')" title="Xác nhận thu tiền tại sân">💵 Thu tiền</button>`;
     }
 
