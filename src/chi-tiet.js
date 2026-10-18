@@ -246,14 +246,6 @@ function serviceTotalPerSession() {
   return SERVICES.reduce((sum, s) => sum + s.price * (pickedServices[s.id] || 0), 0)
 }
 
-function bookUrl(field) {
-  const svcParts = SERVICES.filter((s) => pickedServices[s.id] > 0).map(
-    (s) => `${s.id}:${pickedServices[s.id]}`
-  )
-  const svc = svcParts.length ? `&svc=${encodeURIComponent(svcParts.join(','))}` : ''
-  return `../index.html?book=${encodeURIComponent(field.id)}${svc}#san-noi-bat`
-}
-
 function servicesSectionHtml() {
   return `
     <section class="pay-card">
@@ -299,8 +291,11 @@ function initServices(field) {
           ? `<i class="fa-solid fa-cart-plus"></i> Đã chọn ${count} dịch vụ · Tiền dịch vụ mỗi buổi: <b>${total.toLocaleString('vi-VN')}đ</b> (cộng chung với tiền sân ở form đặt sân).`
           : `<i class="fa-solid fa-circle-info"></i> Chưa chọn dịch vụ nào — bạn vẫn đặt sân không kèm dịch vụ.`
     }
-    if (cta) cta.href = bookUrl(field)
   }
+
+  // "Đặt sân ngay" mở modal đặt trực tiếp ngay tại đây, dịch vụ đã chọn ở trên
+  // được điền sẵn vào form.
+  cta?.addEventListener('click', () => openBooking(field))
 
   list?.addEventListener('click', (e) => {
     const btn = e.target.closest('.qty-btn, .qty-check')
@@ -328,6 +323,480 @@ function initServices(field) {
   })
 
   sync()
+}
+
+// ==================== MODAL ĐẶT SÂN TRỰC TIÊP ====================
+// Bấm "Đặt sân ngay" là mở form ngay tại trang chi tiết, không chuyển trang.
+// Form giống hệt trang chủ: lưới khung giờ chọn trực tiếp (giống "Lịch trống
+// hôm nay" phía trong), dịch vụ/voucher/tổng tiền tính như cũ.
+
+const bookState = { field: null, duration: 1, services: {} }
+
+function toast(msg, type = 'success') {
+  const t = document.createElement('div')
+  t.className = 'toast-4sv' + (type === 'error' ? ' toast-error' : '')
+  t.textContent = msg
+  document.body.appendChild(t)
+  requestAnimationFrame(() => t.classList.add('show'))
+  setTimeout(() => {
+    t.classList.remove('show')
+    setTimeout(() => t.remove(), 250)
+  }, type === 'error' ? 4000 : 2500)
+}
+
+function shakeField(fieldId) {
+  const el = document.getElementById(fieldId)
+  if (!el) return
+  el.classList.remove('shake')
+  void el.offsetWidth
+  el.classList.add('shake')
+}
+
+function buildTimeOptions(venue, date, duration) {
+  const out = []
+  for (let h = venue.hours.open; h < venue.hours.close; h += 1) {
+    if (h + duration > venue.hours.close) continue
+    if (isPastSlot(date, h, h + duration, venue.hours.close)) continue
+    if (SV.isSlotTaken(venue.id, date, h, duration)) continue
+    out.push(`<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`)
+  }
+  return out.join('')
+}
+
+function bookServiceCost() {
+  return SERVICES.reduce((sum, s) => sum + s.price * (bookState.services[s.id] || 0), 0)
+}
+
+function bookSelectedServices() {
+  return SERVICES.filter((s) => (bookState.services[s.id] || 0) > 0).map((s) => ({
+    id: s.id,
+    name: s.name,
+    price: s.price,
+    unit: s.unit,
+    qty: bookState.services[s.id],
+  }))
+}
+
+function openModal(id) {
+  const m = document.getElementById(id)
+  if (!m) return
+  m.classList.add('open')
+  document.body.style.overflow = 'hidden'
+  m.querySelector('input, select, button')?.focus()
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id)
+  if (!m) return
+  m.classList.remove('open')
+  document.body.style.overflow = ''
+}
+
+function openBooking(field) {
+  bookState.field = field
+  bookState.duration = 1
+  // Dịch vụ người dùng chọn ở mục "Dịch vụ đi kèm" điền sẵn vào form.
+  bookState.services = { ...pickedServices }
+
+  const user = window.SV?.currentUser ? window.SV.currentUser() : null
+  const defaultName = user ? user.name || '' : ''
+  const defaultPhone = user ? user.phone || '' : ''
+
+  const body = document.getElementById('bookBody')
+  if (body) {
+    body.innerHTML = `
+      <div class="bk-info">
+        <img src="${esc(field.img)}" alt="${esc(field.name)}" />
+        <div>
+          <div class="bk-name">${esc(field.name)}</div>
+          <div class="bk-sub">${esc(typeLabel(field.type))} · ${esc(formatPriceShort(field.price))}${esc(field.per)} · ${timeLabel(field.hours.open)} – ${timeLabel(field.hours.close)}</div>
+        </div>
+      </div>
+      <form id="bookForm" novalidate>
+        <div class="bk-grid">
+          <div class="bk-field" id="f-date">
+            <label for="bkDate">Ngày <span style="color:#dc2626">*</span></label>
+            <input type="date" id="bkDate" required />
+            <span class="bk-err">Vui lòng chọn ngày không ở quá khứ.</span>
+          </div>
+          <div class="bk-field" id="f-duration">
+            <label for="bkDuration">Thời lượng</label>
+            <select id="bkDuration">
+              <option value="1">1 giờ</option>
+              <option value="1.5">1,5 giờ</option>
+              <option value="2">2 giờ</option>
+              <option value="3">3 giờ</option>
+            </select>
+          </div>
+          <div class="bk-field full" id="f-time">
+            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
+            <select id="bkTime" required style="display: none;"></select>
+            <div class="bk-slot-grid" id="bkTimeSlotGrid"></div>
+            <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
+          </div>
+          <div class="bk-field" id="f-name">
+            <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
+            <input type="text" id="bkName" placeholder="VD: Nguyễn Văn A" autocomplete="name" value="${esc(defaultName)}" required />
+            <span class="bk-err">Vui lòng nhập họ tên (tối thiểu 2 ký tự).</span>
+          </div>
+          <div class="bk-field" id="f-phone">
+            <label for="bkPhone">Số điện thoại <span style="color:#dc2626">*</span></label>
+            <input type="tel" id="bkPhone" placeholder="VD: 0912345678" autocomplete="tel" value="${esc(defaultPhone)}" required />
+            <span class="bk-err">Số điện thoại không hợp lệ (VD: 0912345678).</span>
+          </div>
+          <div class="bk-field full" id="f-services">
+            <label>Dịch vụ đi kèm <span class="bk-hint">(tuỳ chọn · ✓ chọn 1 · +/− chọn số lượng)</span></label>
+            <div class="service-list" id="serviceList">
+              ${SERVICES.map((s) => {
+                const q = bookState.services[s.id] || 0
+                const max = s.max ?? 99
+                return `
+                <div class="service-item ${q > 0 ? 'active' : ''}" data-id="${s.id}">
+                  <i class="fa-solid ${s.icon} svc-icon"></i>
+                  <div class="svc-info">
+                    <div class="svc-name">${esc(s.name)}</div>
+                    <div class="svc-price">${s.price.toLocaleString('vi-VN')}đ / ${esc(s.unit)}</div>
+                  </div>
+                  <div class="s-qty">
+                    ${
+                      s.max === 1
+                        ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="${q > 0}" aria-label="Chọn ${esc(s.name)}"><i class="fa-solid fa-check"></i></button>`
+                        : `<button type="button" class="qty-btn" data-act="dec" data-id="${s.id}" aria-label="Giảm">−</button>
+                    <span class="qty-val" id="qty-${s.id}">${q}</span>
+                    <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" ${q >= max ? 'disabled' : ''} aria-label="Tăng">+</button>`
+                    }
+                  </div>
+                </div>`
+              }).join('')}
+            </div>
+          </div>
+          <div class="bk-field" id="f-voucher">
+            <label for="bkVoucher">Mã giảm giá (nếu có)</label>
+            <input type="text" id="bkVoucher" placeholder="VD: WELCOME4SV" autocomplete="off" />
+            <span class="bk-err">Mã giảm giá không dùng được với đơn này.</span>
+          </div>
+          <div class="bk-field" id="f-total">
+            <label>Tổng tiền</label>
+            <div class="bk-total" id="bkTotal">0đ</div>
+          </div>
+        </div>
+        <button type="submit" class="btn-book btn-book-full" id="btnConfirmBook"><i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân</button>
+      </form>
+    `
+  }
+
+  const dateInput = document.getElementById('bkDate')
+  dateInput.min = todayStr()
+  dateInput.value = todayStr()
+
+  const refresh = () => {
+    const date = dateInput.value
+    const sel = document.getElementById('bkTime')
+    if (!date) {
+      sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
+      sel.value = ''
+      renderBkTimeSlots()
+      return
+    }
+    const prev = sel.value
+    const html = buildTimeOptions(bookState.field || field, date, bookState.duration)
+    sel.innerHTML = html || '<option value="">-- Đã kín lịch --</option>'
+    if (prev && [...sel.options].some((o) => o.value === prev)) {
+      sel.value = prev
+    } else if (sel.options.length) {
+      sel.selectedIndex = 0
+    }
+    renderBkTimeSlots()
+  }
+
+  /** Lưới khung giờ — giống "Lịch trống hôm nay": bấm chọn, select ẩn giữ giá trị. */
+  function renderBkTimeSlots() {
+    const grid = document.getElementById('bkTimeSlotGrid')
+    const sel = document.getElementById('bkTime')
+    if (!grid || !sel) return
+    const date = dateInput.value
+    const v = bookState.field || field
+    const duration = bookState.duration
+    if (!date) {
+      grid.innerHTML = ''
+      return
+    }
+    let html = ''
+    for (let h = v.hours.open; h < v.hours.close; h++) {
+      if (h + duration > v.hours.close) continue
+      const isPast = isPastSlot(date, h, h + duration, v.hours.close)
+      const isTaken = !isPast && SV.isSlotTaken(v.id, date, h, duration)
+      const selected = !isPast && !isTaken && sel.value !== '' && parseFloat(sel.value) === h
+      const cls = isPast ? 'is-past' : isTaken ? 'is-taken' : selected ? 'is-selected' : ''
+      const sub = isPast ? 'Đã quá giờ đặt' : isTaken ? 'Đã có người đặt' : selected ? 'Đã chọn' : 'Còn trống'
+      html += `<button type="button" class="bk-slot ${cls}" data-hour="${h}" ${
+        isPast || isTaken ? 'disabled' : ''
+      }>${timeLabel(h)} – ${timeLabel(h + duration)}<small>${sub}</small></button>`
+    }
+    grid.innerHTML =
+      html ||
+      `<span class="bk-slot-empty"><i class="fa-solid fa-calendar-xmark"></i> Không còn khung giờ trống trong ngày</span>`
+  }
+
+  const updateTotal = () => {
+    bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
+    const current = bookState.field || field
+    const courtSub = Math.round((Number(current.price) || 0) * bookState.duration)
+    const servicePer = bookServiceCost()
+    const subtotal = courtSub + servicePer
+
+    const code = (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase()
+    const voucher = code && window.SV?.previewVoucher ? window.SV.previewVoucher(code, subtotal) : null
+    const usable = !!(voucher && voucher.ok)
+
+    document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
+
+    const total = usable ? subtotal - voucher.discount : subtotal
+    const parts = []
+    if (servicePer > 0) parts.push(`sân ${courtSub.toLocaleString('vi-VN')}đ + DV ${servicePer.toLocaleString('vi-VN')}đ`)
+    if (usable) parts.push(`-${voucher.discount.toLocaleString('vi-VN')}đ`)
+
+    const el = document.getElementById('bkTotal')
+    el.innerHTML = parts.length
+      ? `${total.toLocaleString('vi-VN')}đ <small style="opacity:.75">(${parts.join(' · ')})</small>`
+      : `${total.toLocaleString('vi-VN')}đ`
+    refresh()
+  }
+
+  document.getElementById('serviceList')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.qty-btn, .qty-check')
+    if (!btn) return
+    const id = btn.dataset.id
+    const act = btn.dataset.act
+    const svc = SERVICES.find((x) => x.id === id)
+    if (!svc) return
+    const cur = bookState.services[id] || 0
+    const max = svc.max ?? 99
+    const delta = act === 'inc' ? 1 : act === 'dec' ? -1 : 0
+    const next = Math.max(0, Math.min(max, act === 'toggle' ? (cur > 0 ? 0 : 1) : cur + delta))
+    if (next === 0) delete bookState.services[id]
+    else bookState.services[id] = next
+    const valEl = document.getElementById('qty-' + id)
+    if (valEl) valEl.textContent = next
+    const item = btn.closest('.service-item')
+    item?.classList.toggle('active', next > 0)
+    if (btn.classList.contains('qty-check')) btn.setAttribute('aria-pressed', String(next > 0))
+    item?.querySelector('.qty-btn[data-act="inc"]')?.toggleAttribute('disabled', next >= max)
+    updateTotal()
+  })
+
+  dateInput.addEventListener('change', refresh)
+  document.getElementById('bkTimeSlotGrid')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('.bk-slot')
+    if (!chip || chip.disabled) return
+    const t = document.getElementById('bkTime')
+    t.value = chip.dataset.hour
+    t.dispatchEvent(new Event('change'))
+    document.getElementById('f-time')?.classList.remove('invalid')
+    document.getElementById('f-time')?.classList.remove('shake')
+    renderBkTimeSlots()
+  })
+  document.getElementById('bkDuration').addEventListener('change', updateTotal)
+  document.getElementById('bkVoucher').addEventListener('input', updateTotal)
+  document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
+    if (el.id === 'bkVoucher') return
+    const clearErr = () => {
+      const fieldEl = el.closest('.bk-field')
+      fieldEl?.classList.remove('invalid')
+      fieldEl?.classList.remove('shake')
+    }
+    el.addEventListener('input', clearErr)
+    el.addEventListener('change', clearErr)
+  })
+
+  document.getElementById('bookForm').addEventListener('submit', (e) => {
+    e.preventDefault()
+    submitBooking(field)
+  })
+
+  updateTotal()
+  renderBkTimeSlots()
+  openModal('bookModal')
+}
+
+function submitBooking(field) {
+  const set = (name, ok) => document.getElementById('f-' + name)?.classList.toggle('invalid', !ok)
+
+  const dateInput = document.getElementById('bkDate')
+  const timeInput = document.getElementById('bkTime')
+  const nameInput = document.getElementById('bkName')
+  const phoneInput = document.getElementById('bkPhone')
+
+  const date = dateInput ? dateInput.value : ''
+  const startHour = parseFloat(timeInput ? timeInput.value : NaN)
+  const duration = bookState.duration
+  const name = nameInput ? nameInput.value.trim() : ''
+  const phone = phoneInput ? phoneInput.value.trim().replace(/[\s.-]/g, '') : ''
+
+  const dateOk = !!date && date >= todayStr()
+  let timeOk = Number.isFinite(startHour) && dateOk
+  if (timeOk) {
+    timeOk =
+      startHour >= field.hours.open &&
+      startHour + duration <= field.hours.close &&
+      !isPastSlot(date, startHour, startHour + duration, field.hours.close) &&
+      !SV.isSlotTaken(field.id, date, startHour, duration)
+  }
+  const nameOk = name.length >= 2
+  const phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone)
+
+  set('date', dateOk)
+  set('time', timeOk)
+  set('name', nameOk)
+  set('phone', phoneOk)
+
+  if (!nameOk) {
+    nameInput?.focus()
+    shakeField('f-name')
+    toast('Vui lòng nhập họ và tên của bạn (tối thiểu 2 ký tự)', 'error')
+    return
+  }
+  if (!phoneOk) {
+    phoneInput?.focus()
+    shakeField('f-phone')
+    toast('Vui lòng nhập số điện thoại hợp lệ (10 số, VD: 0912345678)', 'error')
+    return
+  }
+  if (!dateOk) {
+    dateInput?.focus()
+    shakeField('f-date')
+    toast('Vui lòng chọn ngày đặt hợp lệ (không chọn ngày quá khứ)', 'error')
+    return
+  }
+  if (!timeOk) {
+    timeInput?.focus()
+    shakeField('f-time')
+    toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
+    return
+  }
+
+  const btn = document.getElementById('btnConfirmBook')
+  const resetBtn = () => {
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+    }
+  }
+
+  try {
+    const bookFn = window.SV?.createBooking || window.SV?.addBooking
+    if (!bookFn) {
+      toast('Hệ thống dữ liệu chưa sẵn sàng. Vui lòng tải lại trang.', 'error')
+      resetBtn()
+      return
+    }
+    if (btn) {
+      btn.disabled = true
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...'
+    }
+
+    const currentUser = window.SV?.currentUser ? window.SV.currentUser() : null
+
+    const servicePer = bookServiceCost()
+    const services = bookSelectedServices()
+    const courtTotal = Math.round((Number(field.price) || 0) * duration)
+
+    const result = bookFn({
+      courtId: SV.courtKey(field.id),
+      courtName: field.name,
+      type: field.type || '',
+      date,
+      startHour,
+      endHour: startHour + duration,
+      duration,
+      courtTotal,
+      serviceTotal: servicePer,
+      services,
+      total: courtTotal + servicePer,
+      voucherCode: (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase(),
+      userId: currentUser?.id || '',
+      userName: name,
+      customer: { name, phone, email: currentUser?.email || '' },
+      status: 'pending',
+    })
+
+    if (!result || !result.ok) {
+      toast(result?.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
+      resetBtn()
+      return
+    }
+
+    const booking = result.booking
+    const payUrl = `./thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
+    const serviceLine = services.length
+      ? `<div><dt>Dịch vụ</dt><dd>${services.map((s) => `${esc(s.name)} ×${s.qty}`).join(', ')}</dd></div>
+         <div><dt>Tiền dịch vụ</dt><dd>${servicePer.toLocaleString('vi-VN')}đ</dd></div>`
+      : ''
+    const body = document.getElementById('bookBody')
+    if (body) {
+      body.innerHTML = `
+        <div class="bk-success">
+          <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
+          <h3>Đặt sân thành công!</h3>
+          <p>Mã đơn <b>${esc(booking.id)}</b> · Đang mở trang thanh toán...</p>
+          <dl class="bk-summary">
+            <div><dt>Sân</dt><dd>${esc(field.name)}</dd></div>
+            ${field.type ? `<div><dt>Loại sân</dt><dd>${esc(typeLabel(field.type))}</dd></div>` : ''}
+            <div><dt>Ngày</dt><dd>${esc(date)}</dd></div>
+            <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
+            <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
+            ${serviceLine}
+            <div><dt>Tiền sân</dt><dd>${(booking.courtTotal ?? (booking.subtotal || 0) - servicePer).toLocaleString('vi-VN')}đ</dd></div>
+            ${
+              booking.discount > 0
+                ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
+                : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
+            }
+            <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
+          </dl>
+          <div class="bk-success-actions">
+            <button type="button" class="btn-book btn-book-full" id="bkPayNow"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</button>
+            <button type="button" class="btn-book btn-book-full btn-book-ghost" id="bkLater">Để thanh toán sau</button>
+          </div>
+        </div>
+      `
+      const timer = setTimeout(() => {
+        window.location.href = payUrl
+      }, 1500)
+      document.getElementById('bkPayNow')?.addEventListener('click', () => {
+        clearTimeout(timer)
+        window.location.href = payUrl
+      })
+      document.getElementById('bkLater')?.addEventListener('click', () => {
+        clearTimeout(timer)
+        closeModal('bookModal')
+        toast('Đơn đã được giữ. Bạn có thể thanh toán sau trong trang Tài khoản.')
+      })
+    }
+    toast(`Đặt sân thành công · ${booking.id}`)
+  } catch (err) {
+    console.error('Lỗi khi đặt sân:', err)
+    resetBtn()
+    toast('Đã có lỗi xảy ra khi đặt sân: ' + (err.message || 'vui lòng thử lại'), 'error')
+  }
+}
+
+function initBookingModal() {
+  document.querySelectorAll('.modal-overlay').forEach((ov) => {
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) closeModal(ov.id)
+    })
+  })
+  document.querySelectorAll('.modal-close').forEach((btn) => {
+    btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay')?.id))
+  })
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach((m) => closeModal(m.id))
+    }
+  })
 }
 
 function renderField(field) {
@@ -465,9 +934,9 @@ function renderField(field) {
               <div><i class="fa-solid fa-layer-group"></i> ${field.courts} sân · ${esc(typeLabel(field.type))}</div>
               <div><i class="fa-solid fa-shield-halved"></i> Thanh toán tại sân, hoàn tiền theo chính sách</div>
             </div>
-            <a class="btn-book btn-book-full" id="dtBookCta" href="${bookUrl(field)}">
+            <button type="button" class="btn-book btn-book-full" id="dtBookCta">
               <i class="fa-solid fa-calendar-check"></i> Đặt sân ngay
-            </a>
+            </button>
             <a class="btn-book btn-book-ghost btn-book-full" href="../#san-noi-bat">
               <i class="fa-solid fa-list"></i> Xem tất cả sân
             </a>
@@ -546,6 +1015,7 @@ function init() {
 
   applySettings()
   initNav()
+  initBookingModal()
   syncAuthNav({ accountUrl: './tai-khoan.html' })
 
   const id = new URLSearchParams(location.search).get('id')

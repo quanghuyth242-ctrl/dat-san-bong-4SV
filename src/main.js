@@ -675,11 +675,6 @@ function openBook(venue, preset = {}) {
             <input type="date" id="bkDate" required />
             <span class="bk-err">Vui lòng chọn ngày không ở quá khứ.</span>
           </div>
-          <div class="bk-field" id="f-time">
-            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
-            <select id="bkTime" required></select>
-            <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
-          </div>
           <div class="bk-field" id="f-duration">
             <label for="bkDuration">Thời lượng</label>
             <select id="bkDuration">
@@ -688,6 +683,12 @@ function openBook(venue, preset = {}) {
               <option value="2">2 giờ</option>
               <option value="3">3 giờ</option>
             </select>
+          </div>
+          <div class="bk-field full" id="f-time">
+            <label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>
+            <select id="bkTime" required style="display: none;"></select>
+            <div class="bk-slot-grid" id="bkTimeSlotGrid"></div>
+            <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
           </div>
           <div class="bk-field" id="f-name">
             <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
@@ -749,10 +750,52 @@ function openBook(venue, preset = {}) {
     const sel = document.getElementById('bkTime')
     if (!date) {
       sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
+      sel.value = ''
+      renderBkTimeSlots()
       return
     }
+    const prev = sel.value
     const html = buildTimeOptions(bookState.venue || venue, date, bookState.duration)
     sel.innerHTML = html || '<option value="">-- Đã kín lịch --</option>'
+    if (prev && [...sel.options].some((o) => o.value === prev)) {
+      sel.value = prev
+    } else if (sel.options.length) {
+      sel.selectedIndex = 0
+    }
+    renderBkTimeSlots()
+  }
+
+  /**
+   * Lưới khung giờ cho modal đặt trực tiếp — giống "Lịch trống hôm nay" ở trang
+   * chi tiết: xanh = còn trống (bấm chọn), đỏ = đã có người đặt, xám = đã qua
+   * giờ. Ô select ẩn giữ giá trị cho validate/submit như cũ.
+   */
+  function renderBkTimeSlots() {
+    const grid = document.getElementById('bkTimeSlotGrid')
+    const sel = document.getElementById('bkTime')
+    if (!grid || !sel) return
+    const date = dateInput.value
+    const v = bookState.venue || venue
+    const duration = bookState.duration
+    if (!date) {
+      grid.innerHTML = ''
+      return
+    }
+    let html = ''
+    for (let h = v.hours.open; h < v.hours.close; h++) {
+      if (h + duration > v.hours.close) continue
+      const isPast = isPastSlot(date, h, h + duration, v.hours.close)
+      const isTaken = !isPast && isSlotTaken(v.id, date, h, duration)
+      const selected = !isPast && !isTaken && sel.value !== '' && parseFloat(sel.value) === h
+      const cls = isPast ? 'is-past' : isTaken ? 'is-taken' : selected ? 'is-selected' : ''
+      const sub = isPast ? 'Đã quá giờ đặt' : isTaken ? 'Đã có người đặt' : selected ? 'Đã chọn' : 'Còn trống'
+      html += `<button type="button" class="bk-slot ${cls}" data-hour="${h}" ${
+        isPast || isTaken ? 'disabled' : ''
+      }>${timeLabel(h)} – ${timeLabel(h + duration)}<small>${sub}</small></button>`
+    }
+    grid.innerHTML =
+      html ||
+      `<span class="bk-slot-empty"><i class="fa-solid fa-calendar-xmark"></i> Không còn khung giờ trống trong ngày</span>`
   }
 
   const updateTotal = () => {
@@ -809,6 +852,17 @@ function openBook(venue, preset = {}) {
   bookState.refresh = updateTotal
 
   dateInput.addEventListener('change', refresh)
+  // Bấm khung giờ trong lưới: ghi vào select ẩn, các listener change/validation cũ giữ nguyên.
+  document.getElementById('bkTimeSlotGrid')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('.bk-slot')
+    if (!chip || chip.disabled) return
+    const t = document.getElementById('bkTime')
+    t.value = chip.dataset.hour
+    t.dispatchEvent(new Event('change'))
+    document.getElementById('f-time')?.classList.remove('invalid')
+    document.getElementById('f-time')?.classList.remove('shake')
+    renderBkTimeSlots()
+  })
   document.getElementById('bkDuration').addEventListener('change', updateTotal)
   document.getElementById('bkVoucher').addEventListener('input', updateTotal)
   document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
@@ -846,6 +900,8 @@ function openBook(venue, preset = {}) {
       sel.value = String(hours.reduce((a, b) => (Math.abs(b - preset.hour) < Math.abs(a - preset.hour) ? b : a)))
     }
   }
+
+  renderBkTimeSlots()
 
   openModal('bookModal')
 }
@@ -1040,6 +1096,11 @@ function submitBooking(venue) {
     toast(`Đặt sân thành công · ${booking.id}`)
   } catch (err) {
     console.error('Lỗi khi đặt sân:', err)
+    // Không bỏ nút submit ở trạng thái disable để khách thử lại được ngay.
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
+    }
     toast('Đã có lỗi xảy ra khi đặt sân: ' + (err.message || 'vui lòng thử lại'), 'error')
     if (btn) {
       btn.disabled = false
