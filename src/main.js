@@ -791,7 +791,7 @@ function openBook(venue, preset = {}) {
       const sub = isPast ? 'Đã quá giờ đặt' : isTaken ? 'Đã có người đặt' : selected ? 'Đã chọn' : 'Còn trống'
       html += `<button type="button" class="bk-slot ${cls}" data-hour="${h}" ${
         isPast || isTaken ? 'disabled' : ''
-      }">${timeLabel(h)} – ${timeLabel(h + duration)}<small>${sub}</small></button>`
+      }>${timeLabel(h)} – ${timeLabel(h + duration)}<small>${sub}</small></button>`
     }
     grid.innerHTML =
       html ||
