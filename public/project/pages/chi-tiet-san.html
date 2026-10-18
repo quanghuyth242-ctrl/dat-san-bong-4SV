@@ -275,29 +275,13 @@
         <div class="booking-card-fag">
           <div class="bk-card-head">
             <h3><i class="fa-solid fa-calendar-check"></i> Đặt sân</h3>
-            <p>Chọn môn, ngày và khung giờ để giữ sân ngay trong 30 giây</p>
+            <p>Chọn ngày và khung giờ để giữ sân ngay trong 30 giây</p>
           </div>
 
           <form id="fagBookForm" novalidate>
-            <!-- BƯỚC 1: CHỌN MÔN THỂ THAO -->
+            <!-- BƯỚC 1: CHỌN NGÀY CHƠI -->
             <div class="bk-step-box">
-              <label class="bk-step-title"><span class="step-num">1</span> Chọn môn thể thao</label>
-              <div class="sport-select-pills" id="sportPills">
-                <button type="button" class="sport-pill active" data-sport="Bóng đá">
-                  <i class="fa-solid fa-futbol"></i> Bóng đá
-                </button>
-                <button type="button" class="sport-pill" data-sport="Cầu lông">
-                  <i class="fa-solid fa-table-tennis-paddle-ball"></i> Cầu lông
-                </button>
-                <button type="button" class="sport-pill" data-sport="Pickleball">
-                  <i class="fa-solid fa-baseball"></i> Pickleball
-                </button>
-              </div>
-            </div>
-
-            <!-- BƯỚC 2: CHỌN NGÀY CHƠI -->
-            <div class="bk-step-box">
-              <label class="bk-step-title" for="bkDateInput"><span class="step-num">2</span> Chọn ngày chơi</label>
+              <label class="bk-step-title" for="bkDateInput"><span class="step-num">1</span> Chọn ngày chơi</label>
               <div class="date-input-wrap">
                 <i class="fa-solid fa-calendar-days date-icon"></i>
                 <input type="date" id="bkDateInput" class="fag-input-date" required />
@@ -310,17 +294,32 @@
               <div class="date-display-friendly" id="friendlyDateText">Thứ Bảy, 10/10/2026</div>
             </div>
 
-            <!-- BƯỚC 3: CHỌN KHUNG GIỜ -->
+            <!-- BƯỚC 2: CHỌN KHUNG GIỜ -->
             <div class="bk-step-box">
               <div class="slot-step-header">
-                <label class="bk-step-title"><span class="step-num">3</span> Chọn khung giờ</label>
-                <span class="slot-legend"><span class="dot-free"></span> Còn trống</span>
+                <label class="bk-step-title"><span class="step-num">2</span> Chọn khung giờ</label>
+                <span class="slot-legend">
+                  <span><span class="dot-free"></span> Còn trống</span>
+                  <span><span class="dot-taken"></span> Đã đặt</span>
+                  <span><span class="dot-past"></span> Đã quá giờ</span>
+                </span>
               </div>
               <div class="time-slots-grid" id="timeSlotsGrid">
                 <!-- Được render tự động theo ngày & lịch đã đặt -->
               </div>
               <div class="slot-empty-msg" id="slotEmptyMsg" style="display: none;">
                 <i class="fa-solid fa-calendar-xmark"></i> Ngày này đã kín lịch. Vui lòng chọn ngày khác!
+              </div>
+            </div>
+
+            <!-- BƯỚC 3: CHỌN DỊCH VỤ ĐI KÈM -->
+            <div class="bk-step-box">
+              <div class="slot-step-header">
+                <label class="bk-step-title"><span class="step-num">3</span> Chọn dịch vụ đi kèm</label>
+                <span class="slot-legend"><span class="dot-free"></span> Tuỳ chọn · giá mỗi buổi</span>
+              </div>
+              <div class="service-list" id="fagServiceList">
+                <!-- Được render tự động từ danh sách dịch vụ -->
               </div>
             </div>
 
@@ -339,9 +338,9 @@
                 <span>Khung giờ:</span>
                 <strong id="sumTimeSlot" class="highlight-slot">—</strong>
               </div>
-              <div class="summary-line">
-                <span>Môn thể thao:</span>
-                <strong id="sumSport">—</strong>
+              <div class="summary-line" id="sumServicesRow" style="display: none;">
+                <span>Dịch vụ:</span>
+                <strong id="sumServices">—</strong>
               </div>
 
               <!-- Ô NHẬP MÃ GIẢM GIÁ -->
@@ -416,7 +415,7 @@
             <div class="c-row"><span>Sân thể thao:</span><strong id="cfCourt">Sân bóng</strong></div>
             <div class="c-row"><span>Ngày thi đấu:</span><strong id="cfDate">10/10/2026</strong></div>
             <div class="c-row"><span>Khung giờ:</span><strong id="cfTime">17:00 - 18:30</strong></div>
-            <div class="c-row"><span>Môn thể thao:</span><strong id="cfSport">Bóng đá</strong></div>
+            <div class="c-row" id="cfServicesRow" style="display: none;"><span>Dịch vụ:</span><strong id="cfServices">—</strong></div>
             <div class="c-row c-total"><span>Tổng thanh toán:</span><strong id="cfTotal" style="color: var(--primary); font-size: 1.15rem;">0 đ</strong></div>
           </div>
 

@@ -387,3 +387,81 @@ html.dark .nav-user-head strong { color: #f9fafb; }
 .bk-success-actions { display: flex; flex-direction: column; gap: 10px; }
 .bk-success-actions .btn-book { margin-top: 0; }
 @media (max-width: 860px) { .pay-grid { grid-template-columns: 1fr; } .pay-methods { grid-template-columns: 1fr; } .pay-actions-center { flex-direction: column; } }
+
+
+/* ================================ TRANG CHI TIẾT SÂN ================================ */
+.dt-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, .85fr); gap: 18px; align-items: start; }
+.dt-main, .dt-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.dt-hero { position: relative; height: 320px; border-radius: var(--radius-lg); overflow: hidden; background: var(--grey-100); border: 1px solid var(--grey-100); }
+.dt-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dt-open { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-radius: 999px; padding: 5px 12px; font-size: .72rem; font-weight: 700; color: var(--grey-700); }
+.dt-open i { font-size: .55rem; }
+.dt-open.is-open i { color: #16a34a; }
+.dt-open.is-closed { color: #b91c1c; }
+.dt-open.is-closed i { color: #dc2626; }
+.dt-head { padding: 4px 2px 0; }
+.dt-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 3vw, 1.75rem); color: var(--grey-900); line-height: 1.25; letter-spacing: -.02em; }
+.dt-head-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; font-size: .84rem; color: var(--grey-600); }
+.dt-head-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.dt-head-meta i { color: var(--green-primary); }
+.dt-rate strong { color: var(--grey-900); }
+.dt-rate small { color: var(--grey-400); }
+.dt-rate-star { color: #f59e0b !important; }
+.dt-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dt-info > div { background: var(--grey-50); border: 1px solid var(--grey-100); border-radius: 12px; padding: 11px 13px; }
+.dt-info span { display: block; font-size: .72rem; color: var(--grey-500, #6b7280); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.dt-info strong { display: block; margin-top: 3px; font-size: .88rem; color: var(--grey-900); font-weight: 700; line-height: 1.45; word-break: break-word; }
+.dt-desc { font-size: .88rem; color: var(--grey-600); line-height: 1.75; }
+.dt-slots { display: flex; flex-wrap: wrap; gap: 8px; }
+.dt-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1.5px solid var(--green-primary); background: var(--green-light); color: var(--green-dark); border-radius: 10px; padding: 7px 12px; font-size: .8rem; font-weight: 700; }
+.dt-slot small { font-size: .68rem; font-weight: 700; opacity: .75; }
+.dt-slot.is-taken { border-color: #fca5a5; background: #fef2f2; color: #b91c1c; }
+.dt-slot.is-past { border-color: var(--grey-200, #e5e7eb); background: var(--grey-50, #f9fafb); color: var(--grey-400, #9ca3af); }
+.dt-slot-note { margin-top: 12px; font-size: .76rem; color: var(--grey-500, #6b7280); display: flex; gap: 7px; align-items: flex-start; line-height: 1.55; }
+.dt-slot-note i { color: var(--green-primary); margin-top: 3px; }
+.dt-slot-empty, .dt-note { font-size: .86rem; color: var(--grey-600); display: flex; gap: 8px; align-items: center; }
+.dt-slot-empty i, .dt-note i { color: var(--green-primary); }
+.dt-map { height: 280px; border-radius: 14px; overflow: hidden; border: 1px solid var(--grey-200); background: var(--grey-50); }
+.dt-map-fallback { display: flex; align-items: center; justify-content: center; }
+.dt-map-msg { display: flex; gap: 8px; align-items: center; color: var(--grey-500, #6b7280); font-size: .84rem; }
+.dt-map-msg i { color: var(--green-primary); }
+.dt-map-actions { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; margin-top: 12px; }
+.dt-map-addr { font-size: .84rem; color: var(--grey-600); display: inline-flex; gap: 7px; align-items: flex-start; line-height: 1.5; }
+.dt-map-addr i { color: var(--green-primary); margin-top: 3px; }
+.dt-reviews { display: flex; flex-direction: column; gap: 14px; }
+.dt-rv { display: flex; gap: 11px; }
+.dt-rv-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none; background: var(--grey-100); }
+.dt-rv-initial { display: inline-flex; align-items: center; justify-content: center; background: var(--green-light); color: var(--green-dark); font-weight: 800; }
+.dt-rv-body { flex: 1; min-width: 0; background: var(--grey-50); border: 1px solid var(--grey-100); border-radius: 12px; padding: 10px 13px; }
+.dt-rv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dt-rv-top strong { font-size: .86rem; color: var(--grey-900); }
+.dt-rv-stars { color: #f59e0b; font-size: .74rem; letter-spacing: 1px; }
+.dt-rv-date { margin-left: auto; font-size: .72rem; color: var(--grey-400); }
+.dt-rv-text { font-size: .85rem; color: var(--grey-700); line-height: 1.6; margin-top: 5px; }
+.dt-rv-reply { margin-top: 8px; font-size: .78rem; color: var(--green-dark); background: var(--green-light); border-radius: 8px; padding: 7px 10px; line-height: 1.5; }
+.dt-book-card { position: sticky; top: 76px; }
+.dt-price { font-family: var(--font-display); font-weight: 800; font-size: 1.9rem; color: var(--green-primary); line-height: 1.1; }
+.dt-price small { font-size: .85rem; font-weight: 600; color: var(--grey-400); }
+.dt-price-full { font-size: .78rem; color: var(--grey-500, #6b7280); margin-bottom: 14px; }
+.dt-book-rows { display: flex; flex-direction: column; gap: 9px; padding: 13px 0; border-top: 1px dashed var(--grey-200); border-bottom: 1px dashed var(--grey-200); margin-bottom: 14px; }
+.dt-book-rows div { display: flex; gap: 9px; font-size: .82rem; color: var(--grey-600); line-height: 1.5; }
+.dt-book-rows i { color: var(--green-primary); margin-top: 3px; width: 16px; text-align: center; flex: none; }
+.dt-book-card .btn-book + .btn-book { margin-top: 10px; }
+.dt-related-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dt-related-item { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--grey-100); border-radius: 12px; overflow: hidden; background: var(--grey-50); text-decoration: none; transition: .16s; }
+.dt-related-item:hover { border-color: var(--green-primary); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.dt-related-item img { width: 100%; height: 76px; object-fit: cover; }
+.dt-related-name { font-size: .8rem; font-weight: 700; color: var(--grey-900); padding: 7px 9px 0; line-height: 1.35; }
+.dt-related-meta { font-size: .72rem; color: var(--green-primary); font-weight: 600; padding: 0 9px 9px; }
+@media (max-width: 860px) { .dt-grid { grid-template-columns: 1fr; } .dt-book-card { position: static; } .dt-hero { height: 220px; } .dt-info { grid-template-columns: 1fr; } }
+
+/* Card san tren trang chu: anh + ten mo trang chi tiet, nut Chi tiet / Dat san */
+a.court-img-wrap { display: block; }
+a.court-name { text-decoration: none; color: inherit; }
+a.court-name:hover { color: var(--green-primary); }
+.court-actions { display: flex; gap: 8px; }
+.court-actions .btn-book { flex: 1; width: auto; margin-top: 12px; text-align: center; }
+.btn-detail { background: #fff; color: var(--grey-700, #374151); border: 1.5px solid var(--grey-200); }
+.btn-detail:hover { background: var(--grey-50); color: var(--green-dark); border-color: var(--green-primary); }
+.nearby-link { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 0; text-decoration: none; color: inherit; border-radius: 10px; }
+.nearby-link:hover .nearby-name { color: var(--green-primary); }

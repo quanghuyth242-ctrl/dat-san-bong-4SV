@@ -84,10 +84,20 @@ function isCourtFullyBooked(courtId, date) {
   return loadBookings().some((b) => b.courtId === courtId && b.date === date);
 }
 
-function isPastSlot(date, startHour) {
+/**
+ * Khung giờ đã qua giờ đặt chưa.
+ * - Khung thường: quá ngay khi đã qua giờ BẮT ĐẦU.
+ * - Khung cuối trong ngày (kết thúc đúng giờ đóng cửa): vẫn đặt được cho tới tận giờ đóng cửa.
+ * endHour/closeHour là số thập phân (vd 20.5 = 20:30); không truyền thì giữ luật cũ.
+ */
+function isPastSlot(date, startHour, endHour, closeHour) {
   if (date !== todayStr()) return false;
   const now = new Date();
-  return startHour < now.getHours() + now.getMinutes() / 60;
+  const nowH = now.getHours() + now.getMinutes() / 60;
+  if (Number.isFinite(endHour) && Number.isFinite(closeHour) && endHour >= closeHour) {
+    return nowH >= closeHour;
+  }
+  return startHour < nowH;
 }
 
 /** Khung giờ còn khả dụng = trong giờ mở cửa, chưa qua, chưa bị đặt, đủ sức chứa duration. */
@@ -300,7 +310,7 @@ function buildTimeOptions(court, date, duration) {
   const opts = [];
   for (let h = court.hours.open; h < court.hours.close; h += 1) {
     if (h + duration > court.hours.close) continue;
-    if (isPastSlot(date, h)) continue;
+    if (isPastSlot(date, h, h + duration, court.hours.close)) continue;
     if (isSlotTaken(court.id, date, h, duration)) continue;
     opts.push(
       `<option value="${h}">${timeLabel(h)} – ${timeLabel(h + duration)}</option>`
@@ -350,16 +360,19 @@ function getService(id) {
   return SERVICES.find((s) => s.id === id) || null;
 }
 
-/** Danh sách dịch vụ đã chọn (qty > 0) kèm giá mỗi buổi. */
-function selectedServices() {
-  return SERVICES.map((s) => ({ ...s, qty: state.booking.services?.[s.id] || 0 })).filter(
-    (s) => s.qty > 0
-  );
+/**
+ * Danh sách dịch vụ đã chọn (qty > 0) kèm giá mỗi buổi.
+ * Không truyền `bag` thì lấy từ modal đặt sân (state.booking.services);
+ * form FAG truyền detailState.services.
+ */
+function selectedServices(bag) {
+  const src = bag || state.booking.services || {};
+  return SERVICES.map((s) => ({ ...s, qty: src[s.id] || 0 })).filter((s) => s.qty > 0);
 }
 
 /** Tổng tiền dịch vụ cho 1 buổi. */
-function serviceCostPerSession() {
-  return selectedServices().reduce((sum, s) => sum + s.price * s.qty, 0);
+function serviceCostPerSession(bag) {
+  return selectedServices(bag).reduce((sum, s) => sum + s.price * s.qty, 0);
 }
 
 const REPEAT_LABEL = {
@@ -513,7 +526,7 @@ function validateBooking() {
   if (timeOk) {
     if (timeVal < court.hours.open || timeVal + duration > court.hours.close) {
       timeOk = false;
-    } else if (isPastSlot(dateVal, timeVal)) {
+    } else if (isPastSlot(dateVal, timeVal, timeVal + duration, court.hours.close)) {
       timeOk = false;
     } else if (isSlotTaken(court.id, dateVal, timeVal, duration)) {
       timeOk = false;
@@ -621,7 +634,7 @@ function showSuccess() {
   const skipped = [];
   let lastError = '';
   dates.forEach((date) => {
-    if (isPastSlot(date, startHour) || isSlotTaken(court.id, date, startHour, duration)) {
+    if (isPastSlot(date, startHour, startHour + duration, court.hours.close) || isSlotTaken(court.id, date, startHour, duration)) {
       skipped.push(date);
       return;
     }
@@ -1218,9 +1231,10 @@ function initCourtDetail() {
 
   const detailState = {
     court,
-    selectedSport: (court.sports && court.sports.length > 0) ? court.sports[0] : 'Bóng đá',
+    selectedSport: 'Bóng đá',
     selectedDate: SV.todayStr(),
     selectedSlot: null,
+    services: {},
     voucherCode: '',
     discount: 0,
     activeImgIndex: 0,
@@ -1409,32 +1423,10 @@ function initCourtDetail() {
       `${court.name} là tổ hợp thể thao chuyên nghiệp tại ${court.address}, đạt chuẩn thi đấu giao hữu và phong trào. Mặt sân cỏ nhân tạo cao cấp thế hệ mới, hệ thống 16 đèn LED chống chói và tiện ích dịch vụ đầy đủ phục vụ các giải đấu.`;
   }
 
-  // Right-hand Booking Card
-  // 1. Sport Pills
-  const sportPillsContainer = $('#sportPills');
-  if (sportPillsContainer) {
-    sportPillsContainer.innerHTML = court.sports
-      .map(
-        (s, idx) => `
-        <button type="button" class="sport-pill ${idx === 0 ? 'active' : ''}" data-sport="${esc(s)}">
-          <i class="fa-solid ${sportIcon(s)}"></i> ${esc(s)}
-        </button>`
-      )
-      .join('');
+  // Right-hand Booking Card: nền tảng chỉ phục vụ bóng đá nên không còn bước
+  // chọn môn thể thao, môn ghi trên đơn luôn là "Bóng đá".
 
-    sportPillsContainer.addEventListener('click', (e) => {
-      const btn = e.target.closest('.sport-pill');
-      if (!btn) return;
-      $$('.sport-pill', sportPillsContainer).forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      detailState.selectedSport = btn.dataset.sport;
-      detailState.selectedSlot = null;
-      renderTimeSlots();
-      updateSummary();
-    });
-  }
-
-  // 2. Date Selection
+  // 1. Date Selection
   const dateInput = $('#bkDateInput');
   if (dateInput) {
     dateInput.min = SV.todayStr();
@@ -1484,7 +1476,7 @@ function initCourtDetail() {
     });
   });
 
-  // 3. Time Slots Generation
+  // 2. Time Slots Generation
   function generateSlots(courtObj, sport) {
     const slots = [];
     const openH = courtObj.hours ? courtObj.hours.open : 6;
@@ -1529,49 +1521,56 @@ function initCourtDetail() {
     const slots = generateSlots(detailState.court, detailState.selectedSport);
     const date = detailState.selectedDate;
 
-    // Lọc chỉ giữ lại những khung giờ THẬT SỰ CÒN TRỐNG (khung giờ nào hết hoặc quá giờ thì ẨN ĐI hoàn toàn)
-    const availableSlots = slots.filter((slot) => {
-      const isPast = isPastSlot(date, slot.startHour);
+    // Vẽ đủ mọi khung giờ trong ngày: khung đã qua ghi "Đã quá giờ đặt", khung
+    // đã có đơn ghi "Đã có người đặt". Chỉ khung trống là bấm được.
+    const decorated = slots.map((slot) => {
+      const isPast = isPastSlot(date, slot.startHour, slot.endHour, detailState.court.hours?.close);
       const isTaken = SV.isSlotTaken(detailState.court.id, date, slot.startHour, slot.duration);
-      return !isPast && !isTaken;
+      return { ...slot, isPast, isTaken, isFree: !isPast && !isTaken };
     });
+    const freeCount = decorated.filter((s) => s.isFree).length;
 
-    // Nếu khung giờ đang chọn trước đó không còn khả dụng trên ngày này thì bỏ chọn
+    // Nếu khung giờ đang chọn trước đó không còn trống trên ngày này thì bỏ chọn
     if (detailState.selectedSlot) {
-      const isStillAvailable = availableSlots.some(
-        (s) => s.startHour === detailState.selectedSlot.startHour
+      const stillFree = decorated.some(
+        (s) => s.isFree && s.startHour === detailState.selectedSlot.startHour
       );
-      if (!isStillAvailable) {
+      if (!stillFree) {
         detailState.selectedSlot = null;
         updateSummary();
       }
     }
 
-    if (availableSlots.length === 0) {
-      grid.innerHTML = '';
-      if (emptyMsg) {
+    if (emptyMsg) {
+      if (freeCount === 0) {
         emptyMsg.style.display = 'block';
-        emptyMsg.innerHTML = '<i class="fa-solid fa-calendar-xmark" style="color:var(--primary); font-size:1.4rem; display:block; margin-bottom:6px;"></i> <b>Ngày này đã hết khung giờ trống</b><br/><span style="font-size:12px; color:var(--text-muted);">Tất cả khung giờ trong ngày đã có người đặt hoặc quá giờ. Vui lòng chọn ngày khác!</span>';
+        emptyMsg.innerHTML = '<i class="fa-solid fa-calendar-xmark" style="color:var(--primary); font-size:1.4rem; display:block; margin-bottom:6px;"></i> <b>Ngày này đã hết khung giờ trống</b><br/><span style="font-size:12px; color:var(--text-muted);">Tất cả khung giờ trong ngày đã qua giờ đặt hoặc đã có người đặt. Vui lòng chọn ngày khác!</span>';
+      } else {
+        emptyMsg.style.display = 'none';
       }
-      return;
     }
 
-    if (emptyMsg) emptyMsg.style.display = 'none';
-
-    grid.innerHTML = availableSlots
+    grid.innerHTML = decorated
       .map((slot) => {
         const isSelected =
           detailState.selectedSlot &&
           detailState.selectedSlot.startHour === slot.startHour;
+        const state = slot.isPast ? 'past' : slot.isTaken ? 'taken' : 'free';
+        const note = slot.isPast
+          ? 'Đã quá giờ đặt'
+          : slot.isTaken
+            ? 'Đã có người đặt'
+            : formatPrice(slot.price);
 
         return `
-          <button type="button" class="time-slot-btn ${isSelected ? 'active' : ''}"
+          <button type="button" class="time-slot-btn is-${state} ${state !== 'free' ? 'disabled' : ''} ${isSelected ? 'active' : ''}"
+                  ${state !== 'free' ? 'disabled' : ''}
                   data-start="${slot.startHour}"
                   data-duration="${slot.duration}"
                   data-price="${slot.price}"
                   data-label="${slot.label}">
             <strong>${slot.label}</strong>
-            <span style="color:var(--primary); font-weight:600;">${formatPrice(slot.price)}</span>
+            <span style="font-weight:600;">${note}</span>
           </button>
         `;
       })
@@ -1580,12 +1579,17 @@ function initCourtDetail() {
 
   $('#timeSlotsGrid')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.time-slot-btn');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
 
     const startH = parseFloat(btn.dataset.start);
     const dur = parseFloat(btn.dataset.duration);
 
     // Kiểm tra lại tức thì trước khi chọn
+    if (isPastSlot(detailState.selectedDate, startH, startH + dur, detailState.court.hours?.close)) {
+      showToast('Đã quá giờ đặt', 'Khung giờ này đã qua, vui lòng chọn khung giờ khác');
+      renderTimeSlots();
+      return;
+    }
     if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, startH, dur)) {
       showToast('Khung giờ đã hết', 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
       renderTimeSlots();
@@ -1604,7 +1608,7 @@ function initCourtDetail() {
     updateSummary();
   });
 
-  // 4. Voucher Check
+  // 3. Voucher Check
   $('#btnApplyVoucher')?.addEventListener('click', () => {
     const code = $('#bkVoucherCode')?.value.trim().toUpperCase() || '';
     const msgEl = $('#voucherMsg');
@@ -1615,7 +1619,8 @@ function initCourtDetail() {
       msgEl.textContent = 'Vui lòng nhập mã giảm giá!';
       return;
     }
-    const subtotal = detailState.selectedSlot ? detailState.selectedSlot.price : detailState.court.price;
+    const base = detailState.selectedSlot ? detailState.selectedSlot.price : detailState.court.price;
+    const subtotal = base + serviceCostPerSession(detailState.services);
     const check = SV.previewVoucher(code, subtotal);
     if (check.ok) {
       detailState.voucherCode = code;
@@ -1635,15 +1640,52 @@ function initCourtDetail() {
   function updateSummary() {
     if ($('#sumCourtName')) $('#sumCourtName').textContent = detailState.court.name;
     if ($('#sumPlayDate')) $('#sumPlayDate').textContent = friendlyDateStr(detailState.selectedDate);
-    if ($('#sumSport')) $('#sumSport').textContent = detailState.selectedSport;
+
+    // Dịch vụ đi kèm đã chọn ở Bước 3
+    const servicePer = serviceCostPerSession(detailState.services);
+    const pickedList = selectedServices(detailState.services);
+    const svcRow = $('#sumServicesRow');
+    if (svcRow) {
+      svcRow.style.display = pickedList.length ? 'flex' : 'none';
+      if ($('#sumServices')) {
+        $('#sumServices').textContent = pickedList.map((s) => `${s.name} × ${s.qty}`).join(', ');
+      }
+    }
+
     if (detailState.selectedSlot) {
       if ($('#sumTimeSlot')) $('#sumTimeSlot').textContent = detailState.selectedSlot.label;
-      const subtotal = detailState.selectedSlot.price;
+      const base = detailState.selectedSlot.price;
+      const subtotal = base + servicePer;
+      // Tính lại mã giảm giá theo tổng mới để số tiền không lệch khi thêm/bớt dịch vụ.
+      if (detailState.voucherCode) {
+        const chk = SV.previewVoucher(detailState.voucherCode, subtotal);
+        if (chk.ok) {
+          detailState.discount = chk.discount;
+          // Đồng bộ lại thông báo theo giảm giá mới (thêm/bớt dịch vụ làm tổng đổi).
+          if ($('#voucherMsg')) {
+            $('#voucherMsg').className = 'voucher-status-msg ok';
+            $('#voucherMsg').innerHTML = `<i class="fa-solid fa-circle-check"></i> Áp dụng thành công! Giảm ${formatPrice(chk.discount)}`;
+          }
+        } else {
+          detailState.discount = 0;
+          detailState.voucherCode = '';
+          if ($('#voucherMsg')) {
+            $('#voucherMsg').className = 'voucher-status-msg err';
+            $('#voucherMsg').innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Mã không đủ điều kiện với tổng tiền hiện tại';
+          }
+        }
+      }
       const finalTotal = Math.max(0, subtotal - detailState.discount);
       if ($('#sumTotalPrice')) {
-        $('#sumTotalPrice').innerHTML = detailState.discount > 0
-          ? `<span style="font-size:13px;color:#94a3b8;text-decoration:line-through;margin-right:6px;">${formatPrice(subtotal)}</span> ${formatPrice(finalTotal)}`
-          : formatPrice(subtotal);
+        const parts = [];
+        if (servicePer > 0) parts.push(`+ DV ${formatPrice(servicePer)}`);
+        if (detailState.discount > 0) parts.push(`-${formatPrice(detailState.discount)}`);
+        const baseHtml = detailState.discount > 0
+          ? `<span style="font-size:13px;color:#94a3b8;text-decoration:line-through;margin-right:6px;">${formatPrice(subtotal)}</span> `
+          : '';
+        $('#sumTotalPrice').innerHTML = `${baseHtml}${formatPrice(finalTotal)}${
+          parts.length ? ` <small style="font-size:11px; color:#64748b; font-weight:600;">(${parts.join(' ')})</small>` : ''
+        }`;
       }
     } else {
       if ($('#sumTimeSlot')) $('#sumTimeSlot').textContent = '— (Chưa chọn)';
@@ -1651,10 +1693,63 @@ function initCourtDetail() {
     }
   }
 
+  // Bước 3: Dịch vụ đi kèm (khác với state.booking.services của modal đặt sân)
+  function renderDetailServices() {
+    const box = $('#fagServiceList');
+    if (!box) return;
+    box.innerHTML = SERVICES.map((s) => {
+      const qty = detailState.services[s.id] || 0;
+      const max = s.max ?? 99;
+      return `
+        <div class="service-item ${qty > 0 ? 'active' : ''}" data-id="${s.id}">
+          <i class="fa-solid ${s.icon} svc-icon"></i>
+          <div class="svc-info">
+            <div class="svc-name">${esc(s.name)}</div>
+            <div class="svc-price">${formatPrice(s.price)} / ${esc(s.unit)}</div>
+          </div>
+          <div class="s-qty">
+            ${
+              s.max === 1
+                ? `<button type="button" class="qty-check" data-act="toggle" data-id="${s.id}" aria-pressed="${qty > 0}" aria-label="Chọn ${esc(s.name)}"><i class="fa-solid fa-check"></i></button>`
+                : `<button type="button" class="qty-btn" data-act="dec" data-id="${s.id}" aria-label="Giảm">−</button>
+              <span class="qty-val" data-qty="${s.id}">${qty}</span>
+              <button type="button" class="qty-btn" data-act="inc" data-id="${s.id}" ${qty >= max ? 'disabled' : ''} aria-label="Tăng">+</button>`
+            }
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  $('#fagServiceList')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.qty-btn, .qty-check');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const svc = SERVICES.find((s) => s.id === id);
+    if (!svc) return;
+    const max = svc.max ?? 99;
+    const act = btn.dataset.act;
+    const cur = detailState.services[id] || 0;
+    const next = Math.max(
+      0,
+      Math.min(max, act === 'toggle' ? (cur > 0 ? 0 : 1) : act === 'inc' ? cur + 1 : cur - 1)
+    );
+    if (next === 0) delete detailState.services[id];
+    else detailState.services[id] = next;
+
+    const item = btn.closest('.service-item');
+    item?.classList.toggle('active', next > 0);
+    const valEl = item?.querySelector('[data-qty]');
+    if (valEl) valEl.textContent = String(next);
+    if (btn.classList.contains('qty-check')) btn.setAttribute('aria-pressed', String(next > 0));
+    item?.querySelector('.qty-btn[data-act="inc"]')?.toggleAttribute('disabled', next >= max);
+    updateSummary();
+  });
+
+  renderDetailServices();
   renderTimeSlots();
   updateSummary();
 
-  // 5. Submit Booking Form -> Open Confirmation Modal with Payment Options
+  // 4. Submit Booking Form -> Open Confirmation Modal with Payment Options
   $('#fagBookForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!detailState.selectedSlot) {
@@ -1675,8 +1770,14 @@ function initCourtDetail() {
     if ($('#cfCourt')) $('#cfCourt').textContent = detailState.court.name;
     if ($('#cfDate')) $('#cfDate').textContent = friendlyDateStr(detailState.selectedDate);
     if ($('#cfTime')) $('#cfTime').textContent = detailState.selectedSlot.label;
-    if ($('#cfSport')) $('#cfSport').textContent = detailState.selectedSport;
-    const finalTotal = Math.max(0, detailState.selectedSlot.price - detailState.discount);
+    const servicePer = serviceCostPerSession(detailState.services);
+    const pickedList = selectedServices(detailState.services);
+    const cfSvcRow = $('#cfServicesRow');
+    if (cfSvcRow) {
+      cfSvcRow.style.display = pickedList.length ? 'flex' : 'none';
+      if ($('#cfServices')) $('#cfServices').textContent = pickedList.map((s) => `${s.name} × ${s.qty}`).join(', ');
+    }
+    const finalTotal = Math.max(0, detailState.selectedSlot.price + servicePer - detailState.discount);
     if ($('#cfTotal')) $('#cfTotal').textContent = formatPrice(finalTotal);
 
     // Cập nhật thông tin ngân hàng & mã chuyển khoản tương ứng
@@ -1749,7 +1850,7 @@ function initCourtDetail() {
     closeModal($('#confirmModal'));
   });
 
-  // 6. Confirm Modal Form Submit -> Kiểm tra lại tức thì & Lưu đơn
+  // 5. Confirm Modal Form Submit -> Kiểm tra lại tức thì & Lưu đơn
   $('#cfCustomerForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = $('#cfName')?.value.trim() || '';
@@ -1770,7 +1871,14 @@ function initCourtDetail() {
 
     const startH = detailState.selectedSlot.startHour;
     const dur = detailState.selectedSlot.duration;
-    const finalTotal = Math.max(0, detailState.selectedSlot.price - detailState.discount);
+    const servicePerFinal = serviceCostPerSession(detailState.services);
+    const finalTotal = Math.max(0, detailState.selectedSlot.price + servicePerFinal - detailState.discount);
+
+    // Chốt dữ liệu trước khi lưu: SV.addBooking phát sự kiện → listener SV.on ở
+    // cuối file render lại lưới và có thể set selectedSlot/services về rỗng.
+    const slotLabelSnap = detailState.selectedSlot.label;
+    const svcSnap = selectedServices(detailState.services);
+    const svcSnapText = svcSnap.map((s) => `${esc(s.name)} × ${s.qty}`).join(', ');
 
     // BẮT BUỘC KIỂM TRA LẠI TÌNH TRẠNG SÂN NGAY TRƯỚC KHI LƯU ĐƠN
     if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, startH, dur)) {
@@ -1797,7 +1905,18 @@ function initCourtDetail() {
       startHour: startH,
       endHour: startH + dur,
       duration: dur,
-      total: finalTotal,
+      // Truyền tổng CHƯA trừ voucher (như form modal) để SV.addBooking tự trừ
+      // đúng 1 lần theo voucherCode — tránh giảm giá bị trừ hai lần.
+      total: detailState.selectedSlot.price + servicePerFinal,
+      courtTotal: detailState.selectedSlot.price,
+      serviceTotal: servicePerFinal,
+      services: svcSnap.map((s) => ({
+        id: s.id,
+        name: s.name,
+        price: s.price,
+        unit: s.unit,
+        qty: s.qty,
+      })),
       voucherCode: detailState.voucherCode,
       userId: user?.id || '',
       userName: name,
@@ -1822,9 +1941,13 @@ function initCourtDetail() {
         $('#succDetailsBox').innerHTML = `
           <div class="succ-row"><span>Mã đơn đặt sân:</span><strong style="color:var(--primary); font-family:monospace; font-size:1.15rem;">${res.booking.id}</strong></div>
           <div class="succ-row"><span>Sân thể thao:</span><strong>${esc(detailState.court.name)}</strong></div>
-          <div class="succ-row"><span>Môn thi đấu:</span><strong>${esc(detailState.selectedSport)}</strong></div>
           <div class="succ-row"><span>Ngày chơi:</span><strong>${friendlyDateStr(detailState.selectedDate)}</strong></div>
-          <div class="succ-row"><span>Khung giờ:</span><strong style="color:var(--primary);">${detailState.selectedSlot.label}</strong></div>
+          <div class="succ-row"><span>Khung giờ:</span><strong style="color:var(--primary);">${slotLabelSnap}</strong></div>
+          ${
+            svcSnap.length
+              ? `<div class="succ-row"><span>Dịch vụ:</span><strong>${svcSnapText}</strong></div>`
+              : ''
+          }
           <div class="succ-row"><span>Người đặt:</span><strong>${esc(name)} (${esc(phone)})</strong></div>
           <div class="succ-row"><span>Tổng tiền thanh toán:</span><strong style="color:var(--primary); font-size:1.15rem;">${formatPrice(res.booking.total)}</strong></div>
           <div class="succ-row">
@@ -1858,6 +1981,8 @@ function initCourtDetail() {
       openModal($('#successModal'));
 
       detailState.selectedSlot = null;
+      detailState.services = {};
+      renderDetailServices();
       renderTimeSlots();
       updateSummary();
       showToast('Đặt sân thành công!', `Mã đơn: ${res.booking.id} · Cảm ơn bạn!`);
