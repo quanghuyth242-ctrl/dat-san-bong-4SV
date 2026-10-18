@@ -1173,6 +1173,83 @@ a.btn-reset {
   text-overflow: ellipsis;
 }
 
+/* Lưới khung giờ trong modal đặt sân trực tiếp — giống "Lịch trống hôm nay" ở trang chi tiết */
+.bk-slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.bk-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 1.5px solid var(--primary, #8b1e1e);
+  background: var(--green-light, #efe0e0);
+  color: var(--green-dark, #721919);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bk-slot small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.bk-slot:hover:not(:disabled):not(.is-selected) {
+  background: color-mix(in srgb, var(--primary, #8b1e1e) 22%, #fff);
+}
+
+.bk-slot.is-taken {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: not-allowed;
+}
+
+.bk-slot.is-past {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.bk-slot.is-selected {
+  background: var(--primary, #8b1e1e);
+  border-color: var(--primary, #8b1e1e);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(139, 30, 30, 0.3);
+}
+
+.bk-slot.is-selected small {
+  opacity: 0.9;
+}
+
+.bk-slot:disabled {
+  cursor: not-allowed;
+}
+
+.bk-slot-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.bk-slot-empty i {
+  color: #dc2626;
+}
+
 .service-item {
   display: flex;
   align-items: center;

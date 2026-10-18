@@ -299,6 +299,12 @@
       endTime: hourToHHMM(endHour),
       total: toPrice(raw.total),
       discount: toPrice(raw.discount),
+      // Tiền tạm tính TRƯỚC giảm giá: đơn cũ không lưu field này nên suy ra từ
+      // total + discount để trang thanh toán/admin hiện đúng dòng "Tạm tính".
+      subtotal:
+        raw.subtotal != null
+          ? toPrice(raw.subtotal)
+          : toPrice(raw.total) + toPrice(raw.discount),
       voucherCode: String(raw.voucherCode || ''),
       customer: {
         name: String(customer.name || raw.userName || ''),
