@@ -1,5 +1,6 @@
 import './style.css'
 import { mountAssistant, takeStashedIntent } from './ai-assistant.js'
+import { REPEAT_LABEL, repeatDates, repeatCountOf, repeatCountOk, makeSeriesId } from './repeat.js'
 
 // Giờ mở/đóng dùng khi nguồn dữ liệu không có (sân cũ chỉ có id/name/type/price).
 const DEFAULT_OPEN = 6
@@ -595,7 +596,7 @@ function handleSearch(e) {
 
 // ================================ MODAL ĐẶT SÂN ================================
 
-const bookState = { venue: null, duration: 1, refresh: null, services: {} }
+const bookState = { venue: null, duration: 1, refresh: null, services: {}, repeat: 'none', repeatCount: 1 }
 
 // Dịch vụ đi kèm khi đặt sân (giá tính cho mỗi buổi)
 const SERVICES = [
@@ -645,6 +646,8 @@ function openBook(venue, preset = {}) {
   bookState.venue = venue
   bookState.duration = 1
   bookState.services = {}
+  bookState.repeat = 'none'
+  bookState.repeatCount = 1
   // Trang chi tiết gửi kèm dịch vụ người dùng đã chọn (?svc=nuoc-suoi:2,trong-tai:1).
   Object.entries(preset.services || {}).forEach(([id, qty]) => {
     const svc = SERVICES.find((s) => s.id === id)
@@ -689,6 +692,19 @@ function openBook(venue, preset = {}) {
             <select id="bkTime" required style="display: none;"></select>
             <div class="bk-slot-grid" id="bkTimeSlotGrid"></div>
             <span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>
+          </div>
+          <div class="bk-field" id="f-repeat">
+            <label for="bkRepeat">Đặt định kỳ</label>
+            <select id="bkRepeat">
+              ${Object.entries(REPEAT_LABEL)
+                .map(([value, text]) => `<option value="${value}"${value === 'none' ? ' selected' : ''}>${text}</option>`)
+                .join('')}
+            </select>
+          </div>
+          <div class="bk-field" id="f-repeatCount" style="display:none">
+            <label for="bkRepeatCount">Số buổi</label>
+            <input type="number" id="bkRepeatCount" min="1" max="52" value="1" />
+            <span class="bk-err">Số buổi phải từ 1 đến 52.</span>
           </div>
           <div class="bk-field" id="f-name">
             <label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>
@@ -798,7 +814,17 @@ function openBook(venue, preset = {}) {
       `<span class="bk-slot-empty"><i class="fa-solid fa-calendar-xmark"></i> Không còn khung giờ trống trong ngày</span>`
   }
 
+  /** Hiện/ẩn ô "Số buổi" theo lựa chọn định kỳ và ghi vào bookState. */
+  const syncRepeatUI = () => {
+    const repeat = document.getElementById('bkRepeat')?.value || 'none'
+    bookState.repeat = repeat
+    bookState.repeatCount = repeatCountOf(repeat, document.getElementById('bkRepeatCount')?.value)
+    const wrap = document.getElementById('f-repeatCount')
+    if (wrap) wrap.style.display = repeat === 'none' ? 'none' : ''
+  }
+
   const updateTotal = () => {
+    syncRepeatUI()
     bookState.duration = parseFloat(document.getElementById('bkDuration').value) || 1
     const current = bookState.venue || venue
     const courtSub = Math.round((Number(current.price) || 0) * bookState.duration)
@@ -811,10 +837,12 @@ function openBook(venue, preset = {}) {
 
     document.getElementById('f-voucher')?.classList.toggle('invalid', !!code && !usable)
 
-    const total = usable ? subtotal - voucher.discount : subtotal
+    const count = bookState.repeatCount
+    const total = (usable ? subtotal - voucher.discount : subtotal) * count
     const parts = []
     if (servicePer > 0) parts.push(`sân ${courtSub.toLocaleString('vi-VN')}đ + DV ${servicePer.toLocaleString('vi-VN')}đ`)
     if (usable) parts.push(`-${voucher.discount.toLocaleString('vi-VN')}đ`)
+    if (count > 1) parts.push(`${count} buổi`)
 
     const el = document.getElementById('bkTotal')
     el.innerHTML = parts.length
@@ -864,6 +892,8 @@ function openBook(venue, preset = {}) {
     renderBkTimeSlots()
   })
   document.getElementById('bkDuration').addEventListener('change', updateTotal)
+  document.getElementById('bkRepeat')?.addEventListener('change', updateTotal)
+  document.getElementById('bkRepeatCount')?.addEventListener('input', updateTotal)
   document.getElementById('bkVoucher').addEventListener('input', updateTotal)
   document.getElementById('bookForm').querySelectorAll('input, select').forEach((el) => {
     if (el.id === 'bkVoucher') return
@@ -940,6 +970,9 @@ function submitBooking(venue) {
   const duration = bookState.duration
   const name = nameInput ? nameInput.value.trim() : ''
   const phone = phoneInput ? phoneInput.value.trim().replace(/[\s.-]/g, '') : ''
+  const repeat = document.getElementById('bkRepeat')?.value || 'none'
+  const repeatRaw = document.getElementById('bkRepeatCount')?.value ?? '1'
+  const count = repeatCountOf(repeat, repeatRaw)
 
   const dateOk = !!date && date >= todayStr()
   let timeOk = Number.isFinite(startHour) && dateOk
@@ -952,11 +985,13 @@ function submitBooking(venue) {
   }
   const nameOk = name.length >= 2
   const phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone)
+  const repeatOk = repeatCountOk(repeat, repeatRaw)
 
   set('date', dateOk)
   set('time', timeOk)
   set('name', nameOk)
   set('phone', phoneOk)
+  set('repeatCount', repeatOk)
 
   if (!nameOk) {
     nameInput?.focus()
@@ -980,6 +1015,12 @@ function submitBooking(venue) {
     timeInput?.focus()
     shakeField('f-time')
     toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
+    return
+  }
+  if (!repeatOk) {
+    document.getElementById('bkRepeatCount')?.focus()
+    shakeField('f-repeatCount')
+    toast('Số buổi đặt định kỳ phải từ 1 đến 52', 'error')
     return
   }
 
@@ -1012,28 +1053,58 @@ function submitBooking(venue) {
       qty: s.qty,
     }))
     const courtTotal = Math.round((Number(venue.price) || 0) * duration)
+    const voucherCode = (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase()
+    const seriesId = repeat === 'none' ? '' : makeSeriesId()
 
-    const result = bookFn({
-      courtId: courtKey(venue.id),
-      courtName: venue.name,
-      type: venue.type || '',
-      date,
-      startHour,
-      endHour: startHour + duration,
-      duration,
-      courtTotal,
-      serviceTotal: servicePer,
-      services,
-      total: courtTotal + servicePer,
-      voucherCode: (document.getElementById('bkVoucher')?.value || '').trim().toUpperCase(),
-      userId: currentUser?.id || '',
-      userName: name,
-      customer: { name, phone, email: currentUser?.email || '' },
-      status: 'pending',
+    // Đặt định kỳ: tạo từng buổi, bỏ qua buổi đã có người đặt hoặc đã qua giờ.
+    const dates = repeatDates(date, repeat, count)
+    const created = []
+    const skipped = []
+    let lastError = ''
+
+    dates.forEach((d) => {
+      const free =
+        startHour >= venue.hours.open &&
+        startHour + duration <= venue.hours.close &&
+        !isPastSlot(d, startHour, startHour + duration, venue.hours.close) &&
+        !isSlotTaken(venue.id, d, startHour, duration)
+      if (!free) {
+        skipped.push(d)
+        return
+      }
+      const result = bookFn({
+        courtId: courtKey(venue.id),
+        courtName: venue.name,
+        type: venue.type || '',
+        date: d,
+        startHour,
+        endHour: startHour + duration,
+        duration,
+        courtTotal,
+        serviceTotal: servicePer,
+        services,
+        total: courtTotal + servicePer,
+        voucherCode,
+        repeat,
+        repeatCount: count,
+        seriesId,
+        userId: currentUser?.id || '',
+        userName: name,
+        customer: { name, phone, email: currentUser?.email || '' },
+        status: 'pending',
+      })
+      if (result && result.ok) created.push(result.booking)
+      else {
+        if (result?.error) lastError = result.error
+        skipped.push(d)
+      }
     })
 
-    if (!result || !result.ok) {
-      toast(result?.error || 'Không tạo được đơn đặt, vui lòng thử lại.', 'error')
+    if (!created.length) {
+      toast(
+        lastError || 'Tất cả khung giờ đã chọn đều đã có người đặt. Vui lòng chọn lại.',
+        'error'
+      )
       if (btn) {
         btn.disabled = false
         btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Xác nhận đặt sân'
@@ -1041,38 +1112,67 @@ function submitBooking(venue) {
       return
     }
 
-    const booking = result.booking
+    const booking = created[0]
+    const lastBooking = created[created.length - 1]
+    const totalAll = created.reduce((sum, b) => sum + (Number(b.total) || 0), 0)
+    const subtotalAll = created.reduce((sum, b) => sum + (Number(b.subtotal) || 0), 0)
     // Đặt xong thì không mở lại khung chat nữa; khách chọn hoặc tự động sang trang thanh toán.
     bookFromChat = false
     const payUrl = `src/thanh-toan.html?ma=${encodeURIComponent(booking.id)}`
     const serviceLine = services.length
       ? `<div><dt>Dịch vụ</dt><dd>${services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</dd></div>
-         <div><dt>Tiền dịch vụ</dt><dd>${servicePer.toLocaleString('vi-VN')}đ</dd></div>`
+         <div><dt>Tiền dịch vụ</dt><dd>${servicePer.toLocaleString('vi-VN')}đ${
+           created.length > 1 ? ` × ${created.length} buổi` : ''
+         }</dd></div>`
       : ''
+    const repeatLine =
+      repeat === 'none'
+        ? ''
+        : `<div><dt>Hình thức</dt><dd>${REPEAT_LABEL[repeat]} · ${created.length} buổi</dd></div>`
+    const dateLine =
+      created.length > 1
+        ? `<div><dt>Ngày</dt><dd>${esc(booking.date)} → ${esc(lastBooking.date)}</dd></div>`
+        : `<div><dt>Ngày</dt><dd>${esc(booking.date)}</dd></div>`
+    const skipNote = skipped.length
+      ? `<p style="margin:10px 0 0;font-size:.76rem;color:#64748b;text-align:left"><i class="fa-solid fa-circle-info"></i> Đã bỏ qua ${skipped.length} buổi trùng lịch hoặc đã qua giờ.</p>`
+      : ''
+    const multiNote =
+      created.length > 1
+        ? `<p style="margin:8px 0 0;font-size:.76rem;color:#64748b;text-align:left"><i class="fa-solid fa-circle-info"></i> Buổi đầu được mở trang thanh toán, các buổi còn lại được giữ chỗ và thanh toán trực tiếp tại sân.</p>`
+        : ''
     const body = document.getElementById('bookBody')
     if (body) {
       body.innerHTML = `
         <div class="bk-success">
           <div class="bk-success-icon"><i class="fa-solid fa-check"></i></div>
           <h3>Đặt sân thành công!</h3>
-          <p>Mã đơn <b>${booking.id}</b> · Đang mở trang thanh toán...</p>
+          <p>Mã đơn <b>${booking.id}</b>${
+            created.length > 1 ? ` (+${created.length - 1} buổi)` : ''
+          } · Đang mở trang thanh toán...</p>
           <dl class="bk-summary">
             <div><dt>Sân</dt><dd>${esc(venue.name)}</dd></div>
             ${venue.type ? `<div><dt>Loại sân</dt><dd>${esc(typeLabel(venue.type))}</dd></div>` : ''}
-            <div><dt>Ngày</dt><dd>${date}</dd></div>
+            ${dateLine}
             <div><dt>Giờ</dt><dd>${timeLabel(startHour)} – ${timeLabel(startHour + duration)}</dd></div>
             <div><dt>Thời lượng</dt><dd>${duration} giờ</dd></div>
+            ${repeatLine}
             ${serviceLine}
-            <div><dt>Tiền sân</dt><dd>${(booking.courtTotal ?? (booking.subtotal || 0) - servicePer).toLocaleString('vi-VN')}đ</dd></div>
+            <div><dt>Tiền sân</dt><dd>${(courtTotal * created.length).toLocaleString('vi-VN')}đ${
+              created.length > 1 ? ` × ${created.length} buổi` : ''
+            }</dd></div>
             ${
               booking.discount > 0
-                ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${booking.subtotal.toLocaleString('vi-VN')}đ</dd></div>
-                   <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${booking.discount.toLocaleString('vi-VN')}đ</dd></div>
-                   <div><dt>Tổng tiền</dt><dd><b>${booking.total.toLocaleString('vi-VN')}đ</b></dd></div>`
-                : `<div><dt>Tổng tiền</dt><dd>${booking.total.toLocaleString('vi-VN')}đ</dd></div>`
+                ? `<div><dt>Tạm tính</dt><dd style="text-decoration:line-through">${subtotalAll.toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Giảm giá (${esc(booking.voucherCode)})</dt><dd style="color:#16a34a">-${(
+                      subtotalAll - totalAll
+                    ).toLocaleString('vi-VN')}đ</dd></div>
+                   <div><dt>Tổng tiền</dt><dd><b>${totalAll.toLocaleString('vi-VN')}đ</b></dd></div>`
+                : `<div><dt>Tổng tiền</dt><dd>${totalAll.toLocaleString('vi-VN')}đ</dd></div>`
             }
             <div><dt>Liên hệ</dt><dd>${esc(name)} · ${esc(phone)}</dd></div>
           </dl>
+          ${skipNote}
+          ${multiNote}
           <div class="bk-success-actions">
             <button type="button" class="btn-book btn-book-full" id="bkPayNow"><i class="fa-solid fa-credit-card"></i> Thanh toán ngay</button>
             <button type="button" class="btn-book btn-book-full btn-book-ghost" id="bkLater">Để thanh toán sau</button>
@@ -1093,7 +1193,11 @@ function submitBooking(venue) {
         toast('Đơn đã được giữ. Bạn có thể thanh toán sau trong trang Tài khoản.')
       })
     }
-    toast(`Đặt sân thành công · ${booking.id}`)
+    toast(
+      `Đặt sân thành công · ${booking.id}${
+        created.length > 1 ? ` · ${created.length} buổi ${REPEAT_LABEL[repeat].toLowerCase()}` : ''
+      }`
+    )
   } catch (err) {
     console.error('Lỗi khi đặt sân:', err)
     // Không bỏ nút submit ở trạng thái disable để khách thử lại được ngay.

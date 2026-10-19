@@ -338,6 +338,8 @@
         : [],
       repeat: String(raw.repeat || 'none'),
       repeatCount: Math.max(1, parseInt(raw.repeatCount, 10) || 1),
+      // Mã nhóm: các buổi của một lần đặt định kỳ dùng chung seriesId để gộp lại.
+      seriesId: String(raw.seriesId || ''),
       paid: raw.paid === true || raw.paymentStatus === 'paid',
       paidAt: String(raw.paidAt || ''),
       createdAt: raw.createdAt || todayStr(),

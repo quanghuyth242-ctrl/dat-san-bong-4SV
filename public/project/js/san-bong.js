@@ -448,6 +448,7 @@ function addMonths(dateStr, months) {
 
 /** Danh sách ngày cho đặt lịch định kỳ theo tuần/tháng/quý/năm. */
 function repeatDates(startDate, type, count) {
+  if (!type || type === 'none') return [startDate];
   const total = Math.max(1, Math.min(52, Number(count) || 1));
   const out = [];
   for (let i = 0; i < total; i += 1) {
@@ -670,6 +671,7 @@ function showSuccess() {
   const courtTotal = Math.round((Number(court.price) || 0) * duration);
 
   // Đặt định kỳ: tạo từng buổi, bỏ qua buổi đã có người đặt hoặc đã qua.
+  const seriesId = repeat === 'none' ? '' : 'LK' + Date.now().toString(36).toUpperCase();
   const created = [];
   const skipped = [];
   let lastError = '';
@@ -693,6 +695,7 @@ function showSuccess() {
       voucherCode: state.booking.voucherCode || '',
       repeat,
       repeatCount: repeat === 'none' ? 1 : count,
+      seriesId,
       userId: currentUser?.id || '',
       userName: customer.name,
       customer,
@@ -1302,6 +1305,8 @@ function initCourtDetail() {
     services: {},
     voucherCode: '',
     discount: 0,
+    repeat: 'none',
+    repeatCount: 1,
     activeImgIndex: 0,
     images: [
       court.img || DEFAULT_IMG,
@@ -1702,7 +1707,37 @@ function initCourtDetail() {
     }
   });
 
+  /** Đọc lựa chọn đặt định kỳ từ form và vẽ lại dòng "Định kỳ" + gợi ý. */
+  function syncRepeatState() {
+    const repeat = $('#bkRepeatSelect')?.value || 'none';
+    detailState.repeat = repeat;
+    detailState.repeatCount =
+      repeat === 'none'
+        ? 1
+        : Math.max(1, Math.min(52, parseInt($('#bkRepeatCount')?.value, 10) || 1));
+
+    const countWrap = $('#f-repeatCount');
+    if (countWrap) countWrap.style.display = repeat === 'none' ? 'none' : '';
+    const sumRow = $('#sumRepeatRow');
+    if (sumRow) sumRow.style.display = repeat === 'none' ? 'none' : 'flex';
+    const hint = $('#repeatHint');
+    if (repeat === 'none') {
+      if (hint) hint.style.display = 'none';
+      return;
+    }
+    if ($('#sumRepeat')) {
+      $('#sumRepeat').textContent = `${REPEAT_LABEL[repeat]} · ${detailState.repeatCount} buổi`;
+    }
+    if (hint) {
+      hint.style.display = 'block';
+      hint.innerHTML = `<i class="fa-solid fa-circle-info"></i> Sẽ tạo ${detailState.repeatCount} buổi ${REPEAT_LABEL[
+        repeat
+      ].toLowerCase()} kể từ ${friendlyDateStr(detailState.selectedDate)} — buổi trùng lịch hoặc đã qua giờ sẽ tự bỏ qua.`;
+    }
+  }
+
   function updateSummary() {
+    syncRepeatState();
     if ($('#sumCourtName')) $('#sumCourtName').textContent = detailState.court.name;
     if ($('#sumPlayDate')) $('#sumPlayDate').textContent = friendlyDateStr(detailState.selectedDate);
 
@@ -1740,14 +1775,17 @@ function initCourtDetail() {
           }
         }
       }
-      const finalTotal = Math.max(0, subtotal - detailState.discount);
+      const count = detailState.repeatCount || 1;
+      const finalTotal = Math.max(0, subtotal - detailState.discount) * count;
       if ($('#sumTotalPrice')) {
         const parts = [];
         if (servicePer > 0) parts.push(`+ DV ${formatPrice(servicePer)}`);
         if (detailState.discount > 0) parts.push(`-${formatPrice(detailState.discount)}`);
-        const baseHtml = detailState.discount > 0
-          ? `<span style="font-size:13px;color:#94a3b8;text-decoration:line-through;margin-right:6px;">${formatPrice(subtotal)}</span> `
-          : '';
+        if (count > 1) parts.push(`${count} buổi`);
+        const baseHtml =
+          detailState.discount > 0 && subtotal * count > finalTotal
+            ? `<span style="font-size:13px;color:#94a3b8;text-decoration:line-through;margin-right:6px;">${formatPrice(subtotal * count)}</span> `
+            : '';
         $('#sumTotalPrice').innerHTML = `${baseHtml}${formatPrice(finalTotal)}${
           parts.length ? ` <small style="font-size:11px; color:#64748b; font-weight:600;">(${parts.join(' ')})</small>` : ''
         }`;
@@ -1810,6 +1848,13 @@ function initCourtDetail() {
     updateSummary();
   });
 
+  // Đặt định kỳ: đổi hình thức hoặc số buổi -> tính lại tạm tính + gợi ý
+  $('#bkRepeatSelect')?.addEventListener('change', updateSummary);
+  $('#bkRepeatCount')?.addEventListener('input', () => {
+    $('#f-repeatCount')?.classList.remove('invalid');
+    updateSummary();
+  });
+
   renderDetailServices();
   renderTimeSlots();
   updateSummary();
@@ -1832,6 +1877,21 @@ function initCourtDetail() {
       return;
     }
 
+    // Số buổi đặt định kỳ phải từ 1 đến 52
+    syncRepeatState();
+    const repeatType = detailState.repeat;
+    const repeatCount = detailState.repeatCount;
+    const repeatRaw = $('#bkRepeatCount')?.value ?? '1';
+    const repeatOk =
+      repeatType === 'none' ||
+      (Number.isFinite(parseInt(repeatRaw, 10)) && parseInt(repeatRaw, 10) >= 1 && parseInt(repeatRaw, 10) <= 52);
+    if (!repeatOk) {
+      $('#f-repeatCount')?.classList.add('invalid');
+      $('#bkRepeatCount')?.focus();
+      showToast('Số buổi định kỳ', 'Số buổi đặt định kỳ phải từ 1 đến 52');
+      return;
+    }
+
     if ($('#cfCourt')) $('#cfCourt').textContent = detailState.court.name;
     if ($('#cfDate')) $('#cfDate').textContent = friendlyDateStr(detailState.selectedDate);
     if ($('#cfTime')) $('#cfTime').textContent = detailState.selectedSlot.label;
@@ -1842,7 +1902,21 @@ function initCourtDetail() {
       cfSvcRow.style.display = pickedList.length ? 'flex' : 'none';
       if ($('#cfServices')) $('#cfServices').textContent = pickedList.map((s) => `${s.name} × ${s.qty}`).join(', ');
     }
-    const finalTotal = Math.max(0, detailState.selectedSlot.price + servicePer - detailState.discount);
+    const perSession = Math.max(0, detailState.selectedSlot.price + servicePer - detailState.discount);
+    const finalTotal = perSession * repeatCount;
+
+    // Dòng "Đặt định kỳ" trong hộp thoại xác nhận
+    const cfRepeatRow = $('#cfRepeatRow');
+    if (cfRepeatRow) {
+      cfRepeatRow.style.display = repeatType === 'none' ? 'none' : 'flex';
+      if (repeatType !== 'none') {
+        const dates = repeatDates(detailState.selectedDate, repeatType, repeatCount);
+        $('#cfRepeat').textContent = `${REPEAT_LABEL[repeatType]} · ${repeatCount} buổi (${friendlyDateStr(
+          dates[0]
+        )} → ${friendlyDateStr(dates[dates.length - 1])})`;
+      }
+    }
+
     if ($('#cfTotal')) $('#cfTotal').textContent = formatPrice(finalTotal);
 
     // Cập nhật thông tin ngân hàng & mã chuyển khoản tương ứng
@@ -1934,19 +2008,31 @@ function initCourtDetail() {
       return;
     }
 
+    if (!detailState.selectedSlot) {
+      showToast('Chưa chọn giờ', 'Vui lòng chọn lại khung giờ thi đấu còn trống!');
+      closeModal($('#confirmModal'));
+      return;
+    }
+
     const startH = detailState.selectedSlot.startHour;
     const dur = detailState.selectedSlot.duration;
+    const slotPrice = detailState.selectedSlot.price;
     const servicePerFinal = serviceCostPerSession(detailState.services);
-    const finalTotal = Math.max(0, detailState.selectedSlot.price + servicePerFinal - detailState.discount);
 
     // Chốt dữ liệu trước khi lưu: SV.addBooking phát sự kiện → listener SV.on ở
     // cuối file render lại lưới và có thể set selectedSlot/services về rỗng.
+    const dateSnap = detailState.selectedDate;
     const slotLabelSnap = detailState.selectedSlot.label;
     const svcSnap = selectedServices(detailState.services);
     const svcSnapText = svcSnap.map((s) => `${esc(s.name)} × ${s.qty}`).join(', ');
+    const voucherSnap = detailState.voucherCode;
+    const repeatSnap = detailState.repeat;
+    const repeatCountSnap = detailState.repeatCount;
+    const dates = repeatDates(dateSnap, repeatSnap, repeatCountSnap);
+    const seriesId = repeatSnap === 'none' ? '' : 'LK' + Date.now().toString(36).toUpperCase();
 
     // BẮT BUỘC KIỂM TRA LẠI TÌNH TRẠNG SÂN NGAY TRƯỚC KHI LƯU ĐƠN
-    if (SV.isSlotTaken(detailState.court.id, detailState.selectedDate, startH, dur)) {
+    if (SV.isSlotTaken(detailState.court.id, dateSnap, startH, dur)) {
       showToast('Khung giờ đã hết', 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
       closeModal($('#confirmModal'));
       detailState.selectedSlot = null;
@@ -1963,58 +2049,98 @@ function initCourtDetail() {
     const paymentStatus = paymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'unpaid';
 
     const user = SV.currentUser();
-    const res = SV.addBooking({
-      courtId: detailState.court.id,
-      courtName: detailState.court.name,
-      date: detailState.selectedDate,
-      startHour: startH,
-      endHour: startH + dur,
-      duration: dur,
-      // Truyền tổng CHƯA trừ voucher (như form modal) để SV.addBooking tự trừ
-      // đúng 1 lần theo voucherCode — tránh giảm giá bị trừ hai lần.
-      total: detailState.selectedSlot.price + servicePerFinal,
-      courtTotal: detailState.selectedSlot.price,
-      serviceTotal: servicePerFinal,
-      services: svcSnap.map((s) => ({
-        id: s.id,
-        name: s.name,
-        price: s.price,
-        unit: s.unit,
-        qty: s.qty,
-      })),
-      voucherCode: detailState.voucherCode,
-      userId: user?.id || '',
-      userName: name,
-      customer: {
-        name,
-        phone,
-        email,
-        note,
-      },
-      paymentMethod: paymentMethod,
-      paymentStatus: paymentStatus,
-      status: 'pending', // Trạng thái đặt sân: Chờ xác nhận
+
+    // Đặt định kỳ: tạo từng buổi, buổi trùng lịch hoặc đã qua giờ sẽ tự bỏ qua.
+    const created = [];
+    const skipped = [];
+    let lastError = '';
+    dates.forEach((d) => {
+      if (SV.isSlotTaken(detailState.court.id, d, startH, dur)) {
+        skipped.push(d);
+        return;
+      }
+      const res = SV.addBooking({
+        courtId: detailState.court.id,
+        courtName: detailState.court.name,
+        date: d,
+        startHour: startH,
+        endHour: startH + dur,
+        duration: dur,
+        // Truyền tổng CHƯA trừ voucher (như form modal) để SV.addBooking tự trừ
+        // đúng 1 lần theo voucherCode — tránh giảm giá bị trừ hai lần.
+        total: slotPrice + servicePerFinal,
+        courtTotal: slotPrice,
+        serviceTotal: servicePerFinal,
+        services: svcSnap.map((s) => ({
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          unit: s.unit,
+          qty: s.qty,
+        })),
+        voucherCode: voucherSnap,
+        repeat: repeatSnap,
+        repeatCount: repeatCountSnap,
+        seriesId,
+        userId: user?.id || '',
+        userName: name,
+        customer: {
+          name,
+          phone,
+          email,
+          note,
+        },
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatus,
+        status: 'pending', // Trạng thái đặt sân: Chờ xác nhận
+      });
+      if (res && res.ok) created.push(res.booking);
+      else {
+        if (res?.error) lastError = res.error;
+        skipped.push(d);
+      }
     });
 
-    if (res && res.ok) {
-      closeModal($('#confirmModal'));
+    if (!created.length) {
+      showToast(
+        'Không thành công',
+        lastError || 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác'
+      );
+      return;
+    }
 
-      const isBank = res.booking.paymentMethod === 'bank_transfer';
+    closeModal($('#confirmModal'));
 
-      if ($('#succBookingId')) $('#succBookingId').textContent = res.booking.id;
-      if ($('#succDetailsBox')) {
-        $('#succDetailsBox').innerHTML = `
-          <div class="succ-row"><span>Mã đơn đặt sân:</span><strong style="color:var(--primary); font-family:monospace; font-size:1.15rem;">${res.booking.id}</strong></div>
+    const first = created[0];
+    const last = created[created.length - 1];
+    const totalAll = created.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+    const isBank = first.paymentMethod === 'bank_transfer';
+
+    if ($('#succBookingId')) $('#succBookingId').textContent = first.id;
+    if ($('#succDetailsBox')) {
+      $('#succDetailsBox').innerHTML = `
+          <div class="succ-row"><span>Mã đơn đặt sân:</span><strong style="color:var(--primary); font-family:monospace; font-size:1.15rem;">${first.id}${
+            created.length > 1 ? ` (+${created.length - 1} buổi)` : ''
+          }</strong></div>
           <div class="succ-row"><span>Sân thể thao:</span><strong>${esc(detailState.court.name)}</strong></div>
-          <div class="succ-row"><span>Ngày chơi:</span><strong>${friendlyDateStr(detailState.selectedDate)}</strong></div>
+          <div class="succ-row"><span>Ngày chơi:</span><strong>${
+            created.length > 1
+              ? `${friendlyDateStr(first.date)} → ${friendlyDateStr(last.date)}`
+              : friendlyDateStr(dateSnap)
+          }</strong></div>
           <div class="succ-row"><span>Khung giờ:</span><strong style="color:var(--primary);">${slotLabelSnap}</strong></div>
+          ${
+            repeatSnap !== 'none'
+              ? `<div class="succ-row"><span>Đặt định kỳ:</span><strong style="color:var(--primary);">${REPEAT_LABEL[repeatSnap]} · ${created.length} buổi</strong></div>`
+              : ''
+          }
           ${
             svcSnap.length
               ? `<div class="succ-row"><span>Dịch vụ:</span><strong>${svcSnapText}</strong></div>`
               : ''
           }
           <div class="succ-row"><span>Người đặt:</span><strong>${esc(name)} (${esc(phone)})</strong></div>
-          <div class="succ-row"><span>Tổng tiền thanh toán:</span><strong style="color:var(--primary); font-size:1.15rem;">${formatPrice(res.booking.total)}</strong></div>
+          <div class="succ-row"><span>Tổng tiền thanh toán:</span><strong style="color:var(--primary); font-size:1.15rem;">${formatPrice(totalAll)}</strong></div>
           <div class="succ-row">
             <span>Phương thức thanh toán:</span>
             <span class="succ-badge ${isBank ? 'pay-bank' : 'pay-court'}">
@@ -2038,22 +2164,28 @@ function initCourtDetail() {
           <div class="succ-note-box" style="margin-top:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; font-size:12.5px; text-align:left; color:#475569; line-height:1.45;">
             <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-right:5px;"></i>
             ${isBank
-              ? `Hệ thống đã ghi nhận thông báo chuyển khoản của bạn với trạng thái <b>Chờ xác nhận thanh toán</b>. Ban quản lý sẽ đối soát sao kê ngân hàng MB theo mã đơn <b>${res.booking.id}</b> và cập nhật sang <b>Đã thanh toán</b>.`
-              : `Đơn đặt sân đã được gửi tới ban quản lý. Vui lòng có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán trực tiếp số tiền <b>${formatPrice(res.booking.total)}</b>.`}
+              ? `Hệ thống đã ghi nhận thông báo chuyển khoản của bạn với trạng thái <b>Chờ xác nhận thanh toán</b>. Ban quản lý sẽ đối soát sao kê ngân hàng MB theo mã đơn <b>${first.id}</b> và cập nhật sang <b>Đã thanh toán</b>.`
+              : `Đơn đặt sân đã được gửi tới ban quản lý. Vui lòng có mặt trước giờ thi đấu 10-15 phút để làm thủ tục nhận sân và thanh toán trực tiếp số tiền <b>${formatPrice(totalAll)}</b>.`}
+            ${skipped.length ? `<br/>Đã bỏ qua <b>${skipped.length}</b> buổi trùng lịch hoặc đã qua giờ.` : ''}
+            ${created.length > 1 ? `<br/>Các buổi còn lại được giữ chỗ và thanh toán cùng lúc với buổi đầu.` : ''}
           </div>
         `;
-      }
-      openModal($('#successModal'));
-
-      detailState.selectedSlot = null;
-      detailState.services = {};
-      renderDetailServices();
-      renderTimeSlots();
-      updateSummary();
-      showToast('Đặt sân thành công!', `Mã đơn: ${res.booking.id} · Cảm ơn bạn!`);
-    } else {
-      showToast('Không thành công', res?.error || 'Khung giờ này đã hết sân, vui lòng chọn khung giờ khác');
     }
+    openModal($('#successModal'));
+
+    detailState.selectedSlot = null;
+    detailState.services = {};
+    detailState.repeat = 'none';
+    detailState.repeatCount = 1;
+    if ($('#bkRepeatSelect')) $('#bkRepeatSelect').value = 'none';
+    if ($('#bkRepeatCount')) $('#bkRepeatCount').value = '1';
+    renderDetailServices();
+    renderTimeSlots();
+    updateSummary();
+    showToast(
+      'Đặt sân thành công!',
+      `Mã đơn: ${first.id}${created.length > 1 ? ` · ${created.length} buổi ${REPEAT_LABEL[repeatSnap].toLowerCase()}` : ''} · Cảm ơn bạn!`
+    );
   });
 
   // Modal Closers
