@@ -79,6 +79,8 @@ const resendBtn = $('[data-otp-resend]')
 let mode = 'login'
 let otpContext = 'register'
 let otpTarget = ''
+// Tài khoản vừa tạo ở form đăng ký, giữ lại để xác thực OTP xong đăng nhập luôn.
+let pendingRegister = null
 let resendTimer = null
 let redirectTimer = null
 
@@ -291,10 +293,15 @@ function submitOtp() {
   resendBtn.textContent = 'Gửi lại mã'
 
   if (otpContext === 'register') {
+    // Đăng ký xong phải đăng nhập luôn: nếu không, quay về trang chủ vẫn thấy
+    // nút Đăng nhập/Đăng ký và người dùng lại phải đăng nhập thêm một lần nữa.
+    const created = pendingRegister || SV.findUser(otpTarget)
+    pendingRegister = null
+    if (created) SV.signIn(created, false)
     showSuccess(
       'Tạo tài khoản thành công!',
-      `Voucher giảm 20% đã gửi tới ${otpTarget}. Chào mừng bạn đến với 4SV.vn.`,
-      '/',
+      `Voucher giảm 20% đã gửi tới ${otpTarget}. Bạn đã được đăng nhập tự động.`,
+      homeUrl(),
     )
     return
   }
@@ -302,6 +309,15 @@ function submitOtp() {
 }
 
 /* ---------- THÀNH CÔNG ---------- */
+/**
+ * Trang chủ nằm ở thư mục cha của auth.html. Tính theo URL hiện tại thay vì
+ * ghi cứng "/" để còn chạy đúng khi web được đặt trong thư mục con
+ * (GitHub Pages: /ten-repo/) hoặc khi mở trực tiếp file.
+ */
+function homeUrl() {
+  return new URL('../index.html', location.href).href
+}
+
 function showSuccess(title, desc, redirectTo) {
   $('[data-success-title]').textContent = title
   $('[data-success-desc]').textContent = desc
@@ -496,7 +512,7 @@ function initForms() {
     showSuccess(
       `Xin chào, ${user.name}!`,
       'Bạn đã đăng nhập thành công. Chúc bạn có những trận đấu thật chất!',
-      '/',
+      homeUrl(),
     )
   })
 
@@ -532,6 +548,8 @@ function initForms() {
       setFieldState($('#regEmail'), result.error || 'Không tạo được tài khoản')
       return
     }
+    // Giữ tài khoản vừa tạo để bước OTP xong đăng nhập luôn.
+    pendingRegister = result.user
     showOtp('register', email)
   })
 
