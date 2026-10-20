@@ -1,5 +1,6 @@
 import { getUser, getRemembered, setUser, clearUser } from './session.js'
 import { toast, syncAuthNav, escapeHtml } from './auth-nav.js'
+import { REPEAT_LABEL } from './repeat.js'
 import { FIELD_IMAGES, loadVenues } from './venues.js'
 import { mountAssistant, stashIntentForHome } from './ai-assistant.js'
 import { BOOKING_KEY, readFields, readJson, readUsers, writeUsers } from './storage.js'
@@ -196,6 +197,13 @@ function bookingCard(b) {
           <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}</span>
           <span><i class="fa-regular fa-clock"></i> ${timeLabel(startHour)} – ${timeLabel(endHour)}</span>
           <span><i class="fa-solid fa-tag"></i> ${escapeHtml(b.type || 'Sân bóng')}</span>
+          ${
+            b.repeat && b.repeat !== 'none'
+              ? `<span><i class="fa-solid fa-repeat"></i> ${escapeHtml(
+                  REPEAT_LABEL[b.repeat] || b.repeat,
+                )}${Number(b.repeatCount) > 1 ? ` · ${b.repeatCount} buổi` : ''}</span>`
+              : ''
+          }
           ${addr ? `<span><i class="fa-solid fa-location-dot"></i> ${escapeHtml(addr)}</span>` : ''}
         </div>
         <div class="hist-code">

@@ -4,6 +4,8 @@
  * thì trang quản trị và trang chủ thấy ngay, không phải đăng nhập lại.
  */
 
+import { REPEAT_LABEL } from './repeat.js'
+
 const $ = (sel, root = document) => root.querySelector(sel)
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel))
 
@@ -194,6 +196,15 @@ function matchesSearch(b, keyword) {
   return hay.includes(keyword)
 }
 
+/** Nhãn "Đặt định kỳ · Hàng tuần · 12 buổi" — rỗng với đơn đặt thường. */
+function repeatLine(b) {
+  const repeat = String(b.repeat || 'none')
+  if (repeat === 'none') return ''
+  const count = Number(b.repeatCount) || 1
+  const label = REPEAT_LABEL[repeat] || repeat
+  return `<span><i class="fa-solid fa-repeat"></i> ${esc(label)}${count > 1 ? ` · ${count} buổi` : ''}</span>`
+}
+
 function cardHtml(b) {
   const st = STATUS[b.status] || STATUS.pending
   const start = Number(b.startHour) || 0
@@ -224,6 +235,7 @@ function cardHtml(b) {
           <span><i class="fa-regular fa-clock"></i> ${esc(timeLabel(start))} – ${esc(timeLabel(end))}</span>
           <span><i class="fa-solid fa-hourglass-half"></i> ${duration} giờ</span>
           <span><i class="fa-solid fa-location-dot"></i> ${esc(b.fieldId || b.courtId || '—')}</span>
+          ${repeatLine(b)}
         </div>
         <div class="acc-item-code">
           Mã đơn <b>${esc(b.id)}</b>${contact ? ` · ${esc(contact)}` : ''}

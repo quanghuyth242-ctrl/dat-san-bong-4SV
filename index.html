@@ -401,21 +401,12 @@
       </div>
     </footer>
 
-    <!-- MODAL ĐẶT SÂN -->
-    <div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
-      <div class="modal">
-        <div class="modal-head">
-          <h3><i class="fa-solid fa-calendar-check"></i> Đặt sân</h3>
-          <button type="button" class="modal-close" aria-label="Đóng">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <div class="modal-body" id="bookBody"></div>
-      </div>
-    </div>
+    <!-- Modal "Đặt sân" (cả trang) do /project/js/dat-san-modal.js tự tạo -->
 
     <script src="/vendor/leaflet/leaflet.js"></script>
     <script src="/project/js/store.js"></script>
+    <!-- Form đặt sân dùng chung: mở bằng DatSanModal.open(venue, preset) -->
+    <script src="/project/js/dat-san-modal.js"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
