@@ -77,7 +77,7 @@ function loadBookings() {
  * duration có thể 1.5 nên giữ dạng số thập phân, ví dụ 17.5 = 17:30.
  */
 function isSlotTaken(courtId, date, startHour, duration) {
-  return SV.isSlotTaken(courtId, date, startHour, startHour + duration);
+  return SV.isSlotTaken(courtId, date, startHour, duration);
 }
 
 function isCourtFullyBooked(courtId, date) {

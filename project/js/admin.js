@@ -6,6 +6,16 @@ async function hashPassword(password) {
     .join('');
 }
 
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function getRoleBadge(role) {
+  if (role === 'admin') return '<span class="badge badge-danger">👑 Quản trị</span>';
+  if (role === 'owner') return '<span class="badge badge-info">🏟️ Chủ sân</span>';
+  return '<span class="badge badge-secondary">⚽ Khách hàng</span>';
+}
+
 const DataManager = {
   getFields() { return SV.fields(); },
   saveFields(data) { SV.saveFields(data); },
@@ -244,6 +254,26 @@ function initLayout() {
   });
   applySettings();
 
+  // Hiển thị thông tin vai trò trên thanh Header
+  const curUser = (window.SV && typeof SV.currentUser === 'function') ? SV.currentUser() : null;
+  const adminRole = sessionStorage.getItem('admin_role') || (curUser ? curUser.role : 'admin');
+  const adminInfoEl = document.querySelector('.admin-info');
+  if (adminInfoEl) {
+    const roleTitle = adminRole === 'owner' ? 'Chủ sân' : 'Admin';
+    const userName = curUser ? curUser.name : 'Quản trị viên';
+    adminInfoEl.innerHTML = `
+      <span style="font-size:13px; font-weight:600;">${esc(userName)} <small style="opacity:0.8; font-weight:normal;">(${roleTitle})</small></span>
+      <div class="admin-avatar">${adminRole === 'owner' ? '🏟️' : '👑'}</div>
+    `;
+  }
+
+  // Nếu vai trò là Chủ sân (owner): Ẩn các trang chỉ dành riêng cho Quản trị viên
+  if (adminRole === 'owner') {
+    document.querySelectorAll('.sidebar-nav a[href="nguoi-dung.html"], .sidebar-nav a[href="giao-dien.html"]').forEach(a => {
+      a.closest('li')?.remove();
+    });
+  }
+
   const navUl = document.querySelector('.sidebar-nav ul');
   if (navUl && !document.getElementById('adminLogoutItem')) {
     const li = document.createElement('li');
@@ -261,6 +291,8 @@ function initLayout() {
     li.querySelector('a').addEventListener('click', (e) => {
       e.preventDefault();
       sessionStorage.removeItem('admin_authenticated');
+      sessionStorage.removeItem('admin_role');
+      if (window.SV && typeof SV.signOut === 'function') SV.signOut();
       location.reload();
     });
     navUl.appendChild(li);
@@ -684,11 +716,26 @@ function updateBookingStatus(id, newStatus, message, toastType = 'success') {
 }
 
 let usersData = [];
+let currentEditRoleUserId = null;
 
 function initUsers() {
   usersData = DataManager.getUsers();
   renderUsers(usersData);
   document.getElementById('searchUser')?.addEventListener('input', filterUsers);
+  document.getElementById('btnSaveUserRole')?.addEventListener('click', () => {
+    if (!currentEditRoleUserId) return;
+    const sel = document.getElementById('userRoleSelect');
+    const newRole = sel ? sel.value : 'player';
+    const res = SV.setUserRole(currentEditRoleUserId, newRole);
+    if (res.ok) {
+      const roleText = newRole === 'admin' ? 'Quản trị viên' : newRole === 'owner' ? 'Chủ sân' : 'Khách hàng';
+      showToast(`Đã cập nhật vai trò của "${res.user.name}" thành "${roleText}"!`);
+      closeModal('userRoleModal');
+      filterUsers();
+    } else {
+      showToast(res.error || 'Lỗi cập nhật vai trò', 'danger');
+    }
+  });
 }
 
 function filterUsers() {
@@ -712,26 +759,28 @@ function renderUsers(data) {
   if (!tbody) return;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Không tìm thấy người dùng nào</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Không tìm thấy người dùng nào</div></div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = data.map(u => {
     const lockBtn = u.status === 'active'
-      ? `<button class="btn btn-sm btn-warning" onclick="toggleUserStatus('${u.id}')" title="Khóa">🔒</button>`
-      : `<button class="btn btn-sm btn-success" onclick="toggleUserStatus('${u.id}')" title="Mở khóa">🔓</button>`;
+      ? `<button class="btn btn-sm btn-warning" onclick="toggleUserStatus('${u.id}')" title="Khóa tài khoản">🔒</button>`
+      : `<button class="btn btn-sm btn-success" onclick="toggleUserStatus('${u.id}')" title="Mở khóa tài khoản">🔓</button>`;
 
     return `
       <tr>
         <td><strong>${u.id}</strong></td>
-        <td>${u.name}</td>
-        <td>${u.email}</td>
-        <td>${u.phone}</td>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.phone)}</td>
+        <td>${getRoleBadge(u.role)}</td>
         <td>${u.bookings || 0}</td>
         <td>${getStatusBadge(u.status, 'user')}</td>
         <td>
           <div class="action-btns">
-            <button class="btn btn-sm btn-outline" onclick="viewUser('${u.id}')" title="Xem">👁️</button>
+            <button class="btn btn-sm btn-outline" onclick="viewUser('${u.id}')" title="Xem chi tiết">👁️</button>
+            <button class="btn btn-sm btn-outline" onclick="changeUserRole('${u.id}')" title="Phân quyền (Đổi vai trò)">👑</button>
             ${lockBtn}
           </div>
         </td>
@@ -748,14 +797,28 @@ function viewUser(id) {
   if (body) {
     body.innerHTML = `
       <div class="detail-row"><div class="detail-label">ID:</div><div class="detail-value"><strong>${u.id}</strong></div></div>
-      <div class="detail-row"><div class="detail-label">Họ tên:</div><div class="detail-value">${u.name}</div></div>
-      <div class="detail-row"><div class="detail-label">Email:</div><div class="detail-value">${u.email}</div></div>
-      <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${u.phone}</div></div>
+      <div class="detail-row"><div class="detail-label">Họ tên:</div><div class="detail-value">${esc(u.name)}</div></div>
+      <div class="detail-row"><div class="detail-label">Email:</div><div class="detail-value">${esc(u.email)}</div></div>
+      <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${esc(u.phone)}</div></div>
+      <div class="detail-row"><div class="detail-label">Vai trò:</div><div class="detail-value">${getRoleBadge(u.role)}</div></div>
       <div class="detail-row"><div class="detail-label">Số đơn đã đặt:</div><div class="detail-value">${u.bookings || 0}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái:</div><div class="detail-value">${getStatusBadge(u.status, 'user')}</div></div>
     `;
   }
   openModal('userDetailModal');
+}
+
+function changeUserRole(id) {
+  const user = usersData.find(u => u.id === id);
+  if (!user) return;
+  currentEditRoleUserId = id;
+
+  const desc = document.getElementById('userRoleDesc');
+  const sel = document.getElementById('userRoleSelect');
+  if (desc) desc.innerHTML = `Đổi vai trò cho tài khoản: <strong>${esc(user.name)}</strong> (${esc(user.email || user.phone)})`;
+  if (sel) sel.value = user.role || 'player';
+
+  openModal('userRoleModal');
 }
 
 function toggleUserStatus(id) {
@@ -2017,15 +2080,78 @@ function bindVoucherListeners() {
   };
 }
 
+function showAccessDenied(cur) {
+  const overlay = document.createElement('div');
+  overlay.id = 'adminAuthOverlay';
+  overlay.className = 'admin-auth-overlay';
+  overlay.innerHTML = `
+    <div class="admin-auth-card" style="text-align: center; max-width: 440px;">
+      <div class="admin-auth-icon" style="font-size: 48px; margin-bottom: 12px;">🚫</div>
+      <h2 class="admin-auth-title" style="color: #ef4444; margin-bottom: 8px;">KHÔNG CÓ QUYỀN TRUY CẬP</h2>
+      <p class="admin-auth-desc" style="color: #475569; line-height: 1.6; margin-bottom: 20px;">
+        Tài khoản <strong>${esc(cur.name || cur.email)}</strong> đang đăng nhập với vai trò <strong>Khách hàng</strong>.<br>
+        Khu vực Quản trị chỉ dành riêng cho <strong>Chủ sân</strong> và <strong>Quản trị viên</strong>.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <a href="../../index.html" class="admin-auth-btn" style="text-decoration: none; display: block; text-align: center; background: #0284c7;">
+          🏠 Quay lại Trang chủ
+        </a>
+        <button type="button" class="btn btn-outline" id="btnAdminSwitchAccount" style="padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;">
+          🔄 Đăng xuất & Đăng nhập tài khoản Quản trị / Chủ sân
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('btnAdminSwitchAccount')?.addEventListener('click', () => {
+    if (window.SV && typeof SV.signOut === 'function') SV.signOut();
+    sessionStorage.removeItem('admin_authenticated');
+    sessionStorage.removeItem('admin_role');
+    window.location.href = '../../src/auth.html#login';
+  });
+}
+
 function checkAdminAuth(onSuccess) {
-  if (sessionStorage.getItem('admin_authenticated') === 'true') {
+  const page = document.body.dataset.page;
+  const cur = (window.SV && typeof SV.currentUser === 'function') ? SV.currentUser() : null;
+
+  // 1. Nếu là Khách hàng (player): CHẶN TUYỆT ĐỐI
+  if (cur && cur.role === 'player') {
+    sessionStorage.removeItem('admin_authenticated');
+    sessionStorage.removeItem('admin_role');
+    showAccessDenied(cur);
+    return;
+  }
+
+  // 2. Nếu là Chủ sân (owner):
+  if (cur && cur.role === 'owner') {
+    if (page === 'users' || page === 'settings' || page === 'giao-dien') {
+      alert('Chức năng này chỉ dành riêng cho Quản trị viên hệ thống (Admin). Chủ sân chỉ có quyền quản lý sân, đơn đặt và thu tiền.');
+      window.location.href = 'dashboard.html';
+      return;
+    }
+    sessionStorage.setItem('admin_authenticated', 'true');
+    sessionStorage.setItem('admin_role', 'owner');
     if (typeof onSuccess === 'function') onSuccess();
     return;
   }
 
-  const cur = (window.SV && typeof SV.currentUser === 'function') ? SV.currentUser() : null;
-  if (cur && (cur.role === 'admin' || String(cur.username || '').toLowerCase() === 'long' || String(cur.name || '').toLowerCase().includes('long'))) {
+  // 3. Nếu là Admin:
+  if (cur && (cur.role === 'admin' || String(cur.username || '').toLowerCase() === 'admin' || String(cur.username || '').toLowerCase() === 'long' || String(cur.name || '').toLowerCase().includes('long'))) {
     sessionStorage.setItem('admin_authenticated', 'true');
+    sessionStorage.setItem('admin_role', 'admin');
+    if (typeof onSuccess === 'function') onSuccess();
+    return;
+  }
+
+  // 4. Nếu đã xác thực trước đó trong phiên:
+  if (sessionStorage.getItem('admin_authenticated') === 'true') {
+    const role = sessionStorage.getItem('admin_role') || 'admin';
+    if (role === 'owner' && (page === 'users' || page === 'settings' || page === 'giao-dien')) {
+      alert('Chức năng này chỉ dành riêng cho Quản trị viên hệ thống (Admin).');
+      window.location.href = 'dashboard.html';
+      return;
+    }
     if (typeof onSuccess === 'function') onSuccess();
     return;
   }
@@ -2033,11 +2159,12 @@ function checkAdminAuth(onSuccess) {
   const existingOverlay = document.getElementById('adminAuthOverlay');
   if (existingOverlay) return;
 
-  const unlock = () => {
+  const unlock = (role = 'admin') => {
     sessionStorage.setItem('admin_authenticated', 'true');
+    sessionStorage.setItem('admin_role', role);
     overlay.remove();
     if (typeof onSuccess === 'function') onSuccess();
-    showToast('Đăng nhập Admin thành công!');
+    showToast(`Đăng nhập thành công với vai trò ${role === 'owner' ? 'Chủ sân' : 'Quản trị viên'}!`);
   };
 
   const overlay = document.createElement('div');
@@ -2058,7 +2185,7 @@ function checkAdminAuth(onSuccess) {
 
   const descEl = document.createElement('p');
   descEl.className = 'admin-auth-desc';
-  descEl.textContent = 'Khu vực dành riêng cho Quản trị viên. Nghiêm cấm người ngoài truy cập!';
+  descEl.textContent = 'Khu vực dành cho Quản trị viên & Chủ sân. Nghiêm cấm người ngoài truy cập!';
   authCard.appendChild(descEl);
 
   const formEl = document.createElement('form');
@@ -2069,7 +2196,7 @@ function checkAdminAuth(onSuccess) {
   usernameInput.type = 'text';
   usernameInput.id = 'adminAuthUsername';
   usernameInput.className = 'admin-auth-input';
-  usernameInput.placeholder = 'Tên đăng nhập';
+  usernameInput.placeholder = 'Tên đăng nhập / Email';
   usernameInput.autocomplete = 'username';
   formEl.appendChild(usernameInput);
 
@@ -2090,7 +2217,7 @@ function checkAdminAuth(onSuccess) {
   const hintEl = document.createElement('div');
   hintEl.className = 'admin-auth-hint';
   hintEl.style.cssText = 'margin-top: 14px; font-size: 12px; color: #475569; background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px 14px; border-radius: 8px; text-align: center; line-height: 1.6;';
-  hintEl.innerHTML = '💡 <strong>Gợi ý đăng nhập Quản trị:</strong><br>Tài khoản: <strong style="color:#0284c7;">Long</strong> hoặc <strong style="color:#0284c7;">admin</strong><br>Mật khẩu: <strong style="color:#0284c7;">123456</strong> hoặc <strong style="color:#0284c7;">admin123</strong>';
+  hintEl.innerHTML = '💡 <strong>Tài khoản Quản trị mẫu:</strong><br>Quản trị viên: <strong style="color:#0284c7;">admin</strong> (MK: 123456)<br>Chủ sân: <strong style="color:#0284c7;">chusan</strong> (MK: 123456)';
   formEl.appendChild(hintEl);
 
   authCard.appendChild(formEl);
@@ -2143,12 +2270,25 @@ function checkAdminAuth(onSuccess) {
       String(u.phone || '').trim() === username
     );
 
+    // Chặn nếu tài khoản đăng nhập là player (khách hàng)
+    if (foundUser && foundUser.role === 'player') {
+      return fail('Tài khoản này là Khách hàng, không có quyền truy cập trang Quản trị!');
+    }
+
+    let userRole = 'admin';
+    if (foundUser && foundUser.role === 'owner') {
+      userRole = 'owner';
+    } else if (uLower === 'chusan' || uLower === 'owner@4sv.vn') {
+      userRole = 'owner';
+    }
+
     const isAllowedAdmin = (
       uLower === 'admin' ||
+      uLower === 'chusan' ||
       uLower === 'long' ||
       uLower === 'lethanhlong' ||
       uLower === savedUsername ||
-      (foundUser && (foundUser.role === 'admin' || String(foundUser.username || '').toLowerCase() === 'long'))
+      (foundUser && (foundUser.role === 'admin' || foundUser.role === 'owner' || String(foundUser.username || '').toLowerCase() === 'long'))
     );
 
     if (!isAllowedAdmin) {
@@ -2171,7 +2311,12 @@ function checkAdminAuth(onSuccess) {
       }
     }
 
-    if (matched) return unlock();
+    if (matched) {
+      if (foundUser) {
+        SV.signIn(foundUser, false);
+      }
+      return unlock(userRole);
+    }
     fail('Tên đăng nhập hoặc mật khẩu không đúng!');
   });
 }

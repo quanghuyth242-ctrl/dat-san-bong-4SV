@@ -108,6 +108,7 @@
                     <th>Họ tên</th>
                     <th>Email</th>
                     <th>Số điện thoại</th>
+                    <th>Vai trò</th>
                     <th>Số đơn đã đặt</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
@@ -133,6 +134,30 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline modal-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="userRoleModal">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Phân quyền người dùng</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="userRoleDesc" style="margin-bottom: 16px; color: var(--text-muted); font-size: 14px;"></p>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="display:block; margin-bottom:8px; font-weight:600;">Chọn vai trò:</label>
+          <select id="userRoleSelect" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:14px; background:var(--bg-card); color:var(--text);">
+            <option value="player">⚽ Khách hàng (Chỉ xem và đặt sân)</option>
+            <option value="owner">🏟️ Chủ sân (Quản lý sân, đơn đặt, thu tiền)</option>
+            <option value="admin">👑 Quản trị viên (Toàn quyền hệ thống)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-outline modal-close">Hủy</button>
+        <button class="btn btn-primary" id="btnSaveUserRole">Lưu thay đổi</button>
       </div>
     </div>
   </div>

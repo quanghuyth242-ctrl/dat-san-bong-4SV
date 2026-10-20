@@ -261,7 +261,7 @@
       email: email,
       phone: String(raw.phone || '').replace(/\D/g, ''),
       password: String(raw.password || ''),
-      role: raw.role === 'admin' ? 'admin' : 'player',
+      role: (raw.role === 'admin' || raw.role === 'owner') ? raw.role : 'player',
       // Admin khoá tài khoản thì trang đăng nhập phải chặn luôn, nên trạng
       // thái nằm trong bản ghi dùng chung chứ không phải cờ riêng của admin.
       status: raw.status === 'locked' ? 'locked' : 'active',
@@ -605,14 +605,16 @@
   // Số điện thoại phải là duy nhất: tài khoản demo đã giữ 0912345678 nên
   // các tài khoản mẫu còn lại dùng dải số khác để đăng nhập không bị nhập nhằng.
   var DEFAULT_USERS = [
+    { id: 'ND000', name: 'Quản Trị Viên', username: 'admin', email: 'admin@4sv.vn', phone: '0900000001', password: '123456', role: 'admin', status: 'active', createdAt: '2026-01-01', dob: '1990-01-01', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80' },
+    { id: 'ND099', name: 'Chủ Sân 4SV', username: 'chusan', email: 'owner@4sv.vn', phone: '0900000002', password: '123456', role: 'owner', status: 'active', createdAt: '2026-01-02', dob: '1992-06-15', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80' },
     { id: 'ND001', name: 'Nguyễn Minh Tuấn', username: 'tuannguyen', email: 'demo@4sv.vn', phone: '0912345678', password: '123456', role: 'player', status: 'active', createdAt: '2026-01-05', dob: '1998-05-18', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80' },
-    { id: 'ND002', name: 'Nguyễn Văn An', username: 'vanan92', email: 'nguyenvanan@gmail.com', phone: '0901234567', role: 'player', status: 'active', createdAt: '2026-02-11', dob: '1995-10-20', gender: 'Nam', avatar: '' },
-    { id: 'ND003', name: 'Trần Thị Bình', username: 'binhtran', email: 'tranthibinh@gmail.com', phone: '0912345679', role: 'player', status: 'active', createdAt: '2026-03-02', dob: '1999-03-12', gender: 'Nữ', avatar: '' },
-    { id: 'ND004', name: 'Lê Hoàng Cường', username: 'cuongle', email: 'lehoangcuong@gmail.com', phone: '0923456789', role: 'player', status: 'active', createdAt: '2026-03-19', dob: '1997-08-25', gender: 'Nam', avatar: '' },
-    { id: 'ND005', name: 'Phạm Minh Đức', username: 'ducpham', email: 'phamminhduc@gmail.com', phone: '0934567890', role: 'player', status: 'locked', createdAt: '2026-04-07', dob: '1996-12-05', gender: 'Nam', avatar: '' },
-    { id: 'ND006', name: 'Hoàng Thị Linh', username: 'linhhoang', email: 'hoangthilin@gmail.com', phone: '0945678901', role: 'player', status: 'active', createdAt: '2026-05-23', dob: '2001-07-14', gender: 'Nữ', avatar: '' },
-    { id: 'ND007', name: 'Võ Thanh Hải', username: 'haivo', email: 'vothanhhai@gmail.com', phone: '0956789012', role: 'player', status: 'active', createdAt: '2026-06-14', dob: '1994-11-09', gender: 'Nam', avatar: '' },
-    { id: 'ND008', name: 'Đặng Quốc Bảo', username: 'baodang', email: 'dangquocbao@gmail.com', phone: '0967890123', role: 'player', status: 'active', createdAt: '2026-07-30', dob: '2000-02-17', gender: 'Nam', avatar: '' },
+    { id: 'ND002', name: 'Nguyễn Văn An', username: 'vanan92', email: 'nguyenvanan@gmail.com', phone: '0901234567', password: '123456', role: 'player', status: 'active', createdAt: '2026-02-11', dob: '1995-10-20', gender: 'Nam', avatar: '' },
+    { id: 'ND003', name: 'Trần Thị Bình', username: 'binhtran', email: 'tranthibinh@gmail.com', phone: '0912345679', password: '123456', role: 'player', status: 'active', createdAt: '2026-03-02', dob: '1999-03-12', gender: 'Nữ', avatar: '' },
+    { id: 'ND004', name: 'Lê Hoàng Cường', username: 'cuongle', email: 'lehoangcuong@gmail.com', phone: '0923456789', password: '123456', role: 'player', status: 'active', createdAt: '2026-03-19', dob: '1997-08-25', gender: 'Nam', avatar: '' },
+    { id: 'ND005', name: 'Phạm Minh Đức', username: 'ducpham', email: 'phamminhduc@gmail.com', phone: '0934567890', password: '123456', role: 'player', status: 'locked', createdAt: '2026-04-07', dob: '1996-12-05', gender: 'Nam', avatar: '' },
+    { id: 'ND006', name: 'Hoàng Thị Linh', username: 'linhhoang', email: 'hoangthilin@gmail.com', phone: '0945678901', password: '123456', role: 'player', status: 'active', createdAt: '2026-05-23', dob: '2001-07-14', gender: 'Nữ', avatar: '' },
+    { id: 'ND007', name: 'Võ Thanh Hải', username: 'haivo', email: 'vothanhhai@gmail.com', phone: '0956789012', password: '123456', role: 'player', status: 'active', createdAt: '2026-06-14', dob: '1994-11-09', gender: 'Nam', avatar: '' },
+    { id: 'ND008', name: 'Đặng Quốc Bảo', username: 'baodang', email: 'dangquocbao@gmail.com', phone: '0967890123', password: '123456', role: 'player', status: 'active', createdAt: '2026-07-30', dob: '2000-02-17', gender: 'Nam', avatar: '' },
   ]
 
   var DEFAULT_BOOKINGS = [
@@ -699,6 +701,11 @@
     if (cache[name]) return cache[name]
     var normalize = NORMALIZE[name]
     var raw = readJSON(KEYS[name], null)
+    if ((raw === null || (Array.isArray(raw) && raw.length === 0 && (name === 'fields' || name === 'users'))) && DEFAULTS[name]) {
+      var seed = DEFAULTS[name]
+      store(name, seed)
+      return cache[name] || seed.map(normalize)
+    }
     var list = Array.isArray(raw) ? raw.map(normalize) : []
     cache[name] = list
     return list
@@ -1050,6 +1057,10 @@
     /** Khoá/mở khoá: trang đăng nhập đọc cùng trạng thái nên bị chặn ngay. */
     setUserStatus: function (id, status) {
       return SV.updateUser(id, { status: status === 'locked' ? 'locked' : 'active' })
+    },
+    /** Phân quyền: admin, owner, player */
+    setUserRole: function (id, role) {
+      return SV.updateUser(id, { role: (role === 'admin' || role === 'owner') ? role : 'player' })
     },
     saveUsers: function (list) {
       return store('users', list)
@@ -1419,6 +1430,17 @@
           }
           return u
         })
+        // Đảm bảo có tài khoản Quản trị và Chủ sân trong danh sách
+        var hasAdmin = next.some(function(u) { return u.role === 'admin' || u.username === 'admin' || u.email === 'admin@4sv.vn' })
+        if (!hasAdmin) {
+          next.unshift(normUser({ id: 'ND000', name: 'Quản Trị Viên', username: 'admin', email: 'admin@4sv.vn', phone: '0900000001', password: '123456', role: 'admin', status: 'active', createdAt: '2026-01-01', dob: '1990-01-01', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80' }, 0))
+          modified = true
+        }
+        var hasOwner = next.some(function(u) { return u.role === 'owner' || u.username === 'chusan' || u.email === 'owner@4sv.vn' })
+        if (!hasOwner) {
+          next.splice(1, 0, normUser({ id: 'ND099', name: 'Chủ Sân 4SV', username: 'chusan', email: 'owner@4sv.vn', phone: '0900000002', password: '123456', role: 'owner', status: 'active', createdAt: '2026-01-02', dob: '1992-06-15', gender: 'Nam', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80' }, 1))
+          modified = true
+        }
         if (modified) {
           writeJSON(KEYS.users, next)
           cache.users = next
