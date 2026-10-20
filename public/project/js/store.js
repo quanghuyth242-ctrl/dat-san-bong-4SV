@@ -1333,6 +1333,68 @@
     },
 
     // ---------------------------- Cài đặt -----------------------------
+    // ------------------------- Đặt sân định kỳ -------------------------
+    /**
+     * Helper đặt định kỳ (hàng tuần / tháng / quý / năm) — một bản duy nhất
+     * cho form đặt sân dùng chung, trang tài khoản và admin.
+     */
+    repeat: {
+      LABEL: {
+        none: 'Không lặp lại',
+        weekly: 'Hàng tuần',
+        monthly: 'Hàng tháng',
+        quarterly: 'Hàng quý',
+        yearly: 'Hàng năm',
+      },
+      toDateStr: function (d) {
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2)
+      },
+      addDays: function (dateStr, days) {
+        var d = new Date(dateStr + 'T00:00:00')
+        d.setDate(d.getDate() + days)
+        return SV.repeat.toDateStr(d)
+      },
+      /** Cộng tháng và tự kẹp ngày về cuối tháng khác (31/1 + 1 tháng = 28/2). */
+      addMonths: function (dateStr, months) {
+        var d = new Date(dateStr + 'T00:00:00')
+        var day = d.getDate()
+        d.setDate(1)
+        d.setMonth(d.getMonth() + months)
+        var lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+        d.setDate(Math.min(day, lastDay))
+        return SV.repeat.toDateStr(d)
+      },
+      /** Danh sách ngày cho đặt lịch định kỳ theo tuần/tháng/quý/năm (tối đa 52 buổi). */
+      dates: function (startDate, type, count) {
+        if (!type || type === 'none') return [startDate]
+        var total = Math.max(1, Math.min(52, Number(count) || 1))
+        var out = []
+        for (var i = 0; i < total; i += 1) {
+          if (type === 'weekly') out.push(SV.repeat.addDays(startDate, i * 7))
+          else if (type === 'monthly') out.push(SV.repeat.addMonths(startDate, i))
+          else if (type === 'quarterly') out.push(SV.repeat.addMonths(startDate, i * 3))
+          else if (type === 'yearly') out.push(SV.repeat.addMonths(startDate, i * 12))
+          else out.push(startDate)
+        }
+        return out
+      },
+      /** Số buổi hợp lệ: không lặp lại thì 1, có lặp lại thì clamp về 1..52. */
+      countOf: function (type, raw) {
+        if (!type || type === 'none') return 1
+        return Math.max(1, Math.min(52, parseInt(raw, 10) || 1))
+      },
+      /** Số buổi người dùng nhập có hợp lệ không (dùng cho validate form). */
+      countOk: function (type, raw) {
+        if (!type || type === 'none') return true
+        var cnt = parseInt(raw, 10)
+        return isFinite(cnt) && cnt >= 1 && cnt <= 52
+      },
+      /** Mã nhóm định kỳ để nối các buổi của cùng một lần đặt. */
+      seriesId: function () {
+        return 'LK' + Date.now().toString(36).toUpperCase()
+      },
+    },
+
     settings: function () {
       return normSettings(readJSON(KEYS.settings, DEFAULT_SETTINGS))
     },
