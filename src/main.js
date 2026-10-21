@@ -954,6 +954,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ================================ TÀI KHOẢN ĐANG ĐĂNG NHẬP ================================
 
+/** 2 nút Đăng nhập/Đăng ký: khớp cả theo data-auth lẫn theo href để không sót trang. */
+const AUTH_LINK_SELECTOR =
+  '[data-auth="login"], [data-auth="register"], .nav-actions a[href*="auth.html#login"], .nav-actions a[href*="auth.html#register"]'
+
 /**
  * Đã đăng nhập thì ẩn nút "Đăng nhập"/"Đăng ký", thay bằng avatar + tên và menu
  * (tài khoản của tôi / đăng xuất). Đăng nhập ở tab khác thì ô này cũng đổi theo.
@@ -963,21 +967,34 @@ function initAuthNav() {
   const btn = document.getElementById('navUserBtn')
   const menu = document.getElementById('navUserMenu')
   const logout = document.getElementById('navUserLogout')
-  if (!box || !btn || !menu) return
+  // Trang không dựng sẵn ô tài khoản thì vẫn phải ẩn được 2 nút đăng nhập/đăng ký.
+  const hasChip = Boolean(box && btn && menu)
 
   const avatar = document.getElementById('navUserAvatar')
   const name = document.getElementById('navUserName')
   const menuName = document.getElementById('navUserMenuName')
   const mail = document.getElementById('navUserMail')
 
+  function closeMenu() {
+    if (!hasChip) return
+    menu.hidden = true
+    btn.setAttribute('aria-expanded', 'false')
+  }
+
   function render() {
     const user = SV.currentUser()
-    // Ẩn/hiện theo data-auth nên không phải nhớ 2 nút riêng.
-    document.querySelectorAll('[data-auth="login"], [data-auth="register"]').forEach((el) => {
-      el.hidden = !!user
+    // Ẩn/hiện theo data-auth nên không phải nhớ 2 nút riêng. Vừa đặt hidden vừa
+    // ghi style.display để chắc chắn ẩn hẳn, kể cả khi CSS gán display cho link.
+    document.querySelectorAll(AUTH_LINK_SELECTOR).forEach((el) => {
+      const hide = Boolean(user)
+      el.hidden = hide
+      el.style.display = hide ? 'none' : ''
     })
-    box.hidden = !user
-    if (!user) {
+    if (hasChip) {
+      box.hidden = !user
+      box.style.display = user ? '' : 'none'
+    }
+    if (!user || !hasChip) {
       closeMenu()
       return
     }
@@ -1007,28 +1024,26 @@ function initAuthNav() {
     menu.hidden = false
     btn.setAttribute('aria-expanded', 'true')
   }
-  function closeMenu() {
-    menu.hidden = true
-    btn.setAttribute('aria-expanded', 'false')
+
+  if (hasChip) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (menu.hidden) openMenu()
+      else closeMenu()
+    })
+    document.addEventListener('click', (e) => {
+      if (!menu.hidden && !box.contains(e.target)) closeMenu()
+    })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu()
+    })
+
+    logout?.addEventListener('click', () => {
+      SV.signOut()
+      closeMenu()
+      render()
+    })
   }
-
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation()
-    if (menu.hidden) openMenu()
-    else closeMenu()
-  })
-  document.addEventListener('click', (e) => {
-    if (!menu.hidden && !box.contains(e.target)) closeMenu()
-  })
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMenu()
-  })
-
-  logout?.addEventListener('click', () => {
-    SV.signOut()
-    closeMenu()
-    render()
-  })
 
   // Tab khác đăng nhập/đăng xuất, hoặc admin khoá chính tài khoản này.
   SV.on((key) => {

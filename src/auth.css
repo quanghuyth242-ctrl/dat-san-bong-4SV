@@ -775,6 +775,16 @@
   margin-top: 4px;
 }
 
+/* Chỉ còn 1 nút trên màn thành công (sau đăng ký) thì cho nó chiếm hết chiều rộng. */
+.auth-btn-row--single {
+  grid-template-columns: 1fr;
+}
+
+/* .auth-submit đặt display inline-flex nên cần RULE riêng để attribute hidden ăn. */
+.auth-submit[hidden] {
+  display: none !important;
+}
+
 /* ---------- 7. ĐĂNG NHẬP XÃ HỘI ---------- */
 .auth-divider {
   display: flex;

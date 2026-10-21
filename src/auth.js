@@ -81,6 +81,20 @@ let otpContext = 'register'
 let otpTarget = ''
 let resendTimer = null
 let redirectTimer = null
+// Tài khoản vừa tạo ở form Đăng ký: giữ lại để bước OTP xong là đăng nhập luôn.
+let registeredUser = null
+
+/**
+ * Đường về trang chủ tính theo vị trí trang đăng nhập (đang ở /src/auth.html),
+ * nên chạy đúng cả khi dev server, khi build sang dist lẫn khi mở file trực tiếp.
+ */
+function homeUrl() {
+  try {
+    return new URL('../index.html', location.href).href
+  } catch {
+    return '../index.html'
+  }
+}
 
 /* ---------- CHUYỂN MÀN HÌNH ---------- */
 function setMode(next, { updateHash = true, focus = true } = {}) {
@@ -291,10 +305,16 @@ function submitOtp() {
   resendBtn.textContent = 'Gửi lại mã'
 
   if (otpContext === 'register') {
+    // Đăng ký xong thì tự đăng nhập luôn: người dùng bấm "Vào trang chủ" là
+    // vào dùng được ngay, không phải nhập lại email/mật khẩu một lần nữa.
+    const user = registeredUser || findUser(otpTarget)
+    registeredUser = null
+    if (user) SV.signIn(user, true)
     showSuccess(
       'Tạo tài khoản thành công!',
       `Voucher giảm 20% đã gửi tới ${otpTarget}. Chào mừng bạn đến với 4SV.vn.`,
-      '/',
+      homeUrl(),
+      { showLoginBack: false },
     )
     return
   }
@@ -302,9 +322,23 @@ function submitOtp() {
 }
 
 /* ---------- THÀNH CÔNG ---------- */
-function showSuccess(title, desc, redirectTo) {
+function showSuccess(title, desc, redirectTo, { showLoginBack = true } = {}) {
   $('[data-success-title]').textContent = title
   $('[data-success-desc]').textContent = desc
+
+  // Nút "Về trang đăng nhập" chỉ có ích khi chưa đăng nhập; sau khi đăng ký
+  // xong đã tự đăng nhập rồi nên ẩn đi, chỉ giữ nút "Vào trang chủ".
+  const backBtn = $('[data-success-back]')
+  if (backBtn) {
+    backBtn.hidden = !showLoginBack
+    backBtn.style.display = showLoginBack ? '' : 'none'
+    backBtn
+      .closest('.auth-btn-row')
+      ?.classList.toggle('auth-btn-row--single', !showLoginBack)
+  }
+  const homeBtn = $('[data-success-home]')
+  if (homeBtn && redirectTo) homeBtn.setAttribute('href', redirectTo)
+
   setMode('success', { focus: false })
   clearTimeout(redirectTimer)
   if (redirectTo) {
@@ -496,7 +530,7 @@ function initForms() {
     showSuccess(
       `Xin chào, ${user.name}!`,
       'Bạn đã đăng nhập thành công. Chúc bạn có những trận đấu thật chất!',
-      '/',
+      homeUrl(),
     )
   })
 
@@ -532,6 +566,8 @@ function initForms() {
       setFieldState($('#regEmail'), result.error || 'Không tạo được tài khoản')
       return
     }
+    // Giữ lại tài khoản vừa tạo để bước OTP xác thực xong đăng nhập thẳng.
+    registeredUser = result.user
     showOtp('register', email)
   })
 

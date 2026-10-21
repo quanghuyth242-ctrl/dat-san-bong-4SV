@@ -10,6 +10,8 @@
  * lại đúng trạng thái "Đã thanh toán".
  */
 
+import { syncAuthNav } from './auth-nav.js'
+
 const SV = window.SV
 
 const HOME_URL = '../'
@@ -492,5 +494,7 @@ function confirmPayment(b, method) {
 document.addEventListener('DOMContentLoaded', () => {
   const year = document.getElementById('year')
   if (year) year.textContent = String(new Date().getFullYear())
+  // Đã đăng nhập rồi thì header không còn hiện "Đăng nhập/Đăng ký".
+  syncAuthNav({ accountUrl: ACCOUNT_URL })
   render()
 })
