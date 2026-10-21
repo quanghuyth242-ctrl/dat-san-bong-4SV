@@ -1,5 +1,71 @@
-import { getUser, clearUser } from './session.js'
+/**
+ * Navbar dùng chung cho các trang ngoài trang chủ (danh sách sân, chi tiết,
+ * tài khoản, thanh toán): ẩn/hiện nút "Đăng nhập/Đăng ký" và vẽ ô tài khoản.
+ *
+ * Toàn bộ phiên đăng nhập cũng nằm trong file này (trước đây là src/session.js):
+ * đọc/ghi thẳng 2 khoá localStorage mà store.js (SV) cũng dùng, nên đăng nhập
+ * ở trang nào thì mọi trang đều thấy, không cần server.
+ */
 
+// ============================== PHIÊN NGƯỜI DÙNG ==============================
+const SESSION_KEY = '4sv_auth_session'
+const REMEMBER_KEY = '4sv_auth_remember'
+
+function readRaw(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function getUser() {
+  const user = readRaw(REMEMBER_KEY) || readRaw(SESSION_KEY)
+  if (!user || typeof user !== 'object') return null
+  if (!user.email && !user.name) return null
+  return {
+    email: user.email || '',
+    name: user.name || user.email || '',
+    phone: user.phone || '',
+    role: user.role || 'player',
+  }
+}
+
+export function isLoggedIn() {
+  return getUser() !== null
+}
+
+export function getRemembered() {
+  return readRaw(REMEMBER_KEY)
+}
+
+export function setUser(user, remember = false) {
+  const payload = {
+    email: user.email || '',
+    name: user.name || user.email || '',
+    phone: user.phone || '',
+    role: user.role || 'player',
+    at: Date.now(),
+  }
+  clearUser()
+  try {
+    localStorage.setItem(remember ? REMEMBER_KEY : SESSION_KEY, JSON.stringify(payload))
+  } catch {
+    /* storage bị chặn - bỏ qua */
+  }
+}
+
+export function clearUser() {
+  try {
+    localStorage.removeItem(REMEMBER_KEY)
+    localStorage.removeItem(SESSION_KEY)
+  } catch {
+    /* storage bị chặn - bỏ qua */
+  }
+}
+
+// ================================= TIỆN ÍCH =================================
 const AUTH_LINKS =
   '[data-auth-only], .nav-actions a[href*="auth.html#login"], .nav-actions a[href*="auth.html#register"]'
 
@@ -28,6 +94,7 @@ function authPageUrl() {
   return link ? link.getAttribute('href') : '/src/auth.html#login'
 }
 
+// ================================== NAVBAR ==================================
 /**
  * Chưa đăng nhập: hiện nút Đăng nhập / Đăng ký.
  * Đã đăng nhập: ẩn 2 nút đó, thay bằng menu tài khoản.

@@ -1,5 +1,12 @@
-import { getUser, getRemembered, setUser, clearUser } from './session.js'
-import { toast, syncAuthNav, escapeHtml } from './auth-nav.js'
+import {
+  getUser,
+  getRemembered,
+  setUser,
+  clearUser,
+  toast,
+  syncAuthNav,
+  escapeHtml,
+} from './auth-nav.js'
 import { REPEAT_LABEL } from './repeat.js'
 import { FIELD_IMAGES, loadVenues } from './venues.js'
 import { mountAssistant, stashIntentForHome } from './ai-assistant.js'
