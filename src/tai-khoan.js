@@ -455,6 +455,18 @@ function init() {
   syncCompleted()
   refresh()
 
+  // Admin bấm "Xác nhận thu tiền" ở tab quản trị thì store báo cho tab đang mở:
+  // vẽ lại lịch sử + thống kê để đơn hiện "Đã thanh toán" ngay, khách không phải
+  // F5. Không gọi renderProfile() vì nó ghi đè ô họ tên/SĐT đang gõ dở.
+  if (window.SV && typeof window.SV.on === 'function') {
+    window.SV.on((key, origin) => {
+      if (key !== 'bookings' || origin !== 'storage') return
+      state.bookings = myBookings(state.user, state.record)
+      renderStats()
+      renderHistory()
+    })
+  }
+
   $('#profileForm').addEventListener('submit', saveProfile)
   ;['accFormName', 'accFormPhone'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', (e) => {

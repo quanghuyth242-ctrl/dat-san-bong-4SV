@@ -337,34 +337,45 @@ function missingHtml() {
 
 let selectedMethod = null
 let currentId = orderId()
+/**
+ * Màn hình đang mở ('paid', 'awaiting', 'at_venue', 'pay_later', 'select').
+ * Cần biết mình đang ở màn nào để khi admin ghi nhận tiền ở tab quản trị thì
+ * màn "Chờ xác nhận thanh toán" tự chuyển sang màn thành công.
+ */
+let currentScreen = ''
 
 function render() {
   const el = root()
   if (!el) return
 
   if (!SV) {
+    currentScreen = 'missing'
     el.innerHTML = missingHtml()
     return
   }
 
   const b = currentId ? SV.booking(currentId) : null
   if (!b) {
+    currentScreen = 'missing'
     el.innerHTML = missingHtml()
     return
   }
 
   // Đơn đã thanh toán từ trước (F5, mở lại link) -> hiện thẳng thành công.
   if (isPaid(b)) {
+    currentScreen = 'paid'
     el.innerHTML = paidHtml(b, methodById(b.paymentMethod))
     return
   }
   // Đơn chờ xác nhận chuyển khoản
   if (isAwaitingPayment(b)) {
+    currentScreen = 'awaiting'
     el.innerHTML = awaitingPaymentHtml(b)
     return
   }
   // Đơn chọn thanh toán tại sân
   if (isAtVenue(b)) {
+    currentScreen = 'at_venue'
     el.innerHTML = atVenueHtml(b)
     document.getElementById('payAgain')?.addEventListener('click', () => {
       savePayment(b.id, { paymentStatus: 'pending', paymentMethod: '' })
@@ -374,6 +385,7 @@ function render() {
   }
   // Đơn khách chọn "Để thanh toán sau"
   if (isPayLater(b)) {
+    currentScreen = 'pay_later'
     el.innerHTML = payLaterHtml(b)
     document.getElementById('payNowLater')?.addEventListener('click', () => {
       savePayment(b.id, { paymentStatus: 'pending', paymentMethod: '' })
@@ -385,6 +397,7 @@ function render() {
   // Vẽ lại form: bỏ chọn phương thức cũ để nút Thanh toán không giữ trạng thái
   // từ màn hình trước (vd: khách chọn "Thanh toán sau" rồi quay lại chọn khác).
   selectedMethod = null
+  currentScreen = 'select'
   el.innerHTML = formHtml(b)
   bindForm(b)
 }
@@ -489,6 +502,26 @@ function confirmPayment(b, method) {
   }, 1300)
 }
 
+// ================================ CẬP NHẬT KHI ADMIN XÁC NHẬN ================================
+
+/**
+ * Admin bấm "Xác nhận thu tiền" ở tab quản trị thì đơn chuyển sang Đã thanh toán
+ * và store báo cho các tab đang mở (SV.on). Trang đang đứng ở màn "Chờ xác nhận
+ * thanh toán" phải tự đổi sang màn thành công, nếu không khách sẽ mãi thấy dòng
+ * "Admin sẽ xác nhận trong thời gian sớm nhất" cho tới khi tự bấm F5.
+ */
+function watchPayment() {
+  if (!SV || typeof SV.on !== 'function') return
+  SV.on((key, origin) => {
+    // Chỉ nghe thay đổi từ tab khác; ghi ở tab này đã tự render() rồi.
+    if (key !== 'bookings' || origin !== 'storage') return
+    // Đang ở màn hình đang chọn phương thức thì giữ nguyên lựa chọn của khách.
+    if (currentScreen === 'paid' || currentScreen === 'missing' || currentScreen === 'select') return
+    const fresh = currentId ? SV.booking(currentId) : null
+    if (fresh && isPaid(fresh)) render()
+  })
+}
+
 // ================================ KHỞI TẠO ================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -497,4 +530,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Đã đăng nhập rồi thì header không còn hiện "Đăng nhập/Đăng ký".
   syncAuthNav({ accountUrl: ACCOUNT_URL })
   render()
+  watchPayment()
 })
