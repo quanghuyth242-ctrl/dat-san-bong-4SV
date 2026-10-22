@@ -1392,6 +1392,30 @@
 .acc-input::placeholder {
   color: var(--grey-400);
 }
+
+/* style.css được import ở đầu file này và có rule `.acc-field input` (specificity
+   0,1,1) cao hơn `.acc-input` (0,1,0) nên đè mất padding-trái 38px, border:0 và
+   nền trong suốt của ô nhập. Hậu quả: icon bên trái (position:absolute, left:13px)
+   nằm đè lên trên chữ trong phần "Thông tin cá nhân". Khôi phục lại đúng thiết kế. */
+.acc-field .acc-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  border-radius: 12px;
+  padding: 12px 14px 12px 38px;
+  font-size: 0.88rem;
+  color: var(--grey-900);
+}
+.acc-field .acc-input:focus {
+  border: 0;
+  box-shadow: none;
+}
+.acc-field .acc-input[readonly] {
+  color: var(--grey-600);
+  cursor: default;
+}
 .acc-input-wrap.is-static {
   background: var(--grey-100);
   border-style: dashed;
