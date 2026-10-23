@@ -9,7 +9,7 @@
  *   DatSanModal.open(venue, {
  *     services: { 'nuoc-suoi': 2 },   // dịch vụ điền sẵn
  *     date: 'YYYY-MM-DD', hour: 18, duration: 1.5,
- *     repeat: 'weekly', repeatCount: 8,   // repeatCount = số tuần/tháng/quý/năm
+ *     repeat: 'weekly', repeatCount: 8,   // repeatCount = số tuần/tháng/năm
  *     days: [1, 5],                       // thứ (0..6) hoặc ngày (1..31) lặp
  *     hours: [18, 20],                    // nhiều khung giờ cùng lúc
  *     payUrl: (id) => '/src/thanh-toan.html?ma=' + id,
@@ -40,6 +40,9 @@
   ]
 
   var REPEAT_LABEL = { none: 'Không lặp lại', weekly: 'Hàng tuần', monthly: 'Hàng tháng', quarterly: 'Hàng quý', yearly: 'Hàng năm' }
+
+  // Kiểu đặt định kỳ người dùng được chọn trên form (quý đã bỏ).
+  var REPEAT_TYPES = ['none', 'weekly', 'monthly', 'yearly']
 
   var state = { venue: null, duration: 1, services: {}, opts: null, ready: false, repeatDays: [], hours: [], daysCustom: false }
   var payTimer = null
@@ -159,7 +162,8 @@
   }
 
   function currentRepeat() {
-    return $('bkRepeat') ? $('bkRepeat').value : 'none'
+    var v = $('bkRepeat') ? $('bkRepeat').value : 'none'
+    return REPEAT_TYPES.indexOf(v) >= 0 ? v : 'none'
   }
 
   function maxPeriods() {
@@ -734,11 +738,9 @@
       '<div class="bk-field" id="f-repeat">' +
       '<label for="bkRepeat">Đặt định kỳ</label>' +
       '<select id="bkRepeat">' +
-      ['none', 'weekly', 'monthly', 'quarterly', 'yearly']
-        .map(function (value) {
-          return '<option value="' + value + '">' + esc(repeatLabel(value)) + '</option>'
-        })
-        .join('') +
+      REPEAT_TYPES.map(function (value) {
+        return '<option value="' + value + '">' + esc(repeatLabel(value)) + '</option>'
+      }).join('') +
       '</select></div>' +
       '<div class="bk-field" id="f-repeatCount" style="display:none">' +
       '<label for="bkRepeatCount"><span id="repeatCountLabel">Số buổi</span></label>' +
@@ -1335,7 +1337,7 @@
         state.duration = Number(opts.duration)
         $('bkDuration').value = String(opts.duration)
       }
-      if (opts.repeat && $('bkRepeat')) $('bkRepeat').value = opts.repeat
+      if (opts.repeat && REPEAT_TYPES.indexOf(opts.repeat) >= 0 && $('bkRepeat')) $('bkRepeat').value = opts.repeat
       if (opts.repeatCount && $('bkRepeatCount')) $('bkRepeatCount').value = String(opts.repeatCount)
 
       var repeat = syncRepeatUI()

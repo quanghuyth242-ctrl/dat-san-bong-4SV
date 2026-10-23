@@ -1423,12 +1423,11 @@
         yearly: 'Hàng năm',
       },
       /** Nhãn ô nhập số lần lặp cho từng kiểu đặt định kỳ. */
-      PERIOD_LABEL: { weekly: 'Số tuần', monthly: 'Số tháng', quarterly: 'Số quý', yearly: 'Số năm' },
+      PERIOD_LABEL: { weekly: 'Số tuần', monthly: 'Số tháng', yearly: 'Số năm' },
       /** Nhãn nhóm chọn ngày lặp cho từng kiểu đặt định kỳ. */
       DAYS_LABEL: {
         weekly: 'Thứ trong tuần',
         monthly: 'Ngày trong tháng',
-        quarterly: 'Ngày trong tháng',
         yearly: 'Ngày trong tháng',
       },
       /** 7 thứ theo thứ tự Việt Nam (Thứ 2 → Chủ nhật); v = Date.getDay(). */
