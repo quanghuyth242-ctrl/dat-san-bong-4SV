@@ -1422,6 +1422,28 @@
         quarterly: 'Hàng quý',
         yearly: 'Hàng năm',
       },
+      /** Nhãn ô nhập số lần lặp cho từng kiểu đặt định kỳ. */
+      PERIOD_LABEL: { weekly: 'Số tuần', monthly: 'Số tháng', quarterly: 'Số quý', yearly: 'Số năm' },
+      /** Nhãn nhóm chọn ngày lặp cho từng kiểu đặt định kỳ. */
+      DAYS_LABEL: {
+        weekly: 'Thứ trong tuần',
+        monthly: 'Ngày trong tháng',
+        quarterly: 'Ngày trong tháng',
+        yearly: 'Ngày trong tháng',
+      },
+      /** 7 thứ theo thứ tự Việt Nam (Thứ 2 → Chủ nhật); v = Date.getDay(). */
+      WEEK: [
+        { v: 1, l: 'Thứ 2' },
+        { v: 2, l: 'Thứ 3' },
+        { v: 3, l: 'Thứ 4' },
+        { v: 4, l: 'Thứ 5' },
+        { v: 5, l: 'Thứ 6' },
+        { v: 6, l: 'Thứ 7' },
+        { v: 0, l: 'Chủ nhật' },
+      ],
+      /** Giới hạn: số lần lặp 1..52 và tối đa 100 buổi cho một lần đặt. */
+      MAX_PERIODS: 52,
+      MAX_SESSIONS: 100,
       toDateStr: function (d) {
         return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2)
       },
@@ -1440,30 +1462,119 @@
         d.setDate(Math.min(day, lastDay))
         return SV.repeat.toDateStr(d)
       },
-      /** Danh sách ngày cho đặt lịch định kỳ theo tuần/tháng/quý/năm (tối đa 52 buổi). */
-      dates: function (startDate, type, count) {
-        if (!type || type === 'none') return [startDate]
-        var total = Math.max(1, Math.min(52, Number(count) || 1))
+      /** Thứ trong tuần của ngày (0 = Chủ nhật ... 6 = Thứ 7). */
+      weekdayOf: function (dateStr) {
+        var d = new Date(String(dateStr || '') + 'T00:00:00')
+        return isNaN(d.getTime()) ? -1 : d.getDay()
+      },
+      /** Ngày trong tháng (1..31) của ngày, sai trả về -1. */
+      dayOfMonthOf: function (dateStr) {
+        var d = new Date(String(dateStr || '') + 'T00:00:00')
+        return isNaN(d.getTime()) ? -1 : d.getDate()
+      },
+      /**
+       * Chuẩn hoá danh sách ngày lặp: bỏ giá trị ngoài rảng, bỏ trùng và sắp
+       * đúng thứ tự hiển thị. Mảng rỗng -> lấy theo ngày mốc (thứ/ngày của
+       * ngày bắt đầu) nên form luôn có ít nhất một ngày để lặp.
+       */
+      normalizeDays: function (startDate, type, raw) {
+        var weekly = type === 'weekly'
+        var seen = {}
         var out = []
-        for (var i = 0; i < total; i += 1) {
-          if (type === 'weekly') out.push(SV.repeat.addDays(startDate, i * 7))
-          else if (type === 'monthly') out.push(SV.repeat.addMonths(startDate, i))
-          else if (type === 'quarterly') out.push(SV.repeat.addMonths(startDate, i * 3))
-          else if (type === 'yearly') out.push(SV.repeat.addMonths(startDate, i * 12))
-          else out.push(startDate)
+        ;(Array.isArray(raw) ? raw : []).forEach(function (v) {
+          var n = parseInt(v, 10)
+          if (!isFinite(n)) return
+          if (weekly ? n < 0 || n > 6 : n < 1 || n > 31) return
+          if (seen[n]) return
+          seen[n] = 1
+          out.push(n)
+        })
+        if (!out.length) out.push(weekly ? SV.repeat.weekdayOf(startDate) : SV.repeat.dayOfMonthOf(startDate))
+        return out.sort(function (a, b) {
+          return weekly ? (a + 6) % 7 - (b + 6) % 7 : a - b
+        })
+      },
+      /**
+       * Danh sách ngày của một lần đặt định kỳ (tăng dần, không trùng, không
+       * trước ngày bắt đầu):
+       * - weekly: mỗi "tuần" là cửa sổ 7 ngày tính từ ngày bắt đầu, lấy các
+       *   thứ đã chọn trong cửa sổ đó (chọn được nhiều thứ).
+       * - monthly/quarterly/yearly: mỗi chu kỳ lấy các ngày đã chọn trong
+       *   tháng đó (chọn được nhiều ngày; ngày 29-31 tự lùi về cuối tháng).
+       * opts = { days: [thứ 0..6 hoặc ngày 1..31], count: số lần lặp }
+       * — count truyền dạng số vẫn chạy được (dùng ngày mốc làm mặc định).
+       */
+      dates: function (startDate, type, opts) {
+        if (!type || type === 'none') return [startDate]
+        opts = typeof opts === 'number' ? { count: opts } : opts || {}
+        if (!startDate || isNaN(new Date(startDate + 'T00:00:00').getTime())) return []
+        var periods = SV.repeat.countOf(type, opts.count)
+        var days = SV.repeat.normalizeDays(startDate, type, opts.days)
+        var seen = {}
+        var out = []
+        var push = function (d) {
+          if (!d || d < startDate || seen[d]) return
+          seen[d] = 1
+          out.push(d)
         }
+        if (type === 'weekly') {
+          var weekDay = SV.repeat.weekdayOf(startDate)
+          for (var i = 0; i < periods; i += 1) {
+            var weekStart = SV.repeat.addDays(startDate, i * 7)
+            for (var j = 0; j < days.length; j += 1) {
+              push(SV.repeat.addDays(weekStart, (days[j] - weekDay + 7) % 7))
+            }
+          }
+        } else if (type === 'monthly' || type === 'quarterly' || type === 'yearly') {
+          var step = type === 'monthly' ? 1 : type === 'quarterly' ? 3 : 12
+          for (var k = 0; k < periods; k += 1) {
+            var anchor = new Date(startDate + 'T00:00:00')
+            anchor.setDate(1)
+            anchor.setMonth(anchor.getMonth() + k * step)
+            var lastDay = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate()
+            var ym = anchor.getFullYear() + '-' + pad(anchor.getMonth() + 1, 2) + '-'
+            for (var m = 0; m < days.length; m += 1) {
+              push(ym + pad(Math.min(days[m], lastDay), 2))
+            }
+          }
+        } else {
+          out.push(startDate)
+        }
+        return out.sort()
+      },
+      /**
+       * Danh sách buổi { date, hour } = ngày lặp × khung giờ đã chọn
+       * (ngày tăng dần, giờ tăng dần trong từng ngày).
+       */
+      sessions: function (startDate, type, opts) {
+        opts = opts || {}
+        var hours = (Array.isArray(opts.hours) ? opts.hours : [])
+          .map(Number)
+          .filter(function (h) {
+            return isFinite(h) && h >= 0 && h <= 24
+          })
+          .sort(function (a, b) {
+            return a - b
+          })
+        var dates = SV.repeat.dates(startDate, type, opts)
+        var out = []
+        dates.forEach(function (d) {
+          hours.forEach(function (h) {
+            out.push({ date: d, hour: h })
+          })
+        })
         return out
       },
-      /** Số buổi hợp lệ: không lặp lại thì 1, có lặp lại thì clamp về 1..52. */
+      /** Số lần lặp hợp lệ: không lặp lại thì 1, có lặp lại thì clamp 1..52. */
       countOf: function (type, raw) {
         if (!type || type === 'none') return 1
-        return Math.max(1, Math.min(52, parseInt(raw, 10) || 1))
+        return Math.max(1, Math.min(SV.repeat.MAX_PERIODS, parseInt(raw, 10) || 1))
       },
-      /** Số buổi người dùng nhập có hợp lệ không (dùng cho validate form). */
+      /** Số lần lặp người dùng nhập có hợp lệ không (dùng cho validate form). */
       countOk: function (type, raw) {
         if (!type || type === 'none') return true
         var cnt = parseInt(raw, 10)
-        return isFinite(cnt) && cnt >= 1 && cnt <= 52
+        return isFinite(cnt) && cnt >= 1 && cnt <= SV.repeat.MAX_PERIODS
       },
       /** Mã nhóm định kỳ để nối các buổi của cùng một lần đặt. */
       seriesId: function () {

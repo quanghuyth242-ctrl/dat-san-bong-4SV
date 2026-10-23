@@ -9,7 +9,9 @@
  *   DatSanModal.open(venue, {
  *     services: { 'nuoc-suoi': 2 },   // dịch vụ điền sẵn
  *     date: 'YYYY-MM-DD', hour: 18, duration: 1.5,
- *     repeat: 'weekly', repeatCount: 8,
+ *     repeat: 'weekly', repeatCount: 8,   // repeatCount = số tuần/tháng/quý/năm
+ *     days: [1, 5],                       // thứ (0..6) hoặc ngày (1..31) lặp
+ *     hours: [18, 20],                    // nhiều khung giờ cùng lúc
  *     payUrl: (id) => '/src/thanh-toan.html?ma=' + id,
  *     onClose: fn, onSuccess: fn,
  *   })
@@ -39,7 +41,7 @@
 
   var REPEAT_LABEL = { none: 'Không lặp lại', weekly: 'Hàng tuần', monthly: 'Hàng tháng', quarterly: 'Hàng quý', yearly: 'Hàng năm' }
 
-  var state = { venue: null, duration: 1, services: {}, opts: null, ready: false }
+  var state = { venue: null, duration: 1, services: {}, opts: null, ready: false, repeatDays: [], hours: [], daysCustom: false }
   var payTimer = null
 
   // ---------------------------- TIỆN ÍCH ----------------------------
@@ -156,11 +158,95 @@
     return fallback
   }
 
-  function repeatDatesOf(startDate, type, count) {
+  function currentRepeat() {
+    return $('bkRepeat') ? $('bkRepeat').value : 'none'
+  }
+
+  function maxPeriods() {
+    var v = repeatHelper('MAX_PERIODS', null)
+    return typeof v === 'number' && isFinite(v) ? v : 52
+  }
+
+  function maxSessions() {
+    var v = repeatHelper('MAX_SESSIONS', null)
+    return typeof v === 'number' && isFinite(v) ? v : 100
+  }
+
+  function periodLabel(type) {
+    var map = repeatHelper('PERIOD_LABEL', null)
+    return (map && map[type]) || 'Số buổi'
+  }
+
+  function daysLabel(type) {
+    var map = repeatHelper('DAYS_LABEL', null)
+    return (map && map[type]) || 'Ngày lặp'
+  }
+
+  var WEEKDAY_LABEL = { 0: 'Chủ nhật', 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7' }
+
+  function weekdayLabel(v) {
+    var week = repeatHelper('WEEK', null)
+    if (week) {
+      for (var i = 0; i < week.length; i += 1) if (week[i].v === v) return week[i].l
+    }
+    return WEEKDAY_LABEL[v] || String(v)
+  }
+
+  /** Danh sách ô chọn: thứ (0..6) cho hàng tuần, ngày (1..31) cho tháng/quý/năm. */
+  function repeatDayOptions(type) {
+    if (type === 'weekly') {
+      var week = repeatHelper('WEEK', null)
+      var base = week || Object.keys(WEEKDAY_LABEL).map(function (k) {
+        return { v: Number(k), l: WEEKDAY_LABEL[k] }
+      })
+      return base.map(function (o) {
+        return { v: o.v, l: o.l }
+      })
+    }
+    var out = []
+    for (var d = 1; d <= 31; d += 1) out.push({ v: d, l: String(d) })
+    return out
+  }
+
+  function normalizeRepeatDays(startDate, type, raw) {
+    var fn = repeatHelper('normalizeDays', null)
+    if (fn) return fn(startDate, type, raw)
+    return (raw || []).slice()
+  }
+
+  function daysSummary(type, days) {
+    var list = (days || []).slice()
+    if (type === 'weekly') return list.map(weekdayLabel).join(', ')
+    return list
+      .sort(function (a, b) {
+        return a - b
+      })
+      .join(', ')
+  }
+
+  function repeatDatesOf(startDate, type, opts) {
     var fn = repeatHelper('dates', null)
-    if (fn) return fn(startDate, type, count)
+    if (fn) return fn(startDate, type, opts)
     if (!type || type === 'none') return [startDate]
-    return [startDate]
+    return startDate ? [startDate] : []
+  }
+
+  function repeatSessionsOf(startDate, type, opts) {
+    var fn = repeatHelper('sessions', null)
+    if (fn) return fn(startDate, type, opts)
+    opts = opts || {}
+    var hours = (opts.hours || [])
+      .map(Number)
+      .filter(function (h) {
+        return isFinite(h)
+      })
+    var out = []
+    repeatDatesOf(startDate, type, opts).forEach(function (d) {
+      hours.forEach(function (h) {
+        out.push({ date: d, hour: h })
+      })
+    })
+    return out
   }
 
   function repeatCountOf(type, raw) {
@@ -228,6 +314,11 @@
     '.ds4sv-overlay .bk-slot.is-selected small{opacity:.9}',
     '.ds4sv-overlay .bk-slot:disabled{cursor:not-allowed}',
     '.ds4sv-overlay .bk-slot-empty{display:inline-flex;align-items:center;gap:7px;font-size:.84rem;color:#64748b}',
+    '.ds4sv-overlay .bk-chip-group{display:flex;flex-wrap:wrap;gap:7px}',
+    '.ds4sv-overlay .bk-chip{min-width:36px;text-align:center;border:1.5px solid var(--green-primary,#16a34a);background:#fff;color:var(--green-dark,#166534);border-radius:999px;padding:7px 12px;font-size:.78rem;font-weight:700;font-family:inherit;line-height:1.2;cursor:pointer;transition:all .15s ease}',
+    '.ds4sv-overlay .bk-chip:hover{background:#dcfce7}',
+    '.ds4sv-overlay .bk-chip.is-selected{background:var(--green-primary,#16a34a);border-color:var(--green-primary,#16a34a);color:#fff;box-shadow:0 3px 8px rgba(22,163,74,.28)}',
+    '.ds4sv-overlay .bk-field.shake .bk-chip-group{animation:ds4svShake .35s ease-in-out}',
     '.ds4sv-overlay .service-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
     '.ds4sv-overlay .service-item{display:flex;align-items:center;gap:10px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px;background:#fff;transition:border-color .15s,background .15s}',
     '.ds4sv-overlay .service-item.active{border-color:var(--green-primary,#16a34a);background:#f0fdf4}',
@@ -387,39 +478,69 @@
 
   // ---------------------------- LƯỚI KHUNG GIỜ ----------------------------
 
-  function buildTimeOptions(venue, date, duration) {
-    var out = []
-    for (var h = venue.hours.open; h < venue.hours.close; h += 1) {
-      if (h + duration > venue.hours.close) continue
-      if (isPastSlot(date, h, h + duration, venue.hours.close)) continue
-      if (isSlotTaken(venue.id, date, h, duration)) continue
-      out.push('<option value="' + h + '">' + timeLabel(h) + ' – ' + timeLabel(h + duration) + '</option>')
-    }
-    return out.join('')
+  /** Ngày lặp theo cấu hình hiện tại: định kỳ thì nhiều ngày, không thì đúng ngày chọn. */
+  function repeatDatesList() {
+    var date = $('bkDate') ? $('bkDate').value : ''
+    if (!date) return []
+    var repeat = currentRepeat()
+    if (repeat === 'none') return [date]
+    var periods = repeatCountOf(repeat, $('bkRepeatCount') ? $('bkRepeatCount').value : '1')
+    return repeatDatesOf(date, repeat, { days: state.repeatDays, count: periods })
   }
 
-  function renderTimeSlots() {
+  /**
+   * Trạng thái từng khung giờ trên TẤT CẢ ngày lặp: giờ còn trống ít nhất một
+   * ngày vẫn chọn được (buổi trùng lịch sẽ tự bỏ qua khi đặt).
+   */
+  function slotAvailability(duration) {
+    var v = state.venue
+    var dates = repeatDatesList()
+    var map = {}
+    if (!v || !dates.length) return { dates: dates, map: map }
+    for (var h = v.hours.open; h < v.hours.close; h += 1) {
+      if (h + duration > v.hours.close) continue
+      var free = 0
+      var taken = 0
+      var past = 0
+      for (var i = 0; i < dates.length; i += 1) {
+        if (isPastSlot(dates[i], h, h + duration, v.hours.close)) past += 1
+        else if (isSlotTaken(v.id, dates[i], h, duration)) taken += 1
+        else free += 1
+      }
+      map[h] = { free: free, taken: taken, past: past, total: dates.length }
+    }
+    return { dates: dates, map: map }
+  }
+
+  function renderTimeSlots(availability) {
     var grid = $('bkTimeSlotGrid')
     var sel = $('bkTime')
     if (!grid || !sel) return
-    var date = $('bkDate') ? $('bkDate').value : ''
     var v = state.venue
     var duration = state.duration
-    if (!date || !v) {
+    var av = availability || slotAvailability(duration)
+    if (!av.dates.length || !v) {
       grid.innerHTML = ''
       return
     }
     var html = ''
     for (var h = v.hours.open; h < v.hours.close; h++) {
-      if (h + duration > v.hours.close) continue
-      var isPast = isPastSlot(date, h, h + duration, v.hours.close)
-      var isTaken = !isPast && isSlotTaken(v.id, date, h, duration)
-      var selected = !isPast && !isTaken && sel.value !== '' && parseFloat(sel.value) === h
-      var cls = isPast ? ' is-past' : isTaken ? ' is-taken' : selected ? ' is-selected' : ''
-      var sub = isPast ? 'Đã quá giờ đặt' : isTaken ? 'Đã có người đặt' : selected ? 'Đã chọn' : 'Còn trống'
+      var a = av.map[h]
+      if (!a) continue
+      var selected = state.hours.indexOf(h) >= 0
+      var cls = selected ? ' is-selected' : a.free === 0 ? (a.past >= a.total ? ' is-past' : ' is-taken') : ''
+      var sub = selected
+        ? 'Đã chọn'
+        : a.free === 0
+          ? a.past >= a.total
+            ? 'Đã quá giờ đặt'
+            : 'Đã có người đặt'
+          : a.total > 1
+            ? 'Trống ' + a.free + '/' + a.total + ' buổi'
+            : 'Còn trống'
       html +=
         '<button type="button" class="bk-slot' + cls + '" data-hour="' + h + '"' +
-        (isPast || isTaken ? ' disabled' : '') +
+        (!selected && a.free === 0 ? ' disabled' : '') +
         '>' + timeLabel(h) + ' – ' + timeLabel(h + duration) + '<small>' + sub + '</small></button>'
     }
     grid.innerHTML =
@@ -427,32 +548,118 @@
   }
 
   function refreshTimeOptions() {
-    var date = $('bkDate') ? $('bkDate').value : ''
     var sel = $('bkTime')
     if (!sel) return
-    if (!date) {
+    var av = slotAvailability(state.duration)
+    if (!av.dates.length) {
       sel.innerHTML = '<option value="">-- Chọn ngày trước --</option>'
       sel.value = ''
       renderTimeSlots()
       return
     }
-    var prev = sel.value
-    sel.innerHTML = buildTimeOptions(state.venue, date, state.duration) || '<option value="">-- Đã kín lịch --</option>'
-    if (prev && [].some.call(sel.options, function (o) { return o.value === prev })) {
-      sel.value = prev
-    } else if (sel.options.length) {
-      sel.selectedIndex = 0
+    var options = ''
+    Object.keys(av.map)
+      .map(Number)
+      .sort(function (a, b) {
+        return a - b
+      })
+      .forEach(function (h) {
+        if (av.map[h].free <= 0) return
+        options += '<option value="' + h + '">' + timeLabel(h) + ' – ' + timeLabel(h + state.duration) + '</option>'
+      })
+    sel.innerHTML = options || '<option value="">-- Đã kín lịch --</option>'
+    var keep = ''
+    for (var i = 0; i < state.hours.length && !keep; i += 1) {
+      var want = String(state.hours[i])
+      if (
+        [].some.call(sel.options, function (o) {
+          return o.value === want
+        })
+      ) {
+        keep = want
+      }
     }
-    renderTimeSlots()
+    if (keep) sel.value = keep
+    else if (state.hours.length) sel.value = ''
+    else if (sel.options.length) sel.selectedIndex = 0
+    renderTimeSlots(av)
   }
 
   // ---------------------------- TỔNG TIỀN ----------------------------
 
   function syncRepeatUI() {
-    var repeat = $('bkRepeat') ? $('bkRepeat').value : 'none'
-    var wrap = $('f-repeatCount')
-    if (wrap) wrap.style.display = repeat === 'none' ? 'none' : ''
+    var repeat = currentRepeat()
+    var isNone = repeat === 'none'
+    var fCount = $('f-repeatCount')
+    var fDays = $('f-repeatDays')
+    if (fCount) fCount.style.display = isNone ? 'none' : ''
+    if (fDays) fDays.style.display = isNone ? 'none' : ''
+    var cLabel = $('repeatCountLabel')
+    if (cLabel) cLabel.textContent = isNone ? 'Số buổi' : periodLabel(repeat)
+    var dLabel = $('repeatDaysLabel')
+    if (dLabel) dLabel.textContent = daysLabel(repeat)
+    var cErr = fCount && fCount.querySelector('.bk-err')
+    if (cErr && !isNone) cErr.textContent = periodLabel(repeat) + ' phải từ 1 đến ' + maxPeriods() + '.'
+    var dErr = fDays && fDays.querySelector('.bk-err')
+    if (dErr && !isNone) {
+      dErr.textContent = 'Vui lòng chọn ít nhất một ' + (repeat === 'weekly' ? 'thứ' : 'ngày') + '.'
+    }
+    var tErr = $('f-time') && $('f-time').querySelector('.bk-err')
+    if (tErr) {
+      tErr.textContent = isNone
+        ? 'Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.'
+        : 'Vui lòng chọn ít nhất một khung giờ trong giờ hoạt động của sân.'
+    }
+    var tHint = $('bkTimeHint')
+    if (tHint) tHint.style.display = isNone ? 'none' : ''
     return repeat
+  }
+
+  /** Vẽ nhóm ô chọn thứ / ngày lặp theo kiểu đặt định kỳ hiện tại. */
+  function renderRepeatDays() {
+    var grid = $('repeatDaysGrid')
+    if (!grid) return
+    var repeat = currentRepeat()
+    if (repeat === 'none') {
+      grid.innerHTML = ''
+      return
+    }
+    grid.innerHTML = repeatDayOptions(repeat)
+      .map(function (o) {
+        var on = state.repeatDays.indexOf(o.v) >= 0
+        return (
+          '<button type="button" class="bk-chip' + (on ? ' is-selected' : '') + '" data-day="' + o.v +
+          '" aria-pressed="' + on + '">' + esc(o.l) + '</button>'
+        )
+      })
+      .join('')
+  }
+
+  /** Chọn sẵn ngày lặp theo ngày bắt đầu (chưa tay người dùng sửa). */
+  function seedRepeatDays() {
+    var repeat = currentRepeat()
+    if (repeat === 'none') return
+    var date = $('bkDate') ? $('bkDate').value : ''
+    state.repeatDays = date ? normalizeRepeatDays(date, repeat, []) : []
+    state.daysCustom = false
+    renderRepeatDays()
+  }
+
+  /** Số buổi dùng để hiển thị tổng tiền (chưa chọn giờ vẫn tạm tính 1 giờ). */
+  function plannedCount() {
+    var repeat = currentRepeat()
+    if (repeat === 'none') return 1
+    var date = $('bkDate') ? $('bkDate').value : ''
+    if (!date) return 1
+    var periods = repeatCountOf(repeat, $('bkRepeatCount') ? $('bkRepeatCount').value : '1')
+    var dates = repeatDatesOf(date, repeat, { days: state.repeatDays, count: periods })
+    return dates.length * Math.max(1, state.hours.length)
+  }
+
+  /** Lỗi hiển thị cho ô số lần lặp / tổng số buổi. */
+  function countErrorText(repeat, periodsValid, count) {
+    if (!periodsValid) return periodLabel(repeat) + ' phải từ 1 đến ' + maxPeriods() + '.'
+    return 'Tổng số buổi tối đa ' + maxSessions() + ' buổi (số ngày × khung giờ; hiện tại ' + count + ').'
   }
 
   function updateTotal() {
@@ -468,7 +675,7 @@
     var fv = $('f-voucher')
     if (fv) fv.classList.toggle('invalid', !!code && !usable)
 
-    var count = repeatCountOf(repeat, $('bkRepeatCount') ? $('bkRepeatCount').value : '1')
+    var count = plannedCount()
     var total = (usable ? subtotal - voucher.discount : subtotal) * count
     var parts = []
     if (servicePer > 0) parts.push('sân ' + courtSub.toLocaleString('vi-VN') + 'đ + DV ' + servicePer.toLocaleString('vi-VN') + 'đ')
@@ -481,6 +688,19 @@
         ? total.toLocaleString('vi-VN') + 'đ <small style="opacity:.75">(' + parts.join(' · ') + ')</small>'
         : total.toLocaleString('vi-VN') + 'đ'
     }
+    var hint = $('repeatCountHint')
+    if (hint) hint.textContent = repeat === 'none' || count <= 1 ? '' : 'Tổng ' + count + ' buổi'
+
+    var fCount = $('f-repeatCount')
+    if (fCount) {
+      var periodsRaw = $('bkRepeatCount') ? $('bkRepeatCount').value : '1'
+      var periodsValid = repeatCountOk(repeat, periodsRaw)
+      var bad = repeat !== 'none' && (!periodsValid || count > maxSessions())
+      fCount.classList.toggle('invalid', bad)
+      var cErr = fCount.querySelector('.bk-err')
+      if (cErr && repeat !== 'none') cErr.textContent = countErrorText(repeat, periodsValid, count)
+    }
+
     refreshTimeOptions()
   }
 
@@ -511,12 +731,6 @@
       '<option value="1">1 giờ</option><option value="1.5">1,5 giờ</option>' +
       '<option value="2">2 giờ</option><option value="3">3 giờ</option>' +
       '</select></div>' +
-      '<div class="bk-field full" id="f-time">' +
-      '<label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>' +
-      '<select id="bkTime" required style="display: none;"></select>' +
-      '<div class="bk-slot-grid" id="bkTimeSlotGrid"></div>' +
-      '<span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>' +
-      '</div>' +
       '<div class="bk-field" id="f-repeat">' +
       '<label for="bkRepeat">Đặt định kỳ</label>' +
       '<select id="bkRepeat">' +
@@ -527,9 +741,22 @@
         .join('') +
       '</select></div>' +
       '<div class="bk-field" id="f-repeatCount" style="display:none">' +
-      '<label for="bkRepeatCount">Số buổi</label>' +
+      '<label for="bkRepeatCount"><span id="repeatCountLabel">Số buổi</span></label>' +
       '<input type="number" id="bkRepeatCount" min="1" max="52" value="1" />' +
+      '<span class="bk-hint" id="repeatCountHint"></span>' +
       '<span class="bk-err">Số buổi phải từ 1 đến 52.</span>' +
+      '</div>' +
+      '<div class="bk-field full" id="f-repeatDays" style="display:none">' +
+      '<label id="repeatDaysLabel">Thứ trong tuần</label>' +
+      '<div class="bk-chip-group" id="repeatDaysGrid"></div>' +
+      '<span class="bk-err">Vui lòng chọn ít nhất một ngày lặp.</span>' +
+      '</div>' +
+      '<div class="bk-field full" id="f-time">' +
+      '<label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>' +
+      '<select id="bkTime" required style="display: none;"></select>' +
+      '<div class="bk-slot-grid" id="bkTimeSlotGrid"></div>' +
+      '<span class="bk-hint" id="bkTimeHint" style="display:none">Chọn được nhiều khung giờ · buổi trùng lịch hoặc đã qua giờ sẽ tự bỏ qua.</span>' +
+      '<span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>' +
       '</div>' +
       '<div class="bk-field" id="f-name">' +
       '<label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>' +
@@ -568,32 +795,44 @@
     }
 
     var date = $('bkDate') ? $('bkDate').value : ''
-    var startHour = parseFloat($('bkTime') ? $('bkTime').value : NaN)
     var duration = state.duration
     var name = $('bkName') ? $('bkName').value.trim() : ''
     var phone = $('bkPhone') ? $('bkPhone').value.trim().replace(/[\s.-]/g, '') : ''
-    var repeat = $('bkRepeat') ? $('bkRepeat').value : 'none'
+    var repeat = currentRepeat()
     var repeatRaw = $('bkRepeatCount') ? $('bkRepeatCount').value : '1'
-    var count = repeatCountOf(repeat, repeatRaw)
+    var periodsOk = repeatCountOk(repeat, repeatRaw)
+    var periods = repeatCountOf(repeat, repeatRaw)
+    var hours = state.hours.slice()
+    var dates = date ? repeatDatesOf(date, repeat, { days: state.repeatDays, count: periods }) : []
+    var sessions = date ? repeatSessionsOf(date, repeat, { days: state.repeatDays, hours: hours, count: periods }) : []
+    var count = repeat === 'none' ? 1 : dates.length * Math.max(1, hours.length)
 
     var dateOk = !!date && date >= todayStr()
-    var timeOk = isFinite(startHour) && dateOk
-    if (timeOk) {
+    var hoursOk =
+      hours.length > 0 &&
+      hours.every(function (h) {
+        return h >= venue.hours.open && h + duration <= venue.hours.close
+      })
+    var timeOk = dateOk && hoursOk
+    if (timeOk && repeat === 'none') {
       timeOk =
-        startHour >= venue.hours.open &&
-        startHour + duration <= venue.hours.close &&
-        !isPastSlot(date, startHour, startHour + duration, venue.hours.close) &&
-        !isSlotTaken(venue.id, date, startHour, duration)
+        !isPastSlot(date, hours[0], hours[0] + duration, venue.hours.close) &&
+        !isSlotTaken(venue.id, date, hours[0], duration)
     }
     var nameOk = name.length >= 2
     var phoneOk = /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone)
-    var repeatOk = repeatCountOk(repeat, repeatRaw)
+    var daysOk = repeat === 'none' || state.repeatDays.length > 0
+    var countOk = repeat === 'none' ? true : periodsOk && daysOk && count >= 1 && count <= maxSessions()
+
+    var countErr = $('f-repeatCount') && $('f-repeatCount').querySelector('.bk-err')
+    if (countErr && repeat !== 'none') countErr.textContent = countErrorText(repeat, periodsOk, count)
 
     set('date', dateOk)
     set('time', timeOk)
     set('name', nameOk)
     set('phone', phoneOk)
-    set('repeatCount', repeatOk)
+    set('repeatCount', countOk)
+    set('repeatDays', daysOk)
 
     if (!nameOk) {
       if ($('bkName')) $('bkName').focus()
@@ -616,13 +855,28 @@
     if (!timeOk) {
       if ($('bkTime')) $('bkTime').focus()
       shakeField('f-time')
-      toast('Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động', 'error')
+      toast(
+        repeat === 'none'
+          ? 'Khung giờ này đã có người đặt hoặc nằm ngoài giờ hoạt động'
+          : 'Vui lòng chọn ít nhất một khung giờ trong giờ hoạt động của sân',
+        'error',
+      )
       return
     }
-    if (!repeatOk) {
+    if (!daysOk) {
+      shakeField('f-repeatDays')
+      toast('Vui lòng chọn ít nhất một ' + (repeat === 'weekly' ? 'thứ' : 'ngày') + ' trong tuần/tháng', 'error')
+      return
+    }
+    if (!countOk) {
       if ($('bkRepeatCount')) $('bkRepeatCount').focus()
       shakeField('f-repeatCount')
-      toast('Số buổi đặt định kỳ phải từ 1 đến 52', 'error')
+      toast(
+        !periodsOk
+          ? periodLabel(repeat) + ' đặt định kỳ phải từ 1 đến ' + maxPeriods()
+          : 'Tổng số buổi đặt định kỳ tối đa ' + maxSessions() + ' buổi. Vui lòng giảm số lần lặp hoặc bớt ngày/giờ.',
+        'error',
+      )
       return
     }
 
@@ -653,29 +907,28 @@
       var voucherCode = ($('bkVoucher') && $('bkVoucher').value ? $('bkVoucher').value : '').trim().toUpperCase()
       var seriesId = repeat === 'none' ? '' : makeSeriesId()
 
-      // Đặt định kỳ: tạo từng buổi, bỏ qua buổi đã có người đặt hoặc đã qua giờ.
-      var dates = repeatDatesOf(date, repeat, count)
+      // Đặt định kỳ: tạo từng buổi (ngày × khung giờ), bỏ qua buổi trùng hoặc đã qua giờ.
       var created = []
       var skipped = []
       var lastError = ''
 
-      dates.forEach(function (d) {
+      sessions.forEach(function (s) {
         var free =
-          startHour >= venue.hours.open &&
-          startHour + duration <= venue.hours.close &&
-          !isPastSlot(d, startHour, startHour + duration, venue.hours.close) &&
-          !isSlotTaken(venue.id, d, startHour, duration)
+          s.hour >= venue.hours.open &&
+          s.hour + duration <= venue.hours.close &&
+          !isPastSlot(s.date, s.hour, s.hour + duration, venue.hours.close) &&
+          !isSlotTaken(venue.id, s.date, s.hour, duration)
         if (!free) {
-          skipped.push(d)
+          skipped.push(s.date)
           return
         }
         var result = bookFn({
           courtId: SV.courtKey ? SV.courtKey(venue.id) : venue.id,
           courtName: venue.name,
           type: venue.type || '',
-          date: d,
-          startHour: startHour,
-          endHour: startHour + duration,
+          date: s.date,
+          startHour: s.hour,
+          endHour: s.hour + duration,
           duration: duration,
           courtTotal: courtTotal,
           serviceTotal: servicePer,
@@ -693,7 +946,7 @@
         if (result && result.ok) created.push(result.booking)
         else {
           if (result && result.error) lastError = result.error
-          skipped.push(d)
+          skipped.push(s.date)
         }
       })
 
@@ -706,7 +959,9 @@
       showSuccess(venue, {
         created: created,
         skipped: skipped,
-        startHour: startHour,
+        startHour: sessions[0].hour,
+        hours: hours,
+        days: state.repeatDays.slice(),
         duration: duration,
         repeat: repeat,
         count: count,
@@ -757,6 +1012,35 @@
       info.repeat === 'none'
         ? ''
         : '<div><dt>Hình thức</dt><dd>' + esc(repeatLabel(info.repeat)) + ' · ' + created.length + ' buổi</dd></div>'
+    var hours = (info.hours && info.hours.length ? info.hours : [info.startHour])
+      .map(Number)
+      .filter(function (h) {
+        return isFinite(h)
+      })
+      .sort(function (a, b) {
+        return a - b
+      })
+    var hoursText = hours.length
+      ? hours.length === 1
+        ? timeLabel(hours[0]) + ' – ' + timeLabel(hours[0] + info.duration)
+        : hours
+            .slice(0, 4)
+            .map(function (h) {
+              return timeLabel(h)
+            })
+            .join(', ') + (hours.length > 4 ? ' … +' + (hours.length - 4) + ' khung giờ' : '')
+      : timeLabel(info.startHour) + ' – ' + timeLabel(info.startHour + info.duration)
+    var daysText =
+      info.repeat === 'none' || !info.days || !info.days.length
+        ? ''
+        : daysSummary(info.repeat, info.days)
+    var daysLine = daysText
+      ? '<div><dt>' +
+        (info.repeat === 'weekly' ? 'Thứ lặp' : 'Ngày lặp') +
+        '</dt><dd>' +
+        esc(daysText) +
+        '</dd></div>'
+      : ''
     var dateLine =
       created.length > 1
         ? '<div><dt>Ngày</dt><dd>' + esc(booking.date) + ' → ' + esc(lastBooking.date) + '</dd></div>'
@@ -784,8 +1068,9 @@
         '<div><dt>Sân</dt><dd>' + esc(venue.name) + '</dd></div>' +
         (venue.type ? '<div><dt>Loại sân</dt><dd>' + esc(typeLabel(venue.type)) + '</dd></div>' : '') +
         dateLine +
-        '<div><dt>Giờ</dt><dd>' + timeLabel(info.startHour) + ' – ' + timeLabel(info.startHour + info.duration) + '</dd></div>' +
+        '<div><dt>Giờ</dt><dd>' + hoursText + '</dd></div>' +
         '<div><dt>Thời lượng</dt><dd>' + info.duration + ' giờ</dd></div>' +
+        daysLine +
         repeatLine +
         serviceLine +
         '<div><dt>Tiền sân</dt><dd>' +
@@ -851,25 +1136,88 @@
   // ---------------------------- GẮN SỰ KIỆN ----------------------------
 
   function bindFormEvents() {
+    var form = $('bookForm')
+    // Gắn trước các handler nghiệp vụ để dọn lỗi cũ chạy trước khi tính lại.
+    form.querySelectorAll('input, select').forEach(function (el) {
+      if (el.id === 'bkVoucher') return
+      var clearErr = function () {
+        var fieldEl = el.closest('.bk-field')
+        if (fieldEl) {
+          fieldEl.classList.remove('invalid')
+          fieldEl.classList.remove('shake')
+        }
+      }
+      el.addEventListener('input', clearErr)
+      el.addEventListener('change', clearErr)
+    })
+
     var dateInput = $('bkDate')
-    dateInput.addEventListener('change', refreshTimeOptions)
+    dateInput.addEventListener('change', function () {
+      if (currentRepeat() !== 'none' && !state.daysCustom) seedRepeatDays()
+      updateTotal()
+    })
 
     $('bkTimeSlotGrid').addEventListener('click', function (e) {
       var chip = e.target.closest('.bk-slot')
       if (!chip || chip.disabled) return
+      var h = parseFloat(chip.dataset.hour)
+      if (!isFinite(h)) return
+      if (currentRepeat() === 'none') {
+        state.hours = [h]
+      } else {
+        var idx = state.hours.indexOf(h)
+        if (idx >= 0) {
+          if (state.hours.length === 1) {
+            toast('Cần chọn ít nhất một khung giờ', 'error')
+            return
+          }
+          state.hours.splice(idx, 1)
+        } else {
+          state.hours.push(h)
+          state.hours.sort(function (a, b) {
+            return a - b
+          })
+        }
+      }
       var t = $('bkTime')
-      t.value = chip.dataset.hour
-      t.dispatchEvent(new Event('change'))
+      if (t) t.value = state.hours.length ? String(state.hours[0]) : ''
       var f = $('f-time')
       if (f) {
         f.classList.remove('invalid')
         f.classList.remove('shake')
       }
-      renderTimeSlots()
+      updateTotal()
+    })
+
+    $('repeatDaysGrid').addEventListener('click', function (e) {
+      var chip = e.target.closest('.bk-chip')
+      if (!chip) return
+      var repeat = currentRepeat()
+      if (repeat === 'none') return
+      var v = parseInt(chip.dataset.day, 10)
+      if (!isFinite(v)) return
+      var next = state.repeatDays.slice()
+      var idx = next.indexOf(v)
+      if (idx >= 0) next.splice(idx, 1)
+      else next.push(v)
+      if (!next.length) {
+        toast('Vui lòng chọn ít nhất một ' + (repeat === 'weekly' ? 'thứ' : 'ngày'), 'error')
+        return
+      }
+      var date = $('bkDate') ? $('bkDate').value : ''
+      state.repeatDays = normalizeRepeatDays(date, repeat, next)
+      state.daysCustom = true
+      renderRepeatDays()
+      updateTotal()
     })
 
     $('bkDuration').addEventListener('change', updateTotal)
-    $('bkRepeat').addEventListener('change', updateTotal)
+    $('bkRepeat').addEventListener('change', function () {
+      syncRepeatUI()
+      if (currentRepeat() === 'none') state.hours = state.hours.slice(0, 1)
+      else seedRepeatDays()
+      updateTotal()
+    })
     $('bkRepeatCount').addEventListener('input', updateTotal)
     $('bkVoucher').addEventListener('input', updateTotal)
 
@@ -894,20 +1242,6 @@
       var inc = item && item.querySelector('.qty-btn[data-act="inc"]')
       if (inc) inc.toggleAttribute('disabled', next >= max)
       updateTotal()
-    })
-
-    var form = $('bookForm')
-    form.querySelectorAll('input, select').forEach(function (el) {
-      if (el.id === 'bkVoucher') return
-      var clearErr = function () {
-        var fieldEl = el.closest('.bk-field')
-        if (fieldEl) {
-          fieldEl.classList.remove('invalid')
-          fieldEl.classList.remove('shake')
-        }
-      }
-      el.addEventListener('input', clearErr)
-      el.addEventListener('change', clearErr)
     })
 
     form.addEventListener('submit', function (e) {
@@ -979,6 +1313,9 @@
       state.opts = opts
       state.duration = 1
       state.services = {}
+      state.hours = []
+      state.repeatDays = []
+      state.daysCustom = false
       Object.keys(opts.services || {}).forEach(function (id) {
         var svc = null
         for (var i = 0; i < SERVICES.length; i++) if (SERVICES[i].id === id) svc = SERVICES[i]
@@ -1001,22 +1338,46 @@
       if (opts.repeat && $('bkRepeat')) $('bkRepeat').value = opts.repeat
       if (opts.repeatCount && $('bkRepeatCount')) $('bkRepeatCount').value = String(opts.repeatCount)
 
+      var repeat = syncRepeatUI()
+      if (repeat !== 'none') {
+        seedRepeatDays()
+        if (opts.days && opts.days.length) {
+          state.repeatDays = normalizeRepeatDays(dateInput.value, repeat, opts.days)
+          state.daysCustom = true
+          renderRepeatDays()
+        }
+      }
+
       updateTotal()
 
-      if (opts.hour != null) {
-        var sel = $('bkTime')
-        var hours = [].map
+      var sel = $('bkTime')
+      var presetHours = Array.isArray(opts.hours)
+        ? opts.hours
+            .map(Number)
+            .filter(function (h) {
+              return isFinite(h)
+            })
+        : []
+      if (!presetHours.length && opts.hour != null) {
+        var available = [].map
           .call(sel.options, function (o) {
             return Number(o.value)
           })
           .filter(isFinite)
-        if (hours.length) {
-          sel.value = String(
-            hours.reduce(function (a, b) {
+        if (available.length) {
+          presetHours = [
+            available.reduce(function (a, b) {
               return Math.abs(b - opts.hour) < Math.abs(a - opts.hour) ? b : a
             }),
-          )
+          ]
         }
+      }
+      if (presetHours.length) {
+        state.hours = presetHours.sort(function (a, b) {
+          return a - b
+        })
+        sel.value = String(state.hours[0])
+        updateTotal()
       }
       renderTimeSlots()
       openModal()
