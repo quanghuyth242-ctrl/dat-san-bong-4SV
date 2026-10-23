@@ -323,6 +323,20 @@
     '.ds4sv-overlay .bk-chip:hover{background:#dcfce7}',
     '.ds4sv-overlay .bk-chip.is-selected{background:var(--green-primary,#16a34a);border-color:var(--green-primary,#16a34a);color:#fff;box-shadow:0 3px 8px rgba(22,163,74,.28)}',
     '.ds4sv-overlay .bk-field.shake .bk-chip-group{animation:ds4svShake .35s ease-in-out}',
+    '.ds4sv-overlay .bk-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px}',
+    '.ds4sv-overlay .bk-quick button{border:1px solid #e2e8f0;background:#fff;color:#475569;border-radius:8px;padding:3px 9px;font-size:.7rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s ease}',
+    '.ds4sv-overlay .bk-quick button:hover{border-color:var(--green-primary,#16a34a);color:var(--green-dark,#166534);background:#f0fdf4}',
+    '.ds4sv-overlay .bk-rp{border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:10px 12px;display:flex;flex-direction:column;gap:6px}',
+    '.ds4sv-overlay .bk-rp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.8rem}',
+    '.ds4sv-overlay .bk-rp-head b{color:var(--green-primary,#16a34a);font-size:.92rem}',
+    '.ds4sv-overlay .bk-rp-head span{color:#64748b;font-size:.72rem}',
+    '.ds4sv-overlay .bk-rp ul{margin:0;padding:0;list-style:none;max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:4px}',
+    '.ds4sv-overlay .bk-rp ul li{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:.8rem;color:#0f172a;padding:4px 6px;background:#fff;border-radius:7px;border:1px solid #f1f5f9}',
+    '.ds4sv-overlay .bk-rp ul li b{font-weight:700;white-space:nowrap}',
+    '.ds4sv-overlay .bk-rp ul li span{color:#166534;font-weight:700;white-space:nowrap}',
+    '.ds4sv-overlay .bk-rp ul li i{font-style:normal;opacity:.45;padding:0 4px}',
+    '.ds4sv-overlay .bk-rp-note{font-size:.72rem;color:#b45309;display:flex;gap:6px;align-items:center}',
+    '.ds4sv-overlay .bk-rp-empty{font-size:.8rem;color:#64748b}',
     '.ds4sv-overlay .service-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
     '.ds4sv-overlay .service-item{display:flex;align-items:center;gap:10px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px;background:#fff;transition:border-color .15s,background .15s}',
     '.ds4sv-overlay .service-item.active{border-color:var(--green-primary,#16a34a);background:#f0fdf4}',
@@ -540,7 +554,7 @@
             ? 'Đã quá giờ đặt'
             : 'Đã có người đặt'
           : a.total > 1
-            ? 'Trống ' + a.free + '/' + a.total + ' buổi'
+            ? 'Còn ' + a.free + ' buổi'
             : 'Còn trống'
       html +=
         '<button type="button" class="bk-slot' + cls + '" data-hour="' + h + '"' +
@@ -589,6 +603,94 @@
     renderTimeSlots(av)
   }
 
+  // ---------------------------- BẢN XEM TRƯỚC CÁC BUỔI ----------------------------
+
+  /** Các buổi sẽ thực sự tạo ra (đã lọc trùng lịch / quá giờ). */
+  function previewSessions() {
+    var v = state.venue
+    var dates = repeatDatesList()
+    var hours = state.hours.slice()
+    var duration = state.duration
+    var groups = []
+    var skipped = 0
+    var total = 0
+    for (var i = 0; i < dates.length; i += 1) {
+      var d = dates[i]
+      var dayHours = []
+      for (var j = 0; j < hours.length; j += 1) {
+        var h = hours[j]
+        var free =
+          h >= v.hours.open &&
+          h + duration <= v.hours.close &&
+          !isPastSlot(d, h, h + duration, v.hours.close) &&
+          !isSlotTaken(v.id, d, h, duration)
+        if (free) dayHours.push(h)
+        else skipped += 1
+      }
+      if (dayHours.length) {
+        groups.push({ date: d, hours: dayHours })
+        total += dayHours.length
+      }
+    }
+    return { groups: groups, skipped: skipped, total: total }
+  }
+
+  function dayHeading(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00')
+    if (isNaN(d.getTime())) return dateStr
+    return weekdayLabel(d.getDay()) + ', ' + d.getDate() + '/' + (d.getMonth() + 1)
+  }
+
+  /** Vẽ danh sách buổi đặt cụ thể (ngày + giờ) để người dùng kiểm tra trước khi xác nhận. */
+  function renderRepeatPreview() {
+    var box = $('repeatPreview')
+    if (!box) return
+    var repeat = currentRepeat()
+    if (repeat === 'none' || !state.venue) {
+      box.innerHTML = ''
+      return
+    }
+    var pv = previewSessions()
+    if (!pv.total) {
+      box.innerHTML =
+        '<div class="bk-rp-empty">Chưa có buổi nào trống với cấu hình hiện tại — thử đổi ngày, thứ hoặc khung giờ.</div>'
+      return
+    }
+    var first = pv.groups[0].date
+    var last = pv.groups[pv.groups.length - 1].date
+    var list = pv.groups
+      .map(function (g) {
+        return (
+          '<li><b>' +
+          esc(dayHeading(g.date)) +
+          '</b><span>' +
+          g.hours
+            .map(function (h) {
+              return timeLabel(h) + '–' + timeLabel(h + state.duration)
+            })
+            .join('<i>·</i>') +
+          '</span></li>'
+        )
+      })
+      .join('')
+    box.innerHTML =
+      '<div class="bk-rp-head"><b>' +
+      pv.total +
+      ' buổi</b><span>' +
+      esc(first) +
+      ' → ' +
+      esc(last) +
+      '</span></div>' +
+      '<ul>' +
+      list +
+      '</ul>' +
+      (pv.skipped
+        ? '<div class="bk-rp-note"><i class="fa-solid fa-circle-info"></i> ' +
+          pv.skipped +
+          ' buổi bị bỏ qua vì trùng lịch hoặc đã qua giờ</div>'
+        : '')
+  }
+
   // ---------------------------- TỔNG TIỀN ----------------------------
 
   function syncRepeatUI() {
@@ -596,8 +698,15 @@
     var isNone = repeat === 'none'
     var fCount = $('f-repeatCount')
     var fDays = $('f-repeatDays')
+    var fPreview = $('f-repeatPreview')
     if (fCount) fCount.style.display = isNone ? 'none' : ''
     if (fDays) fDays.style.display = isNone ? 'none' : ''
+    if (fPreview) fPreview.style.display = isNone ? 'none' : ''
+    var quick = $('repeatQuick')
+    if (quick) quick.style.display = repeat === 'weekly' ? '' : 'none'
+    var dField = $('f-date')
+    var dLabel = dField && dField.querySelector('label')
+    if (dLabel) dLabel.innerHTML = (isNone ? 'Ngày' : 'Bắt đầu từ') + ' <span style="color:#dc2626">*</span>'
     var cLabel = $('repeatCountLabel')
     if (cLabel) cLabel.textContent = isNone ? 'Số buổi' : periodLabel(repeat)
     var dLabel = $('repeatDaysLabel')
@@ -706,6 +815,7 @@
     }
 
     refreshTimeOptions()
+    renderRepeatPreview()
   }
 
   // ---------------------------- FORM ----------------------------
@@ -750,6 +860,11 @@
       '</div>' +
       '<div class="bk-field full" id="f-repeatDays" style="display:none">' +
       '<label id="repeatDaysLabel">Thứ trong tuần</label>' +
+      '<div class="bk-quick" id="repeatQuick" style="display:none">' +
+      '<button type="button" data-quick="weekdays">Thứ 2–6</button>' +
+      '<button type="button" data-quick="weekend">Thứ 7, CN</button>' +
+      '<button type="button" data-quick="all">Tất cả</button>' +
+      '</div>' +
       '<div class="bk-chip-group" id="repeatDaysGrid"></div>' +
       '<span class="bk-err">Vui lòng chọn ít nhất một ngày lặp.</span>' +
       '</div>' +
@@ -757,8 +872,12 @@
       '<label for="bkTime">Khung giờ <span style="color:#dc2626">*</span></label>' +
       '<select id="bkTime" required style="display: none;"></select>' +
       '<div class="bk-slot-grid" id="bkTimeSlotGrid"></div>' +
-      '<span class="bk-hint" id="bkTimeHint" style="display:none">Chọn được nhiều khung giờ · buổi trùng lịch hoặc đã qua giờ sẽ tự bỏ qua.</span>' +
+      '<span class="bk-hint" id="bkTimeHint" style="display:none">Bấm để bật/tắt nhiều khung giờ · buổi trùng lịch hoặc đã qua giờ sẽ tự bỏ qua.</span>' +
       '<span class="bk-err">Khung giờ này không còn trống hoặc nằm ngoài giờ mở cửa.</span>' +
+      '</div>' +
+      '<div class="bk-field full" id="f-repeatPreview" style="display:none">' +
+      '<label>Các buổi đặt</label>' +
+      '<div class="bk-rp" id="repeatPreview"></div>' +
       '</div>' +
       '<div class="bk-field" id="f-name">' +
       '<label for="bkName">Họ tên <span style="color:#dc2626">*</span></label>' +
@@ -1188,6 +1307,18 @@
         f.classList.remove('invalid')
         f.classList.remove('shake')
       }
+      updateTotal()
+    })
+
+    $('repeatQuick').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-quick]')
+      if (!btn || currentRepeat() !== 'weekly') return
+      var preset = { weekdays: [1, 2, 3, 4, 5], weekend: [6, 0], all: [1, 2, 3, 4, 5, 6, 0] }[btn.dataset.quick]
+      if (!preset) return
+      var date = $('bkDate') ? $('bkDate').value : ''
+      state.repeatDays = normalizeRepeatDays(date, 'weekly', preset)
+      state.daysCustom = true
+      renderRepeatDays()
       updateTotal()
     })
 
