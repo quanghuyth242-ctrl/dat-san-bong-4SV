@@ -7,10 +7,19 @@
 const R = window.SV.repeat // store.js được nạp trước module này trên mọi trang
 
 export const REPEAT_LABEL = R.LABEL
+export const PERIOD_LABEL = R.PERIOD_LABEL
+export const DAYS_LABEL = R.DAYS_LABEL
+export const WEEK = R.WEEK
+export const MAX_PERIODS = R.MAX_PERIODS
+export const MAX_SESSIONS = R.MAX_SESSIONS
 export const toDateStr = R.toDateStr
 export const addDays = R.addDays
 export const addMonths = R.addMonths
+export const weekdayOf = R.weekdayOf
+export const dayOfMonthOf = R.dayOfMonthOf
+export const normalizeRepeatDays = R.normalizeDays
 export const repeatDates = R.dates
+export const repeatSessions = R.sessions
 export const repeatCountOf = R.countOf
 export const repeatCountOk = R.countOk
 export const makeSeriesId = R.seriesId
