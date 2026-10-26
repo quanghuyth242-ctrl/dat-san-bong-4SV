@@ -765,13 +765,15 @@ function myBookings(user) {
   if (!user) return []
   const email = String(user.email || '').trim().toLowerCase()
   const phone = digits(user.phone)
-  return SV.bookings().filter((b) => {
+  const mine = SV.bookings().filter((b) => {
     if (user.id && b.userId && b.userId === user.id) return true
     const bEmail = String(b.customer?.email || '').trim().toLowerCase()
     if (email && bEmail) return bEmail === email
     if (phone && digits(b.customer?.phone)) return digits(b.customer.phone) === phone
     return false
   })
+  // Đặt định kỳ gộp nhiều buổi thành MỘT đơn: hiện 1 thẻ, tiền = tổng cả đơn.
+  return SV.groupOrders ? SV.groupOrders(mine) : mine
 }
 
 function sortBookings(list, upcomingFirst) {
@@ -872,7 +874,9 @@ function cardHtml(b) {
           </span>
         </div>
         <div class="acc-item-meta">
-          <span><i class="fa-regular fa-calendar"></i> ${esc(formatDate(b.date))}</span>
+          <span><i class="fa-regular fa-calendar"></i> ${esc(formatDate(b.date))}${
+            b.orderCount > 1 ? ` → ${esc(formatDate(b.orderTo))}` : ''
+          }</span>
           <span><i class="fa-regular fa-clock"></i> ${esc(timeLabel(start))} – ${esc(timeLabel(end))}</span>
           <span><i class="fa-solid fa-hourglass-half"></i> ${duration} giờ</span>
           <span><i class="fa-solid fa-location-dot"></i> ${esc(b.fieldId || b.courtId || '—')}</span>
@@ -1131,13 +1135,25 @@ function cancelBooking(id) {
     notify('Chỉ huỷ được đơn đang chờ xử lý hoặc đã xác nhận')
     return
   }
-  const result = SV.setBookingStatus(id, 'cancelled')
-  if (!result.ok) {
-    notify(result.error || 'Không huỷ được đơn')
+
+  // Đặt định kỳ là MỘT đơn: huỷ hết các buổi, không để sót buổi "treo" dở dang.
+  const order = SV.orderOf ? SV.orderOf(id) : null
+  const targets = (order?.items || [booking]).filter((b) => CANCELLED_BY_USER.includes(b.status))
+  if (!targets.length) {
+    notify('Chỉ huỷ được đơn đang chờ xử lý hoặc đã xác nhận')
     return
   }
+
+  for (const t of targets) {
+    const result = SV.setBookingStatus(t.id, 'cancelled')
+    if (!result.ok) {
+      notify(result.error || 'Không huỷ được đơn')
+      return
+    }
+  }
+
   refresh()
-  notify(`Đã huỷ đơn ${id}`)
+  notify(targets.length > 1 ? `Đã huỷ đơn ${id} (${targets.length} buổi)` : `Đã huỷ đơn ${id}`)
 }
 
 /**

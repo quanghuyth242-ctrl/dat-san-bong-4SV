@@ -615,6 +615,13 @@ function viewBooking(id) {
   if (!b) return;
 
   const body = document.getElementById('bookingDetailBody');
+  // Đơn đặt định kỳ: tạm tính/giảm giá/tổng phải là TIỀN CẢ NHÓM, không phải 1 buổi.
+  const detailOrder = orderOfBooking(b.id);
+  const detailGrouped = !!(detailOrder && detailOrder.items && detailOrder.items.length > 1);
+  const detailSubtotal = detailGrouped ? detailOrder.subtotal : Number(b.subtotal || 0);
+  const detailDiscount = detailGrouped ? detailOrder.discount : Number(b.discount || 0);
+  const detailTotal = detailGrouped ? Number(detailOrder.total) || 0 : Number(b.total) || 0;
+  const detailSessionsNote = detailGrouped ? ` · ${detailOrder.items.length} buổi` : '';
   if (body) {
     body.innerHTML = `
       <div class="detail-row"><div class="detail-label">Mã đơn:</div><div class="detail-value"><strong>${b.id}</strong></div></div>
@@ -631,12 +638,12 @@ function viewBooking(id) {
       }
       ${Array.isArray(b.services) && b.services.length ? `<div class="detail-row"><div class="detail-label">Dịch vụ:</div><div class="detail-value">${b.services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</div></div>` : ''}
       ${
-        b.discount > 0
-          ? `<div class="detail-row"><div class="detail-label">Tạm tính:</div><div class="detail-value">${formatCurrency(b.subtotal || b.total + b.discount)}</div></div>
-             <div class="detail-row"><div class="detail-label">Mã giảm giá:</div><div class="detail-value">${b.voucherCode} (-${formatCurrency(b.discount)})</div></div>`
+        detailDiscount > 0
+          ? `<div class="detail-row"><div class="detail-label">Tạm tính:</div><div class="detail-value">${formatCurrency(detailSubtotal || detailTotal + detailDiscount)}</div></div>
+             <div class="detail-row"><div class="detail-label">Mã giảm giá:</div><div class="detail-value">${b.voucherCode} (-${formatCurrency(detailDiscount)})</div></div>`
           : ''
       }
-      <div class="detail-row"><div class="detail-label">Tổng tiền:</div><div class="detail-value"><strong>${formatCurrency(b.total)}</strong></div></div>
+      <div class="detail-row"><div class="detail-label">Tổng tiền:</div><div class="detail-value"><strong>${formatCurrency(detailTotal)}${detailSessionsNote}</strong></div></div>
       <div class="detail-row"><div class="detail-label">Liên hệ:</div><div class="detail-value">${b.customer?.phone || '—'}</div></div>
       <div class="detail-row"><div class="detail-label">Hình thức TT:</div><div class="detail-value">${getStatusBadge(b.paymentMethod || 'at_court', 'paymentMethod')}</div></div>
       <div class="detail-row"><div class="detail-label">Trạng thái TT:</div><div class="detail-value">${getStatusBadge(b.paymentStatus || 'unpaid', 'payment')}</div></div>
@@ -681,11 +688,11 @@ function adminCollectPayment(id) {
 
   showConfirm(
     'Xác nhận thu tiền',
-    `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã nhận tiền thực tế qua ${methodText}? Đơn hàng sẽ được chuyển sang Đã thanh toán và Đã xác nhận.`,
+    `Xác nhận đơn "${b.id}" (${orderAmountLabel(id, b.total)}) đã nhận tiền thực tế qua ${methodText}? Đơn hàng sẽ được chuyển sang Đã thanh toán và Đã xác nhận.`,
     () => {
       const res = processCollectMoney(id, {
         paymentMethod: b.paymentMethod || 'at_court',
-        amount: b.total,
+        amount: Number(orderOfBooking(id)?.total) || b.total,
         note: `Admin xác nhận thu tiền ${methodText}`
       });
       if (res.ok) {
@@ -992,24 +999,31 @@ function openCollectModal(id) {
   const b = DataManager.getBookings().find(x => x.id === id);
   if (!b) return;
 
+  // Đặt định kỳ: ô tổng phải hiện TIỀN CẢ ĐƠN, không phải tiền 1 buổi.
+  const order = orderOfBooking(id);
+  const orderTotal = Number(order?.total) || Number(b.total) || 0;
+  const grouped = !!(order && order.items && order.items.length > 1);
+
   currentCollectBookingId = id;
   const idEl = document.getElementById('collectBookingId');
-  if (idEl) idEl.textContent = b.id;
+  if (idEl) idEl.textContent = grouped ? `${b.id} (${order.items.length} buổi)` : b.id;
 
   const nameEl = document.getElementById('collectCustomerName');
   if (nameEl) nameEl.textContent = b.userName + (b.customer?.phone ? ` (${b.customer.phone})` : '');
 
   const courtEl = document.getElementById('collectCourtInfo');
-  if (courtEl) courtEl.textContent = `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
+  if (courtEl) courtEl.textContent = grouped
+    ? `${b.fieldName} | ${order.items.length} buổi đặt định kỳ (${b.date} → ${order.items[order.items.length - 1].date})`
+    : `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
 
   const totalEl = document.getElementById('collectTotalAmount');
-  if (totalEl) totalEl.textContent = formatCurrency(b.total);
+  if (totalEl) totalEl.textContent = formatCurrency(orderTotal);
 
   const methodSelect = document.getElementById('collectMethodSelect');
   if (methodSelect) methodSelect.value = b.paymentMethod || 'at_court';
 
   const amountInput = document.getElementById('collectAmountInput');
-  if (amountInput) amountInput.value = b.total;
+  if (amountInput) amountInput.value = orderTotal;
 
   const noteInput = document.getElementById('collectNoteInput');
   if (noteInput) noteInput.value = '';
@@ -1024,7 +1038,8 @@ function submitCollectMoneyAction() {
   if (!b) return;
 
   const method = document.getElementById('collectMethodSelect')?.value || 'at_court';
-  const amount = Number(document.getElementById('collectAmountInput')?.value) || b.total;
+  const fallbackTotal = Number(orderOfBooking(id)?.total) || Number(b.total) || 0;
+  const amount = Number(document.getElementById('collectAmountInput')?.value) || fallbackTotal;
   const note = document.getElementById('collectNoteInput')?.value.trim() || '';
 
   const res = processCollectMoney(id, {
@@ -1054,11 +1069,11 @@ function confirmCollectMoneyAction(id) {
 
   showConfirm(
     'Xác nhận thu tiền',
-    `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã thanh toán thành công qua ${methodText}? Đơn hàng sẽ tự động chuyển sang trạng thái Đã xác nhận.`,
+    `Xác nhận đơn "${b.id}" (${orderAmountLabel(id, b.total)}) đã thanh toán thành công qua ${methodText}? Đơn hàng sẽ tự động chuyển sang trạng thái Đã xác nhận.`,
     () => {
       processCollectMoney(id, {
         paymentMethod: b.paymentMethod || (isBank ? 'bank_transfer' : 'at_court'),
-        amount: b.total,
+        amount: Number(orderOfBooking(id)?.total) || b.total,
         note: `Đã đối soát xác nhận ${methodText}`
       });
       thuTienData = DataManager.getBookings();
@@ -1219,16 +1234,41 @@ function renderThuTienTable(data) {
 }
 
 /**
+ * Đơn của một mã đơn. Đặt định kỳ tạo N bản ghi chung 1 seriesId, admin thu tiền
+ * một lần cho cả nhóm nên cần biết tổng và danh sách buổi của đơn gộp.
+ */
+function orderOfBooking(id) {
+  if (SV.orderOf) {
+    const o = SV.orderOf(id);
+    if (o) return o;
+  }
+  const b = SV.bookings().find((x) => x.id === String(id));
+  return b ? { id: b.id, head: b, items: [b], count: 1, total: Number(b.total) || 0 } : null;
+}
+
+/** Câu tiền cho hộp xác nhận: đơn định kỳ hiện TỔNG CẢ NHÓM kèm số buổi. */
+function orderAmountLabel(id, fallbackTotal) {
+  const o = orderOfBooking(id);
+  if (!o) return formatCurrency(fallbackTotal || 0);
+  const label = formatCurrency(Number(o.total) || 0);
+  return o.items?.length > 1 ? `${label} (${o.items.length} buổi)` : label;
+}
+
+/**
  * Xử lý thu tiền: ghi nhận thanh toán thực tế và cập nhật trạng thái đơn.
  * Chỉ gọi sau khi Admin xác nhận đã nhận được tiền thực tế.
+ * Đơn đặt định kỳ: ghi "đã thu" cho TẤT CẢ buổi để khách không còn thấy buổi nào treo.
  */
 function processCollectMoney(id, { paymentMethod, amount, note }) {
   const list = SV.bookings();
   const idx = list.findIndex(b => b.id === String(id));
   if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' };
 
-  const b = list[idx];
   const now = new Date().toLocaleString('vi-VN');
+  const order = orderOfBooking(id);
+  const grouped = !!(order && order.items && order.items.length > 1);
+  const targets = {};
+  (order?.items || [list[idx]]).forEach((x) => { targets[x.id] = true; });
 
   // Chuẩn hoá phương thức thanh toán về 2 giá trị admin dùng
   let normalizedMethod = paymentMethod;
@@ -1238,15 +1278,19 @@ function processCollectMoney(id, { paymentMethod, amount, note }) {
     normalizedMethod = 'at_court';
   }
 
-  list[idx] = Object.assign({}, b, {
-    paymentStatus: 'paid',
-    paymentMethod: normalizedMethod,
-    paid: true,
-    paidAt: now,
-    paidAmount: amount || b.total,
-    collectNote: note || '',
-    // Tự động xác nhận đơn khi thu tiền (nếu đang pending)
-    status: b.status === 'pending' ? 'confirmed' : b.status,
+  list.forEach((item, i) => {
+    if (!targets[item.id]) return;
+    list[i] = Object.assign({}, item, {
+      paymentStatus: 'paid',
+      paymentMethod: normalizedMethod,
+      paid: true,
+      paidAt: now,
+      // Đơn gộp: mỗi buổi ghi đúng tiền của buổi đó, tổng doanh thu mới đúng.
+      paidAmount: grouped ? Number(item.total) || 0 : (amount || item.total),
+      collectNote: note || '',
+      // Tự động xác nhận đơn khi thu tiền (nếu đang pending)
+      status: item.status === 'pending' ? 'confirmed' : item.status,
+    });
   });
 
   SV.saveBookings(list);
@@ -1255,6 +1299,7 @@ function processCollectMoney(id, { paymentMethod, amount, note }) {
 
 /**
  * Xử lý hoàn tiền: chỉ gọi sau khi Admin xác nhận đã hoàn tiền cho khách.
+ * Đơn đặt định kỳ hoàn một lần -> hoàn cả nhóm buổi.
  */
 function processRefundMoney(id, { amount, reason, note }) {
   const list = SV.bookings();
@@ -1267,14 +1312,21 @@ function processRefundMoney(id, { amount, reason, note }) {
   }
 
   const now = new Date().toLocaleString('vi-VN');
+  const order = orderOfBooking(id);
+  const grouped = !!(order && order.items && order.items.length > 1);
+  const targets = {};
+  (order?.items || [list[idx]]).forEach((x) => { targets[x.id] = true; });
 
-  list[idx] = Object.assign({}, b, {
-    paymentStatus: 'refunded',
-    status: 'refunded',
-    refundAmount: amount || b.total,
-    refundReason: reason || 'Khách yêu cầu hủy đơn',
-    refundNote: note || '',
-    refundedAt: now,
+  list.forEach((item, i) => {
+    if (!targets[item.id]) return;
+    list[i] = Object.assign({}, item, {
+      paymentStatus: 'refunded',
+      status: 'refunded',
+      refundAmount: grouped ? Number(item.total) || 0 : (amount || item.total),
+      refundReason: reason || 'Khách yêu cầu hủy đơn',
+      refundNote: note || '',
+      refundedAt: now,
+    });
   });
 
   SV.saveBookings(list);
@@ -1416,23 +1468,30 @@ function openRefundModal(id) {
   const b = DataManager.getBookings().find(x => x.id === id);
   if (!b) return;
 
+  // Đơn định kỳ hoàn một lần -> hiện tổng CẢ NHÓM.
+  const order = orderOfBooking(id);
+  const grouped = !!(order && order.items && order.items.length > 1);
+  const orderTotal = Number(order?.total) || Number(b.total) || 0;
+
   currentRefundBookingId = id;
   const idEl = document.getElementById('refundBookingId');
-  if (idEl) idEl.textContent = b.id;
+  if (idEl) idEl.textContent = grouped ? `${b.id} (${order.items.length} buổi)` : b.id;
 
   const nameEl = document.getElementById('refundCustomerName');
   if (nameEl) nameEl.textContent = b.userName + (b.customer?.phone ? ` (${b.customer.phone})` : '');
 
   const courtEl = document.getElementById('refundCourtInfo');
-  if (courtEl) courtEl.textContent = `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
+  if (courtEl) courtEl.textContent = grouped
+    ? `${b.fieldName} | ${order.items.length} buổi đặt định kỳ (${b.date} → ${order.items[order.items.length - 1].date})`
+    : `${b.fieldName} | ${b.date} (${b.startTime} - ${b.endTime})`;
 
   const paidEl = document.getElementById('refundPaidAmount');
-  if (paidEl) paidEl.textContent = formatCurrency(b.total);
+  if (paidEl) paidEl.textContent = formatCurrency(orderTotal);
 
   const amountInput = document.getElementById('refundAmountInput');
   if (amountInput) {
-    amountInput.value = b.total;
-    amountInput.max = b.total;
+    amountInput.value = orderTotal;
+    amountInput.max = orderTotal;
   }
 
   const reasonSelect = document.getElementById('refundReasonSelect');
@@ -1665,11 +1724,11 @@ function confirmPaymentReceived(id) {
 
   showConfirm(
     'Xác nhận nhận tiền',
-    `Xác nhận đơn "${b.id}" (${formatCurrency(b.total)}) đã thanh toán thành công qua ${methodText}?`,
+    `Xác nhận đơn "${b.id}" (${orderAmountLabel(id, b.total)}) đã thanh toán thành công qua ${methodText}?`,
     () => {
       processCollectMoney(id, {
         paymentMethod: b.paymentMethod,
-        amount: b.total,
+        amount: Number(orderOfBooking(id)?.total) || b.total,
         note: `Đã xác nhận thanh toán qua ${methodText}`
       });
       paymentsData = DataManager.getBookings();

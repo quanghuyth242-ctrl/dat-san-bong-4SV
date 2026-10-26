@@ -201,7 +201,9 @@ function bookingCard(b) {
           </span>
         </div>
         <div class="hist-meta">
-          <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}</span>
+          <span><i class="fa-regular fa-calendar"></i> ${escapeHtml(formatDate(b.date))}${
+            b.orderCount > 1 ? ` → ${escapeHtml(formatDate(b.orderTo))}` : ''
+          }</span>
           <span><i class="fa-regular fa-clock"></i> ${timeLabel(startHour)} – ${timeLabel(endHour)}</span>
           <span><i class="fa-solid fa-tag"></i> ${escapeHtml(b.type || 'Sân bóng')}</span>
           ${
@@ -243,11 +245,26 @@ function bookingCard(b) {
 
 const state = { user: null, record: null, bookings: [], filter: 'all' }
 
+/**
+ * Gộp các buổi của một lần đặt định kỳ (cùng seriesId) thành MỘT đơn.
+ *
+ * Trước đây mỗi buổi là một đơn riêng nên trang này hiện N thẻ, mỗi thẻ một
+ * khoản tiền -> khách thấy "chia ra thành nhiều đơn" và lệch với số tiền đã
+ * thấy ở màn đặt. Giờ mỗi đơn gộp chỉ hiện 1 thẻ, tiền = TỔNG CẢ các buổi
+ * (đúng số khách sẽ trả ở trang thanh toán).
+ *
+ * Logic gộp nằm chung ở SV.groupOrders (store.js) để các trang dùng một kiểu.
+ * Chỉ trả về bản sao để state.bookings (dữ liệu thô) vẫn giữ từng buổi cho
+ * các việc nền như đánh dấu "Đã hoàn thành" hay đồng bộ với trang quản trị.
+ */
+function groupOrders(list) {
+  if (window.SV?.groupOrders) return SV.groupOrders(list)
+  return list
+}
+
 function visibleBookings() {
-  const list = [...state.bookings].sort((a, b) => {
-    const key = (x) => `${x.date || ''} ${String(Math.floor(Number(x.startHour) || 0)).padStart(2, '0')}`
-    return key(b).localeCompare(key(a))
-  })
+  const keyOf = (b) => b.orderSort || `${b.date || ''} ${String(Math.floor(Number(b.startHour) || 0)).padStart(2, '0')}`
+  const list = groupOrders(state.bookings).sort((a, b) => keyOf(b).localeCompare(keyOf(a)))
   if (state.filter === 'upcoming') return list.filter(isUpcoming)
   if (state.filter === 'pending') return list.filter((b) => b.status === 'pending')
   if (state.filter === 'completed') return list.filter((b) => b.status === 'completed')
@@ -283,7 +300,8 @@ function renderProfile() {
 }
 
 function renderStats() {
-  const list = state.bookings
+  // Gộp đơn định kỳ: đếm theo ĐƠN và cộng tiền theo ĐƠN, buổi không bị đếm trùng.
+  const list = groupOrders(state.bookings)
   // Tổng chi tiêu là số tiền ĐÃ đóng: đơn huỷ (kể cả đã hoàn tiền) không tính.
   const spent = list.filter(isPaid).reduce((sum, b) => sum + (Number(b.total) || 0), 0)
 
@@ -411,29 +429,49 @@ function cancelBooking(id) {
   const idx = list.findIndex((b) => b.id === id)
   if (idx === -1) return
   const booking = list[idx]
-  if (!['pending', 'confirmed'].includes(booking.status)) {
+  const sid = String(booking.seriesId || '')
+
+  // Đơn định kỳ là MỘT đơn: huỷ hết các buổi, nếu không khách sẽ còn buổi "treo".
+  const targets = list.filter(
+    (b) =>
+      (sid ? String(b.seriesId || '') === sid : b.id === booking.id) &&
+      ['pending', 'confirmed'].includes(b.status),
+  )
+  if (!targets.length) {
     toast('Chỉ huỷ được đơn đang chờ xử lý hoặc đã xác nhận.', 'error')
     return
   }
 
-  const wasPaid = isPaid(booking)
-  booking.status = 'cancelled'
-  booking.cancelledAt = new Date().toISOString()
-  // Đơn đã đóng tiền mà bị huỷ thì chuyển sang trạng thái hoàn tiền cho rõ ràng.
-  if (wasPaid) {
-    booking.paid = false
-    booking.paymentStatus = 'refunded'
-    booking.refundAt = new Date().toLocaleString('vi-VN')
-  }
+  const nowIso = new Date().toISOString()
+  const nowStr = new Date().toLocaleString('vi-VN')
+  let wasPaid = false
+  let refunded = 0
+
+  targets.forEach((b) => {
+    const paid = isPaid(b)
+    if (paid) {
+      wasPaid = true
+      refunded += Number(b.total) || 0
+    }
+    b.status = 'cancelled'
+    b.cancelledAt = nowIso
+    // Đơn đã đóng tiền mà bị huỷ thì chuyển sang trạng thái hoàn tiền cho rõ ràng.
+    if (paid) {
+      b.paid = false
+      b.paymentStatus = 'refunded'
+      b.refundAt = nowStr
+    }
+  })
 
   if (!writeJson(BOOKING_KEY, list)) return
   state.bookings = myBookings(state.user, state.record)
   renderStats()
   renderHistory()
+  const sessionsNote = targets.length > 1 ? ` (${targets.length} buổi)` : ''
   toast(
     wasPaid
-      ? `Đã huỷ đơn ${id}, ${(Number(booking.total) || 0).toLocaleString('vi-VN')}đ sẽ được hoàn tiền.`
-      : `Đã huỷ đơn ${id}`,
+      ? `Đã huỷ đơn ${id}${sessionsNote}, ${refunded.toLocaleString('vi-VN')}đ sẽ được hoàn tiền.`
+      : `Đã huỷ đơn ${id}${sessionsNote}`,
   )
 }
 
