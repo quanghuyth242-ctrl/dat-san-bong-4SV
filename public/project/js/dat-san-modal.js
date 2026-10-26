@@ -1050,9 +1050,14 @@
         skipped.length +
         ' buổi trùng lịch hoặc đã qua giờ.</p>'
       : ''
+    // Đơn gộp: nhiều buổi nhưng khách chỉ thanh toán một lần cho tổng cả đơn.
     var multiNote =
       created.length > 1
-        ? '<p style="margin:8px 0 0;font-size:.76rem;color:#64748b;text-align:left"><i class="fa-solid fa-circle-info"></i> Buổi đầu được mở trang thanh toán, các buổi còn lại được giữ chỗ và thanh toán trực tiếp tại sân.</p>'
+        ? '<p style="margin:8px 0 0;font-size:.76rem;color:#16a34a;font-weight:700;text-align:left"><i class="fa-solid fa-layer-group"></i> Đơn gộp ' +
+          created.length +
+          ' buổi thành MỘT đơn. Bạn thanh toán tổng ' +
+          totalAll.toLocaleString('vi-VN') +
+          'đ cho tất cả các buổi trong một lần.</p>'
         : ''
 
     var body = $('bookBody')

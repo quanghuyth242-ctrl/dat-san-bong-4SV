@@ -1169,6 +1169,147 @@
         })[0]
       )
     },
+    /**
+     * Đơn gộp: đặt định kỳ tạo N bản ghi (mỗi buổi một ngày/giờ) nhưng khách chỉ
+     * thanh toán MỘT lần cho cả nhóm. Nhóm theo seriesId, đơn không có seriesId
+     * coi như đơn lẻ (items chỉ có 1 phần tử) nên hành vi cũ giữ nguyên.
+     * Trả về null nếu không tìm thấy mã đơn.
+     */
+    orderOf: function (id) {
+      var list = collection('bookings')
+      var head = list.filter(function (b) {
+        return b.id === String(id)
+      })[0]
+      if (!head) return null
+
+      var seriesId = String(head.seriesId || '')
+      var items = list.filter(function (b) {
+        return seriesId ? String(b.seriesId || '') === seriesId : b.id === head.id
+      })
+      items = items.slice().sort(function (a, b) {
+        return (
+          String(a.date || '').localeCompare(String(b.date || '')) ||
+          (Number(a.startHour) || 0) - (Number(b.startHour) || 0)
+        )
+      })
+
+      // Buổi đã huỷ / đã hoàn tiền không còn thuộc phần tiền phải thu.
+      var payable = items.filter(function (b) {
+        return b.status !== 'cancelled' && b.paymentStatus !== 'refunded'
+      })
+      if (!payable.length) payable = items
+
+      var subtotal = 0
+      var discount = 0
+      var total = 0
+      payable.forEach(function (b) {
+        subtotal += Number(b.subtotal) || 0
+        discount += Number(b.discount) || 0
+        total += Number(b.total) || 0
+      })
+
+      return {
+        id: head.id,
+        seriesId: seriesId,
+        head: clone(head),
+        items: clone(items),
+        payable: clone(payable),
+        count: items.length,
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
+      }
+    },
+    /** Ghi trạng thái/thông tin cho TẤT CẢ buổi của một đơn gộp (1 lần thanh toán). */
+    saveOrder: function (id, patch) {
+      var order = SV.orderOf(id)
+      if (!order) return null
+      var wanted = {}
+      order.items.forEach(function (b) {
+        wanted[b.id] = true
+      })
+      var list = collection('bookings').map(function (b) {
+        return wanted[b.id] ? Object.assign({}, b, patch) : b
+      })
+      store('bookings', list)
+      return SV.orderOf(id)
+    },
+    /**
+     * Gộp danh sách đơn theo seriesId để các trang chỉ hiện 1 thẻ/1 dòng cho
+     * một lần đặt định kỳ. Trả về BẢN SAO nên dữ liệu thô không bị ảnh hưởng;
+     * đơn không có seriesId giữ nguyên (chỉ thêm orderCount = 1).
+     * Trường `total/subtotal/discount` của thẻ đại diện = TỔNG CẢ nhóm buổi,
+     * đúng số tiền khách thấy ở màn đặt và trang thanh toán.
+     */
+    groupOrders: function (list) {
+      function dateKey(x) {
+        return (
+          String(x.date || '') +
+          ' ' +
+          String(Math.floor(Number(x.startHour) || 0)).padStart(2, '0')
+        )
+      }
+      function sum(items, key) {
+        var s = 0
+        items.forEach(function (b) {
+          s += Number(b[key]) || 0
+        })
+        return s
+      }
+
+      var singles = []
+      var groups = {}
+      var order = []
+
+      ;(list || []).forEach(function (b) {
+        var sid = String((b && b.seriesId) || '')
+        if (!sid) {
+          singles.push(
+            Object.assign({}, b, {
+              orderCount: 1,
+              orderIds: [b.id],
+              orderFrom: b.date,
+              orderTo: b.date,
+              orderSort: dateKey(b),
+            }),
+          )
+          return
+        }
+        if (!groups[sid]) {
+          groups[sid] = []
+          order.push(sid)
+        }
+        groups[sid].push(b)
+      })
+
+      var reps = order.map(function (sid) {
+        var items = groups[sid].slice().sort(function (a, z) {
+          return dateKey(a).localeCompare(dateKey(z))
+        })
+        var head = items[0]
+        var last = items[items.length - 1]
+        var payable = items.filter(function (b) {
+          return b.status !== 'cancelled' && b.paymentStatus !== 'refunded'
+        })
+        var src = payable.length ? payable : items
+        return Object.assign({}, head, {
+          seriesId: sid,
+          orderIds: items.map(function (b) {
+            return b.id
+          }),
+          orderCount: items.length,
+          orderFrom: head.date,
+          orderTo: last.date,
+          orderSort: dateKey(last),
+          repeatCount: items.length,
+          total: sum(src, 'total'),
+          subtotal: sum(src, 'subtotal'),
+          discount: sum(src, 'discount'),
+        })
+      })
+
+      return singles.concat(reps)
+    },
     addBooking: function (data) {
       var list = collection('bookings').slice()
       var input = Object.assign({}, data)
@@ -1273,17 +1414,11 @@
       return { ok: true, booking: list[idx] }
     },
     setPaymentStatus: function (id, paymentStatus, extra) {
-      var list = collection('bookings').slice()
-      var idx = list.findIndex(function (b) {
-        return b.id === String(id)
-      })
-      if (idx === -1) return { ok: false, error: 'Không tìm thấy đơn' }
-      list[idx].paymentStatus = paymentStatus
-      if (extra && typeof extra === 'object') {
-        Object.assign(list[idx], extra)
-      }
-      store('bookings', list)
-      return { ok: true, booking: list[idx] }
+      var order = SV.orderOf(id)
+      if (!order) return { ok: false, error: 'Không tìm thấy đơn' }
+      var patch = Object.assign({ paymentStatus: paymentStatus }, extra || {})
+      var saved = SV.saveOrder(id, patch)
+      return { ok: true, booking: saved.head }
     },
     updateBooking: function (id, patch) {
       var list = collection('bookings').slice()
