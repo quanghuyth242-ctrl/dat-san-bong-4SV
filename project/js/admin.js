@@ -602,6 +602,14 @@ function renderBookings(data) {
   }).join('');
 }
 
+const REPEAT_LABEL = {
+  none: 'Không lặp lại',
+  weekly: 'Hàng tuần',
+  monthly: 'Hàng tháng',
+  quarterly: 'Hàng quý',
+  yearly: 'Hàng năm',
+};
+
 function viewBooking(id) {
   const b = bookingsData.find(x => x.id === id);
   if (!b) return;
@@ -614,6 +622,13 @@ function viewBooking(id) {
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
       <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${
+        b.repeat && b.repeat !== 'none'
+          ? `<div class="detail-row"><div class="detail-label">Đặt định kỳ:</div><div class="detail-value">${REPEAT_LABEL[b.repeat] || b.repeat}${
+              Number(b.repeatCount) > 1 ? ` · ${b.repeatCount} buổi` : ''
+            }${b.seriesId ? ` <span style="color:#64748b">(nhóm ${b.seriesId})</span>` : ''}</div></div>`
+          : ''
+      }
       ${Array.isArray(b.services) && b.services.length ? `<div class="detail-row"><div class="detail-label">Dịch vụ:</div><div class="detail-value">${b.services.map((s) => `${s.name} ×${s.qty}`).join(', ')}</div></div>` : ''}
       ${
         b.discount > 0
