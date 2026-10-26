@@ -137,25 +137,7 @@
       </div>
     </footer>
 
-<div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Chi tiết sân">
-      <div class="modal">
-        <div class="modal-head">
-          <h3><i class="fa-solid fa-circle-info" style="color: var(--primary)"></i> Chi tiết sân</h3>
-          <button type="button" class="modal-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body" id="detailBody"></div>
-      </div>
-    </div>
-
-<div class="modal-overlay" id="bookModal" role="dialog" aria-modal="true" aria-label="Đặt sân">
-      <div class="modal">
-        <div class="modal-head">
-          <h3><i class="fa-solid fa-calendar-check" style="color: var(--primary)"></i> Đặt sân</h3>
-          <button type="button" class="modal-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body" id="bookBody"></div>
-      </div>
-    </div>
+    <!-- Modal "Đặt sân" (dùng chung) do ../js/dat-san-modal.js tự tạo -->
 
 <div class="toast" id="toast" role="status" aria-live="polite">
       <i class="fa-solid fa-circle-check"></i>
@@ -169,6 +151,8 @@
     </div>
 
     <script src="../js/store.js"></script>
+    <!-- Form đặt sân dùng chung: mở bằng DatSanModal.open(court) -->
+    <script src="../js/dat-san-modal.js"></script>
 
     <script src="../js/san-bong.js"></script>
   </body>
