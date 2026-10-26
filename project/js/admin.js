@@ -330,28 +330,40 @@ function darkenColor(hex, percent) {
 
 function initDashboard() {
   const fields = DataManager.getFields();
-  const bookings = DataManager.getBookings();
   const users = DataManager.getUsers();
 
-  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+  // Đặt định kỳ gộp thành 1 đơn: số đếm và "5 đơn gần nhất" tính theo ĐƠN,
+  // tiền = TỔNG cả đơn (khách trả 1 lần khi đặt định kỳ).
+  const orders = orderRows(DataManager.getBookings());
+  const pendingCount = orders.filter(rep => orderItems(rep).some(b => b.status === 'pending')).length;
+
   animateCounter(document.getElementById('statFields'), 0, fields.length, 750);
-  animateCounter(document.getElementById('statBookings'), 0, bookings.length, 750);
+  animateCounter(document.getElementById('statBookings'), 0, orders.length, 750);
   animateCounter(document.getElementById('statUsers'), 0, users.length, 750);
   animateCounter(document.getElementById('statPending'), 0, pendingCount, 750);
   const tbody = document.getElementById('recentBookingsBody');
   if (tbody) {
-    const recent = [...bookings].reverse().slice(0, 5);
-    tbody.innerHTML = recent.map(b => `
+    const recent = [...orders]
+      .sort((a, b) => String(b.orderSort || b.id).localeCompare(String(a.orderSort || a.id)))
+      .slice(0, 5);
+    tbody.innerHTML = recent.map(rep => {
+      const orderCount = Number(rep.orderCount) || 1;
+      const grouped = orderCount > 1;
+      return `
       <tr>
-        <td><strong>${b.id}</strong></td>
-        <td>${b.userName}</td>
-        <td>${b.fieldName}</td>
-        <td>${b.date}</td>
-        <td>${b.startTime} - ${b.endTime}</td>
-        <td>${formatCurrency(b.total)}</td>
-        <td>${getStatusBadge(b.status, 'booking')}</td>
+        <td>
+          <strong>${rep.id}</strong>
+          ${grouped ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Nhóm ${orderCount} buổi</div>` : ''}
+        </td>
+        <td>${rep.userName}</td>
+        <td>${rep.fieldName}</td>
+        <td>${rep.date}${grouped ? ` → ${rep.orderTo}` : ''}</td>
+        <td>${rep.startTime} - ${rep.endTime}</td>
+        <td>${formatCurrency(orderMoney(rep))}</td>
+        <td>${getStatusBadge(rep.status, 'booking')}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 }
 
@@ -532,23 +544,54 @@ function bindBookingListeners() {
   document.getElementById('filterBookingStatus')?.addEventListener('change', filterBookings);
 }
 
+/**
+ * Các buổi thuộc cùng đơn. Đơn đặt định kỳ gộp nhiều buổi thành MỘT đơn
+ * nên bảng chỉ hiện 1 dòng, nhưng lọc/bộ lọc vẫn cần biết hết các buổi.
+ */
+function orderItems(rep) {
+  const o = orderOfBooking(rep && rep.id);
+  return o && o.items && o.items.length ? o.items : [rep];
+}
+
+/** Danh sách ĐÃ GỘP: 1 lần đặt định kỳ = 1 dòng/1 đơn trên mọi trang admin. */
+function orderRows(list) {
+  return SV.groupOrders ? SV.groupOrders(list) : list;
+}
+
+/** Tiền của đơn (rep.total đã là TỔNG cả đơn nếu có gộp). */
+function orderMoney(rep) {
+  return Number(rep && rep.total) || 0;
+}
+
+/** Tổng tiền đã hoàn của một đơn: cộng phần hoàn của từng buổi trong nhóm. */
+function orderRefundAmount(rep) {
+  return orderItems(rep).reduce(
+    (sum, b) => sum + (b.paymentStatus === 'refunded' ? Number(b.refundAmount || b.total) || 0 : 0),
+    0,
+  );
+}
+
 function filterBookings() {
   bookingsData = DataManager.getBookings();
   const keyword = (document.getElementById('searchBooking')?.value || '').toLowerCase();
   const statusFilter = document.getElementById('filterBookingStatus')?.value || '';
 
-  let filtered = bookingsData;
+  // Gộp TRƯỚC khi lọc: một đơn chỉ hiện 1 dòng và tiền luôn là TỔNG cả đơn,
+  // không bị cắt cụt khi chỉ vài buổi khớp từ khóa/trạng thái.
+  let filtered = orderRows(bookingsData);
 
   if (keyword) {
-    filtered = filtered.filter(b =>
-      String(b.id || '').toLowerCase().includes(keyword) ||
-      String(b.userName || '').toLowerCase().includes(keyword) ||
-      String(b.fieldName || '').toLowerCase().includes(keyword)
+    filtered = filtered.filter(rep =>
+      orderItems(rep).some(b =>
+        String(b.id || '').toLowerCase().includes(keyword) ||
+        String(b.userName || '').toLowerCase().includes(keyword) ||
+        String(b.fieldName || '').toLowerCase().includes(keyword)
+      )
     );
   }
 
   if (statusFilter) {
-    filtered = filtered.filter(b => b.status === statusFilter);
+    filtered = filtered.filter(rep => orderItems(rep).some(b => b.status === statusFilter));
   }
 
   renderBookings(filtered);
@@ -564,6 +607,11 @@ function renderBookings(data) {
   }
 
   tbody.innerHTML = data.map(b => {
+    // Đơn định kỳ: 1 dòng cho cả nhóm, tiền = TỔNG cả đơn, ngày = khoảng từ
+    // buổi đầu tới buổi cuối (đúng như khách thấy ở màn đặt và trang thanh toán).
+    const orderCount = Number(b.orderCount) || 1;
+    const grouped = orderCount > 1;
+
     let actions = `<button class="btn btn-sm btn-outline" onclick="viewBooking('${b.id}')" title="Xem chi tiết">👁️</button>`;
 
     if (b.paymentStatus === 'awaiting_payment') {
@@ -582,10 +630,17 @@ function renderBookings(data) {
 
     return `
       <tr>
-        <td><strong>${b.id}</strong></td>
+        <td>
+          <strong>${b.id}</strong>
+          ${
+            grouped
+              ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Nhóm ${orderCount} buổi</div>`
+              : ''
+          }
+        </td>
         <td>${b.userName}</td>
         <td>${b.fieldName}</td>
-        <td>${b.date}</td>
+        <td>${b.date}${grouped ? ` → ${b.orderTo}` : ''}</td>
         <td>${b.startTime}</td>
         <td>${b.endTime}</td>
         <td>${formatCurrency(b.total)}</td>
@@ -622,13 +677,32 @@ function viewBooking(id) {
   const detailDiscount = detailGrouped ? detailOrder.discount : Number(b.discount || 0);
   const detailTotal = detailGrouped ? Number(detailOrder.total) || 0 : Number(b.total) || 0;
   const detailSessionsNote = detailGrouped ? ` · ${detailOrder.items.length} buổi` : '';
+  const detailSessionRows = detailGrouped
+    ? detailOrder.items
+        .slice()
+        .sort(
+          (x, y) =>
+            String(x.date || '').localeCompare(String(y.date || '')) ||
+            (Number(x.startHour) || 0) - (Number(y.startHour) || 0),
+        )
+        .map(
+          (s, i) =>
+            `<div>${i + 1}. <b>${s.date}</b> · ${s.startTime} - ${s.endTime} · ${formatCurrency(Number(s.total) || 0)} · ${getStatusBadge(s.status, 'booking')}</div>`,
+        )
+        .join('')
+    : '';
   if (body) {
     body.innerHTML = `
       <div class="detail-row"><div class="detail-label">Mã đơn:</div><div class="detail-value"><strong>${b.id}</strong></div></div>
       <div class="detail-row"><div class="detail-label">Người đặt:</div><div class="detail-value">${b.userName}</div></div>
       <div class="detail-row"><div class="detail-label">Sân:</div><div class="detail-value">${b.fieldName}</div></div>
-      <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}</div></div>
+      <div class="detail-row"><div class="detail-label">Ngày đặt:</div><div class="detail-value">${b.date}${detailGrouped ? ` → ${b.orderTo || detailOrder.items[detailOrder.items.length - 1].date}` : ''}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian:</div><div class="detail-value">${b.startTime} - ${b.endTime}</div></div>
+      ${
+        detailGrouped
+          ? `<div class="detail-row"><div class="detail-label">Các buổi (${detailOrder.items.length}):</div><div class="detail-value" style="display:flex; flex-direction:column; gap:4px;">${detailSessionRows}</div></div>`
+          : ''
+      }
       ${
         b.repeat && b.repeat !== 'none'
           ? `<div class="detail-row"><div class="detail-label">Đặt định kỳ:</div><div class="detail-value">${REPEAT_LABEL[b.repeat] || b.repeat}${
@@ -707,34 +781,54 @@ function adminCollectPayment(id) {
 }
 
 function confirmBooking(id) {
-  updateBookingStatus(id, 'confirmed', 'Xác nhận đơn đặt sân thành công!');
+  updateBookingStatus(id, 'confirmed', orderActionLabel(id, 'Xác nhận đơn đặt sân thành công!'));
 }
 
 function completeBooking(id) {
-  updateBookingStatus(id, 'completed', 'Đơn đặt sân đã hoàn thành!');
+  updateBookingStatus(id, 'completed', orderActionLabel(id, 'Đơn đặt sân đã hoàn thành!'));
 }
 
 function cancelBooking(id) {
-  const b = bookingsData.find(x => x.id === id);
+  const b = bookingsData.find(x => x.id === id) || (SV.booking ? SV.booking(id) : null);
   if (!b) return;
 
-  showConfirm('Hủy đơn đặt', `Bạn có chắc muốn hủy đơn "${b.id}"?`, () => {
-    updateBookingStatus(id, 'cancelled', 'Đã hủy đơn đặt sân!', 'danger');
+  const o = orderOfBooking(id);
+  const grouped = o && o.items && o.items.length > 1;
+  const body = grouped
+    ? `Đơn đặt định kỳ này gộp ${o.items.length} buổi (tổng ${formatCurrency(Number(o.total) || 0)}). Bạn có chắc muốn hủy CẢ ${o.items.length} buổi?`
+    : `Bạn có chắc muốn hủy đơn "${b.id}"?`;
+
+  showConfirm('Hủy đơn đặt', body, () => {
+    updateBookingStatus(id, 'cancelled', orderActionLabel(id, 'Đã hủy đơn đặt sân!'), 'danger');
   });
 }
 
 function updateBookingStatus(id, newStatus, message, toastType = 'success') {
-  const idx = bookingsData.findIndex(b => b.id === id);
-  if (idx === -1) return;
-
-  const result = SV.setBookingStatus(id, newStatus);
-  if (!result.ok) {
-    showToast(result.error || 'Không đổi được trạng thái đơn', 'danger');
+  const order = SV.orderOf ? SV.orderOf(id) : null;
+  const targets = order && order.items && order.items.length ? order.items : bookingsData.filter(b => b.id === id);
+  if (!targets.length) {
+    showToast('Không tìm thấy đơn đặt', 'danger');
     return;
   }
-  bookingsData[idx].status = result.booking.status;
+
+  // Đơn định kỳ là MỘT đơn: đổi trạng thái cho TẤT CẢ buổi của nhóm,
+  // tránh tình trạng xác nhận xong buổi đầu vẫn còn buổi "chờ xử lý" treo.
+  for (const t of targets) {
+    const result = SV.setBookingStatus(t.id, newStatus);
+    if (!result.ok) {
+      showToast(result.error || 'Không đổi được trạng thái đơn', 'danger');
+      return;
+    }
+  }
+
   filterBookings();
   showToast(message, toastType);
+}
+
+/** Câu xác nhận kèm số buổi để Admin biết thao tác áp dụng cho cả đơn. */
+function orderActionLabel(id, fallback) {
+  const o = orderOfBooking(id);
+  return o && o.items && o.items.length > 1 ? `${fallback} (${o.items.length} buổi)` : fallback;
 }
 
 let usersData = [];
@@ -945,8 +1039,9 @@ function initProcessing() {
 }
 
 function renderPendingBookings() {
-  const bookings = DataManager.getBookings();
-  const pending = bookings.filter(b => b.status === 'pending');
+  // Gộp đơn định kỳ: 1 lần đặt N buổi đang chờ = 1 dòng, đếm theo ĐƠN.
+  const orders = orderRows(DataManager.getBookings());
+  const pending = orders.filter(rep => orderItems(rep).some(b => b.status === 'pending'));
 
   animateCounter(document.getElementById('pendingCount'), 0, pending.length, 600);
 
@@ -959,6 +1054,9 @@ function renderPendingBookings() {
   }
 
   tbody.innerHTML = pending.map(b => {
+    const orderCount = Number(b.orderCount) || 1;
+    const grouped = orderCount > 1;
+
     let actions = `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetail('${b.id}')" title="Xem chi tiết giao dịch">👁️</button>`;
 
     if (b.paymentStatus === 'awaiting_payment') {
@@ -973,14 +1071,17 @@ function renderPendingBookings() {
 
     return `
       <tr>
-        <td><strong>${b.id}</strong></td>
+        <td>
+          <strong>${b.id}</strong>
+          ${grouped ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Nhóm ${orderCount} buổi</div>` : ''}
+        </td>
         <td>
           <div style="font-weight: 600;">${b.userName}</div>
           ${phoneStr}
         </td>
         <td>
           <div style="font-weight: 500;">${b.fieldName}</div>
-          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+          <small style="color: #64748b;">📅 ${b.date}${grouped ? ` → ${b.orderTo}` : ''} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
         </td>
         <td>
           <div style="font-weight: 700; color: #1e293b;">${formatCurrency(b.total)}</div>
@@ -1107,33 +1208,38 @@ function initThuTien() {
 }
 
 function renderThuTienStats() {
-  const all = DataManager.getBookings();
+  // Đếm theo ĐƠN (đơn định kỳ gộp N buổi = 1 đơn), tiền vẫn là tổng các buổi
+  // nên tổng doanh thu giữ nguyên.
+  const orders = orderRows(DataManager.getBookings());
+  const has = (rep, fn) => orderItems(rep).some(fn);
 
-  const paidBookings = all.filter(b => b.paymentStatus === 'paid');
-  const paidRev = paidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const paidOrders = orders.filter(rep => has(rep, b => b.paymentStatus === 'paid'));
+  const paidRev = paidOrders.reduce((sum, rep) => sum + orderMoney(rep), 0);
 
-  const pendingCKBookings = all.filter(b => b.paymentStatus === 'awaiting_payment');
-  const pendingCKRev = pendingCKBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const pendingCKOrders = orders.filter(rep => has(rep, b => b.paymentStatus === 'awaiting_payment'));
+  const pendingCKRev = pendingCKOrders.reduce((sum, rep) => sum + orderMoney(rep), 0);
 
-  const unpaidBookings = all.filter(b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || b.paymentStatus === 'pay_later');
-  const unpaidRev = unpaidBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const unpaidOrders = orders.filter(rep =>
+    has(rep, b => b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue' || b.paymentStatus === 'pay_later'),
+  );
+  const unpaidRev = unpaidOrders.reduce((sum, rep) => sum + orderMoney(rep), 0);
 
-  const pendingOrderCount = all.filter(b => b.status === 'pending').length;
+  const pendingOrderCount = orders.filter(rep => has(rep, b => b.status === 'pending')).length;
 
   const elPaidRev = document.getElementById('statThuTienPaidRev');
   const elPaidCnt = document.getElementById('statThuTienPaidCount');
   if (elPaidRev) elPaidRev.textContent = formatCurrency(paidRev);
-  if (elPaidCnt) elPaidCnt.textContent = `${paidBookings.length} đơn`;
+  if (elPaidCnt) elPaidCnt.textContent = `${paidOrders.length} đơn`;
 
   const elPendingRev = document.getElementById('statThuTienPendingRev');
   const elPendingCnt = document.getElementById('statThuTienPendingCount');
   if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingCKRev);
-  if (elPendingCnt) elPendingCnt.textContent = `${pendingCKBookings.length} đơn cần duyệt`;
+  if (elPendingCnt) elPendingCnt.textContent = `${pendingCKOrders.length} đơn cần duyệt`;
 
   const elUnpaidRev = document.getElementById('statThuTienUnpaidRev');
   const elUnpaidCnt = document.getElementById('statThuTienUnpaidCount');
   if (elUnpaidRev) elUnpaidRev.textContent = formatCurrency(unpaidRev);
-  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidBookings.length} đơn chưa thu`;
+  if (elUnpaidCnt) elUnpaidCnt.textContent = `${unpaidOrders.length} đơn chưa thu`;
 
   const elPendingOrder = document.getElementById('statThuTienPendingBookingCount');
   if (elPendingOrder) elPendingOrder.textContent = pendingOrderCount;
@@ -1145,41 +1251,50 @@ function filterThuTien() {
   const methodFilter = document.getElementById('filterThuTienMethod')?.value;
   const statusFilter = document.getElementById('filterThuTienStatus')?.value;
 
+  // Một đơn nhiều buổi -> lọc theo "có buổi nào khớp", không tách thành N dòng.
+  const has = (rep, fn) => orderItems(rep).some(fn);
+
   // Trang thu tiền hiển thị các đơn chưa paid hoặc đã paid (không hiện đã hủy/hoàn)
-  let filtered = thuTienData.filter(b =>
-    b.status !== 'refunded' && b.paymentStatus !== 'refunded'
+  let filtered = orderRows(thuTienData).filter(rep =>
+    has(rep, b => b.status !== 'refunded' && b.paymentStatus !== 'refunded'),
   );
 
   if (methodFilter) {
-    filtered = filtered.filter(b => {
-      const method = b.paymentMethod || 'at_court';
-      if (methodFilter === 'bank_transfer') {
-        return method === 'bank_transfer' || method === 'bank' || method === 'momo' || method === 'zalopay' || method === 'vnpay';
-      }
-      return method === methodFilter || method === 'at_court' || method === 'cash' || method === 'at_venue';
-    });
-  }
-
-  if (statusFilter) {
-    filtered = filtered.filter(b => {
-      if (statusFilter === 'awaiting_payment') return b.paymentStatus === 'awaiting_payment';
-      if (statusFilter === 'pay_later') return b.paymentStatus === 'pay_later';
-      if (statusFilter === 'unpaid') return b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue';
-      if (statusFilter === 'paid') return b.paymentStatus === 'paid';
-      return true;
-    });
-  }
-
-  if (keyword) {
-    filtered = filtered.filter(b =>
-      String(b.id || '').toLowerCase().includes(keyword) ||
-      String(b.userName || '').toLowerCase().includes(keyword) ||
-      String(b.customer?.phone || '').includes(keyword) ||
-      String(b.fieldName || '').toLowerCase().includes(keyword)
+    filtered = filtered.filter(rep =>
+      has(rep, b => {
+        const method = b.paymentMethod || 'at_court';
+        if (methodFilter === 'bank_transfer') {
+          return method === 'bank_transfer' || method === 'bank' || method === 'momo' || method === 'zalopay' || method === 'vnpay';
+        }
+        return method === methodFilter || method === 'at_court' || method === 'cash' || method === 'at_venue';
+      }),
     );
   }
 
-  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
+  if (statusFilter) {
+    filtered = filtered.filter(rep =>
+      has(rep, b => {
+        if (statusFilter === 'awaiting_payment') return b.paymentStatus === 'awaiting_payment';
+        if (statusFilter === 'pay_later') return b.paymentStatus === 'pay_later';
+        if (statusFilter === 'unpaid') return b.paymentStatus === 'unpaid' || b.paymentStatus === 'at_venue';
+        if (statusFilter === 'paid') return b.paymentStatus === 'paid';
+        return true;
+      }),
+    );
+  }
+
+  if (keyword) {
+    filtered = filtered.filter(rep =>
+      has(rep, b =>
+        String(b.id || '').toLowerCase().includes(keyword) ||
+        String(b.userName || '').toLowerCase().includes(keyword) ||
+        String(b.customer?.phone || '').includes(keyword) ||
+        String(b.fieldName || '').toLowerCase().includes(keyword),
+      ),
+    );
+  }
+
+  filtered.sort((a, b) => String(b.orderSort || b.id).localeCompare(String(a.orderSort || a.id)));
 
   const totalEl = document.getElementById('thuTienTotalRecords');
   if (totalEl) totalEl.textContent = filtered.length;
@@ -1197,6 +1312,10 @@ function renderThuTienTable(data) {
   }
 
   tbody.innerHTML = data.map(b => {
+    // Đơn định kỳ: 1 dòng, tiền = TỔNG cả đơn, ngày = khoảng từ buổi đầu đến cuối.
+    const orderCount = Number(b.orderCount) || 1;
+    const grouped = orderCount > 1;
+
     let actions = `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetail('${b.id}')" title="Xem chi tiết giao dịch">👁️</button>`;
 
     if (b.paymentStatus === 'awaiting_payment') {
@@ -1211,14 +1330,17 @@ function renderThuTienTable(data) {
 
     return `
       <tr>
-        <td><strong>${b.id}</strong></td>
+        <td>
+          <strong>${b.id}</strong>
+          ${grouped ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Nhóm ${orderCount} buổi</div>` : ''}
+        </td>
         <td>
           <div style="font-weight: 600;">${b.userName}</div>
           ${phoneStr}
         </td>
         <td>
           <div style="font-weight: 500;">${b.fieldName}</div>
-          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+          <small style="color: #64748b;">📅 ${b.date}${grouped ? ` → ${b.orderTo}` : ''} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
         </td>
         <td>
           <div style="font-weight: 700; color: #1e293b;">${formatCurrency(b.total)}</div>
@@ -1355,27 +1477,29 @@ function initHoanTien() {
 }
 
 function renderHoanTienStats() {
-  const all = DataManager.getBookings();
+  // Đếm theo ĐƠN (đặt định kỳ gộp N buổi = 1 đơn), tiền vẫn lấy từ tổng các buổi.
+  const orders = orderRows(DataManager.getBookings());
+  const has = (rep, fn) => orderItems(rep).some(fn);
 
-  const refundedBookings = all.filter(b => b.paymentStatus === 'refunded');
-  const refundedRev = refundedBookings.reduce((sum, b) => sum + (Number(b.refundAmount || b.total) || 0), 0);
+  const refundedOrders = orders.filter(rep => has(rep, b => b.paymentStatus === 'refunded'));
+  const refundedRev = refundedOrders.reduce((sum, rep) => sum + orderRefundAmount(rep), 0);
 
-  const pendingRefundBookings = all.filter(b =>
-    b.status === 'cancelled' && b.paymentStatus === 'paid'
+  const pendingRefundOrders = orders.filter(rep =>
+    has(rep, b => b.status === 'cancelled' && b.paymentStatus === 'paid'),
   );
-  const pendingRefundRev = pendingRefundBookings.reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+  const pendingRefundRev = pendingRefundOrders.reduce((sum, rep) => sum + orderMoney(rep), 0);
 
-  const cancelledCount = all.filter(b => b.status === 'cancelled').length;
+  const cancelledCount = orders.filter(rep => has(rep, b => b.status === 'cancelled')).length;
 
   const elRefundedRev = document.getElementById('statHoanTienTotalRev');
   const elRefundedCnt = document.getElementById('statHoanTienTotalCount');
   if (elRefundedRev) elRefundedRev.textContent = formatCurrency(refundedRev);
-  if (elRefundedCnt) elRefundedCnt.textContent = `${refundedBookings.length} đơn`;
+  if (elRefundedCnt) elRefundedCnt.textContent = `${refundedOrders.length} đơn`;
 
   const elPendingRev = document.getElementById('statHoanTienPendingRev');
   const elPendingCnt = document.getElementById('statHoanTienPendingCount');
   if (elPendingRev) elPendingRev.textContent = formatCurrency(pendingRefundRev);
-  if (elPendingCnt) elPendingCnt.textContent = `${pendingRefundBookings.length} đơn cần hoàn`;
+  if (elPendingCnt) elPendingCnt.textContent = `${pendingRefundOrders.length} đơn cần hoàn`;
 
   const elCancelledCnt = document.getElementById('statHoanTienCancelledCount');
   if (elCancelledCnt) elCancelledCnt.textContent = `${cancelledCount} đơn`;
@@ -1386,29 +1510,36 @@ function filterHoanTien() {
   const keyword = (document.getElementById('searchHoanTien')?.value || '').toLowerCase().trim();
   const statusFilter = document.getElementById('filterHoanTienStatus')?.value;
 
-  let filtered = hoanTienData.filter(b =>
-    b.paymentStatus === 'refunded' ||
-    b.status === 'cancelled' ||
-    b.paymentStatus === 'paid'
+  // Gộp đơn định kỳ TRƯỚC khi lọc: mỗi đơn 1 dòng, tiền = tổng cả đơn.
+  const has = (rep, fn) => orderItems(rep).some(fn);
+
+  let filtered = orderRows(hoanTienData).filter(rep =>
+    has(rep, b =>
+      b.paymentStatus === 'refunded' ||
+      b.status === 'cancelled' ||
+      b.paymentStatus === 'paid',
+    ),
   );
 
   if (statusFilter === 'needs_refund') {
-    filtered = filtered.filter(b => b.status === 'cancelled' && b.paymentStatus === 'paid');
+    filtered = filtered.filter(rep => has(rep, b => b.status === 'cancelled' && b.paymentStatus === 'paid'));
   } else if (statusFilter === 'refunded') {
-    filtered = filtered.filter(b => b.paymentStatus === 'refunded');
+    filtered = filtered.filter(rep => has(rep, b => b.paymentStatus === 'refunded'));
   }
 
   if (keyword) {
-    filtered = filtered.filter(b =>
-      String(b.id || '').toLowerCase().includes(keyword) ||
-      String(b.userName || '').toLowerCase().includes(keyword) ||
-      String(b.customer?.phone || '').includes(keyword) ||
-      String(b.fieldName || '').toLowerCase().includes(keyword) ||
-      String(b.refundReason || '').toLowerCase().includes(keyword)
+    filtered = filtered.filter(rep =>
+      has(rep, b =>
+        String(b.id || '').toLowerCase().includes(keyword) ||
+        String(b.userName || '').toLowerCase().includes(keyword) ||
+        String(b.customer?.phone || '').includes(keyword) ||
+        String(b.fieldName || '').toLowerCase().includes(keyword) ||
+        String(b.refundReason || '').toLowerCase().includes(keyword),
+      ),
     );
   }
 
-  filtered.sort((a, b) => (b.id > a.id ? 1 : -1));
+  filtered.sort((a, b) => String(b.orderSort || b.id).localeCompare(String(a.orderSort || a.id)));
 
   const totalEl = document.getElementById('hoanTienTotalRecords');
   if (totalEl) totalEl.textContent = filtered.length;
@@ -1426,8 +1557,13 @@ function renderHoanTienTable(data) {
   }
 
   tbody.innerHTML = data.map(b => {
+    // Đơn định kỳ gộp N buổi -> 1 dòng, tiền/tiền hoàn đều là TỔNG cả đơn.
+    const orderCount = Number(b.orderCount) || 1;
+    const grouped = orderCount > 1;
+    const orderSessionItems = orderItems(b);
+
     let actions = '';
-    const isRefunded = b.paymentStatus === 'refunded';
+    const isRefunded = orderSessionItems.some(x => x.paymentStatus === 'refunded');
 
     if (isRefunded) {
       actions = `<button class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #fca5a5;" onclick="viewRefundDetail('${b.id}')" title="Xem phiếu hoàn tiền">👁️ Phiếu hoàn</button>`;
@@ -1437,7 +1573,7 @@ function renderHoanTienTable(data) {
 
     const phoneStr = b.customer?.phone ? `<br><small style="color:#64748b;">📞 ${b.customer.phone}</small>` : '';
     const refundAmountDisplay = isRefunded
-      ? `<strong class="text-danger">${formatCurrency(b.refundAmount || b.total)}</strong>`
+      ? `<strong class="text-danger">${formatCurrency(orderRefundAmount(b))}</strong>`
       : `<span class="text-muted">Chưa hoàn</span>`;
     const reasonDisplay = isRefunded
       ? `<div style="font-size:13px; font-weight:500;">${b.refundReason || 'Khách hủy đơn'}</div><small style="color:#64748b;">⏰ ${b.refundedAt || '—'}</small>`
@@ -1445,14 +1581,17 @@ function renderHoanTienTable(data) {
 
     return `
       <tr>
-        <td><strong>${b.id}</strong></td>
+        <td>
+          <strong>${b.id}</strong>
+          ${grouped ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">Nhóm ${orderCount} buổi</div>` : ''}
+        </td>
         <td>
           <div style="font-weight: 600;">${b.userName}</div>
           ${phoneStr}
         </td>
         <td>
           <div style="font-weight: 500;">${b.fieldName}</div>
-          <small style="color: #64748b;">📅 ${b.date} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
+          <small style="color: #64748b;">📅 ${b.date}${grouped ? ` → ${b.orderTo}` : ''} &bull; ⏰ ${b.startTime} - ${b.endTime}</small>
         </td>
         <td><strong>${formatCurrency(b.total)}</strong></td>
         <td>${refundAmountDisplay}</td>
@@ -1544,6 +1683,17 @@ function viewRefundDetail(id) {
   const b = DataManager.getBookings().find(x => x.id === id);
   if (!b) return;
 
+  // Phiếu hoàn của đơn đặt định kỳ = HOÀN TỔNG CẢ ĐƠN một lần.
+  const order = orderOfBooking(id);
+  const items = order && order.items && order.items.length ? order.items : [b];
+  const grouped = items.length > 1;
+  const refundTotal = orderRefundAmount(b);
+  const sessionNote = grouped ? ` (${items.length} buổi)` : '';
+  const sessionDates = items.map(x => String(x.date || '')).sort();
+  const dateLabel = grouped
+    ? `${sessionDates[0]} → ${sessionDates[sessionDates.length - 1]} (${items.length} buổi)`
+    : `${b.date} (${b.startTime} - ${b.endTime})`;
+
   const body = document.getElementById('refundDetailBody');
   if (body) {
     body.innerHTML = `
@@ -1554,14 +1704,14 @@ function viewRefundDetail(id) {
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 13px; color: #64748b;">Số tiền đã hoàn trả:</span>
-          <span style="font-size: 18px; font-weight: 800; color: #dc2626;">${formatCurrency(b.refundAmount || b.total)}</span>
+          <span style="font-size: 18px; font-weight: 800; color: #dc2626;">${formatCurrency(refundTotal)}${sessionNote}</span>
         </div>
       </div>
 
       <div class="detail-row"><div class="detail-label">Khách nhận hoàn:</div><div class="detail-value"><strong>${b.userName}</strong></div></div>
       <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${b.customer?.phone || '—'}</div></div>
       <div class="detail-row"><div class="detail-label">Sân bóng:</div><div class="detail-value">${b.fieldName}</div></div>
-      <div class="detail-row"><div class="detail-label">Lịch đặt đã hủy:</div><div class="detail-value">${b.date} (${b.startTime} - ${b.endTime})</div></div>
+      <div class="detail-row"><div class="detail-label">Lịch đặt đã hủy:</div><div class="detail-value">${dateLabel}</div></div>
       <div class="detail-row"><div class="detail-label">Thời gian hoàn tiền:</div><div class="detail-value"><strong>${b.refundedAt || '—'}</strong></div></div>
       <div class="detail-row"><div class="detail-label">Lý do hoàn:</div><div class="detail-value"><span class="badge badge-warning">${b.refundReason || 'Khách yêu cầu hủy đơn'}</span></div></div>
       <div class="detail-row"><div class="detail-label">Ghi chú đối soát:</div><div class="detail-value">${b.refundNote || '—'}</div></div>
@@ -1743,6 +1893,20 @@ function viewPaymentDetail(id) {
   const b = DataManager.getBookings().find(x => x.id === id);
   if (!b) return;
 
+  // Phiếu thu của đơn đặt định kỳ = TIỀN CẢ ĐƠN (khách trả 1 lần).
+  const order = orderOfBooking(id);
+  const items = order && order.items && order.items.length ? order.items : [b];
+  const grouped = items.length > 1;
+  const orderTotal = Number(order?.total) || Number(b.total) || 0;
+  const anyRefunded = items.some(x => x.paymentStatus === 'refunded');
+  const refundTotal = items.reduce(
+    (s, x) => s + (x.paymentStatus === 'refunded' ? Number(x.refundAmount || x.total) || 0 : 0),
+    0,
+  );
+  const sessionDates = items.map(x => String(x.date || '')).sort();
+  const dateLabel = grouped ? `${sessionDates[0]} → ${sessionDates[sessionDates.length - 1]}` : b.date;
+  const sessionNote = grouped ? ` · ${items.length} buổi` : '';
+
   const body = document.getElementById('paymentDetailBody');
   if (body) {
     const isMB = b.paymentMethod === 'bank_transfer';
@@ -1754,7 +1918,7 @@ function viewPaymentDetail(id) {
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <span style="font-size: 14px; color: #64748b;">Số tiền giao dịch:</span>
-          <span style="font-size: 18px; font-weight: 800; color: #0284c7;">${formatCurrency(b.total)}</span>
+          <span style="font-size: 18px; font-weight: 800; color: #0284c7;">${formatCurrency(orderTotal)}${sessionNote}</span>
         </div>
       </div>
 
@@ -1762,8 +1926,8 @@ function viewPaymentDetail(id) {
       <div class="detail-row"><div class="detail-label">Số điện thoại:</div><div class="detail-value">${b.customer?.phone || '—'}</div></div>
       <div class="detail-row"><div class="detail-label">Email:</div><div class="detail-value">${b.customer?.email || '—'}</div></div>
       <div class="detail-row"><div class="detail-label">Sân bóng:</div><div class="detail-value">${b.fieldName}</div></div>
-      <div class="detail-row"><div class="detail-label">Ngày đá:</div><div class="detail-value">${b.date}</div></div>
-      <div class="detail-row"><div class="detail-label">Khung giờ:</div><div class="detail-value">${b.startTime} - ${b.endTime} (${b.duration}h)</div></div>
+      <div class="detail-row"><div class="detail-label">Ngày đá:</div><div class="detail-value">${dateLabel}</div></div>
+      <div class="detail-row"><div class="detail-label">Khung giờ:</div><div class="detail-value">${b.startTime} - ${b.endTime} (${b.duration}h)${grouped ? ` · mỗi buổi ${b.duration}h` : ''}</div></div>
 
       <hr style="margin: 12px 0; border: none; border-top: 1px dashed #e2e8f0;">
 
@@ -1784,10 +1948,10 @@ function viewPaymentDetail(id) {
         <div class="detail-row"><div class="detail-label">Thời gian thu:</div><div class="detail-value">${b.paidAt}</div></div>
       ` : ''}
 
-      ${b.paymentStatus === 'refunded' ? `
+      ${anyRefunded ? `
         <div style="margin-top: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
           <div style="font-weight: 700; color: #dc2626; margin-bottom: 6px;">↩️ THÔNG TIN HOÀN TIỀN</div>
-          <div class="detail-row"><div class="detail-label">Số tiền đã hoàn:</div><div class="detail-value" style="color:#dc2626; font-weight:700;">${formatCurrency(b.refundAmount || b.total)}</div></div>
+          <div class="detail-row"><div class="detail-label">Số tiền đã hoàn:</div><div class="detail-value" style="color:#dc2626; font-weight:700;">${formatCurrency(refundTotal)}${sessionNote}</div></div>
           <div class="detail-row"><div class="detail-label">Thời gian hoàn:</div><div class="detail-value">${b.refundedAt || '—'}</div></div>
           <div class="detail-row"><div class="detail-label">Lý do hoàn tiền:</div><div class="detail-value">${b.refundReason || 'Khách yêu cầu hủy đơn'}</div></div>
           ${b.refundNote ? `<div class="detail-row"><div class="detail-label">Ghi chú đối soát:</div><div class="detail-value">${b.refundNote}</div></div>` : ''}
