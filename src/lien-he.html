@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Liên hệ 4SV.vn: hotline, email, Zalo và địa chỉ văn phòng. Gửi yêu cầu hỗ trợ đặt sân, tài khoản hoặc hợp tác chủ sân."
+    />
+    <title>Liên hệ · 4SV.vn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lexend:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./info-pages.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="site-header" id="siteHeader">
+      <div class="container nav-inner">
+        <a class="nav-brand" href="../">
+          <img data-site-logo alt="" hidden class="nav-brand-logo" />
+          <span data-site-name>4SV.vn</span>
+        </a>
+
+        <button
+          class="nav-toggle"
+          id="navToggle"
+          type="button"
+          aria-label="Mở menu"
+          aria-expanded="false"
+        >
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <nav class="nav-menu" id="navMenu">
+          <ul class="nav-links">
+            <li>
+              <a class="nav-link" href="../#tim-san"
+                ><i class="fa-solid fa-magnifying-glass"></i> Tìm sân</a
+              >
+            </li>
+            <li>
+              <a class="nav-link" href="../#san-noi-bat"
+                ><i class="fa-solid fa-futbol"></i> Sân nổi bật</a
+              >
+            </li>
+            <li>
+              <a class="nav-link" href="./gioi-thieu.html"
+                ><i class="fa-solid fa-circle-info"></i> Giới thiệu</a
+              >
+            </li>
+            <li>
+              <a class="nav-link is-active" href="./lien-he.html"
+                ><i class="fa-solid fa-headset"></i> Liên hệ</a
+              >
+            </li>
+          </ul>
+
+          <div class="nav-actions">
+            <a href="auth.html#login" class="nav-link"
+              ><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a
+            >
+            <a href="auth.html#register" class="nav-link nav-register">Đăng ký</a>
+            <a href="../" class="btn-cta"
+              ><i class="fa-solid fa-house"></i> Trang chủ</a
+            >
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main class="info-page">
+      <!-- HERO -->
+      <section class="info-hero contact-hero">
+        <div class="info-hero-glow" aria-hidden="true"></div>
+        <div class="container">
+          <nav class="info-crumbs" aria-label="Đường dẫn">
+            <a href="../"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            <i class="fa-solid fa-angle-right"></i>
+            <span>Liên hệ</span>
+          </nav>
+
+          <div class="contact-hero-head">
+            <span class="info-eyebrow">
+              <i class="fa-solid fa-headset"></i> Liên hệ 4SV.vn
+            </span>
+            <h1>Chúng tôi luôn ở đây<br /><span class="txt-green">để hỗ trợ bạn</span></h1>
+            <p class="info-lead">
+              Cần tìm sân, hỗ trợ đơn đặt, hay muốn hợp tác cùng 4SV? Gửi tin
+              nhắn hoặc gọi trực tiếp — đội ngũ của chúng tôi phản hồi trong
+              vòng 24 giờ làm việc.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- FORM + KÊNH LIÊN HỆ -->
+      <section class="info-section contact-section">
+        <div class="container">
+          <div class="contact-grid">
+            <!-- FORM -->
+            <div class="contact-card contact-form-card" id="contactFormCard">
+              <div class="contact-card-head" id="contactFormWrap">
+                <span class="info-eyebrow">
+                  <i class="fa-solid fa-paper-plane"></i> Gửi tin nhắn
+                </span>
+                <h2 class="info-h2">Bạn cần chúng tôi giúp gì?</h2>
+                <p class="info-p">
+                  Điền thông tin bên dưới, càng chi tiết càng giúp 4SV xử lý
+                  nhanh hơn.
+                </p>
+              </div>
+
+              <form class="contact-form" id="contactForm" novalidate>
+                <div class="contact-form-grid">
+                  <div class="contact-field">
+                    <label for="cName">Họ và tên <span>*</span></label>
+                    <input
+                      type="text"
+                      id="cName"
+                      name="name"
+                      autocomplete="name"
+                      placeholder="Nguyễn Văn A"
+                    />
+                    <span class="contact-error" data-err-for="name"></span>
+                  </div>
+
+                  <div class="contact-field">
+                    <label for="cPhone">Số điện thoại <span>*</span></label>
+                    <input
+                      type="tel"
+                      id="cPhone"
+                      name="phone"
+                      inputmode="tel"
+                      autocomplete="tel"
+                      placeholder="0912 345 678"
+                    />
+                    <span class="contact-error" data-err-for="phone"></span>
+                  </div>
+
+                  <div class="contact-field">
+                    <label for="cEmail">Email <span>*</span></label>
+                    <input
+                      type="email"
+                      id="cEmail"
+                      name="email"
+                      autocomplete="email"
+                      placeholder="you@example.com"
+                    />
+                    <span class="contact-error" data-err-for="email"></span>
+                  </div>
+
+                  <div class="contact-field">
+                    <label for="cTopic">Chủ đề <span>*</span></label>
+                    <select id="cTopic" name="topic">
+                      <option value="">Chọn chủ đề</option>
+                      <option value="dat-san">Đặt sân / thanh toán</option>
+                      <option value="tai-khoan">Tài khoản &amp; đăng nhập</option>
+                      <option value="chu-san">Hợp tác chủ sân</option>
+                      <option value="gop-y">Góp ý sản phẩm</option>
+                      <option value="khac">Vấn đề khác</option>
+                    </select>
+                    <span class="contact-error" data-err-for="topic"></span>
+                  </div>
+
+                  <div class="contact-field full">
+                    <label for="cMessage">Nội dung <span>*</span></label>
+                    <textarea
+                      id="cMessage"
+                      name="message"
+                      rows="6"
+                      maxlength="1200"
+                      placeholder="Ví dụ: Tôi đã đặt sân 7 lúc 19:00 ngày 30/10 nhưng muốn đổi sang 20:00..."
+                    ></textarea>
+                    <div class="contact-field-foot">
+                      <span class="contact-error" data-err-for="message"></span>
+                      <span class="contact-count"
+                        ><b id="cMessageCount">0</b>/1200</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <label class="contact-check" for="cConsent">
+                  <input type="checkbox" id="cConsent" name="consent" />
+                  <span>
+                    Tôi đồng ý để 4SV.vn liên hệ lại qua email hoặc số điện
+                    thoại đã cung cấp.
+                  </span>
+                </label>
+                <span class="contact-error contact-error-check" data-err-for="consent"></span>
+
+                <button type="submit" class="btn btn-primary contact-submit" id="contactSubmit">
+                  <i class="fa-solid fa-paper-plane"></i> Gửi tin nhắn
+                </button>
+
+                <p class="contact-privacy">
+                  <i class="fa-solid fa-lock"></i>
+                  Thông tin của bạn chỉ được dùng để phản hồi yêu cầu này.
+                </p>
+              </form>
+
+              <!-- THÀNH CÔNG -->
+              <div class="contact-success" id="contactSuccess" hidden>
+                <span class="contact-success-icon">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+                <h3>Đã gửi tin nhắn!</h3>
+                <p>
+                  Cảm ơn bạn đã liên hệ 4SV.vn. Mã yêu cầu của bạn là
+                  <strong id="contactRef">—</strong>.
+                </p>
+                <p class="contact-success-note">
+                  Chúng tôi sẽ phản hồi qua email hoặc số điện thoại bạn để lại
+                  trong vòng 24 giờ làm việc.
+                </p>
+                <div class="contact-success-actions">
+                  <button type="button" class="btn btn-primary" id="contactAgain">
+                    <i class="fa-solid fa-rotate-left"></i> Gửi tin khác
+                  </button>
+                  <a class="btn btn-ghost" href="../#tim-san">
+                    <i class="fa-solid fa-magnifying-glass"></i> Tìm sân
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- KÊNH LIÊN HỆ -->
+            <aside class="contact-side">
+              <div class="contact-card">
+                <span class="info-eyebrow">
+                  <i class="fa-solid fa-phone-volume"></i> Kênh liên hệ
+                </span>
+                <h2 class="contact-side-title">Nói chuyện với 4SV</h2>
+
+                <div class="contact-channels">
+                  <a class="contact-channel" href="tel:19006868">
+                    <span class="contact-channel-icon">
+                      <i class="fa-solid fa-phone"></i>
+                    </span>
+                    <span class="contact-channel-body">
+                      <small>Hotline (8:00 – 22:00)</small>
+                      <strong>1900 6868</strong>
+                    </span>
+                    <i class="fa-solid fa-arrow-up-right-from-square contact-channel-go"></i>
+                  </a>
+
+                  <a class="contact-channel" href="mailto:hotro@4sv.vn">
+                    <span class="contact-channel-icon">
+                      <i class="fa-solid fa-envelope"></i>
+                    </span>
+                    <span class="contact-channel-body">
+                      <small>Email hỗ trợ</small>
+                      <strong>hotro@4sv.vn</strong>
+                    </span>
+                    <i class="fa-solid fa-arrow-up-right-from-square contact-channel-go"></i>
+                  </a>
+
+                  <a
+                    class="contact-channel"
+                    href="https://zalo.me/0912345678"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span class="contact-channel-icon">
+                      <i class="fa-solid fa-comment-dots"></i>
+                    </span>
+                    <span class="contact-channel-body">
+                      <small>Zalo / Hợp tác</small>
+                      <strong>0912 345 678</strong>
+                    </span>
+                    <i class="fa-solid fa-arrow-up-right-from-square contact-channel-go"></i>
+                  </a>
+
+                  <a
+                    class="contact-channel"
+                    href="https://www.google.com/maps/search/?api=1&query=21.0167,105.8155"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span class="contact-channel-icon">
+                      <i class="fa-solid fa-location-dot"></i>
+                    </span>
+                    <span class="contact-channel-body">
+                      <small>Văn phòng</small>
+                      <strong>88 Láng Hạ, Đống Đa, Hà Nội</strong>
+                    </span>
+                    <i class="fa-solid fa-arrow-up-right-from-square contact-channel-go"></i>
+                  </a>
+                </div>
+
+                <div class="contact-note">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <p>
+                    Ngoài giờ hỗ trợ, vui lòng để lại tin nhắn qua form. Chúng
+                    tôi sẽ gọi lại vào đầu ngày làm việc tiếp theo.
+                  </p>
+                </div>
+              </div>
+
+              <div class="contact-card contact-owner-card">
+                <span class="contact-owner-icon">
+                  <i class="fa-solid fa-building"></i>
+                </span>
+                <h3>Bạn là chủ sân?</h3>
+                <p>
+                  Đưa sân của bạn lên 4SV để tiếp cận thêm khách hàng, quản lý
+                  lịch và doanh thu trong một màn hình.
+                </p>
+                <ul class="contact-owner-list">
+                  <li><i class="fa-solid fa-check"></i> Miễn phí tạo hồ sơ cơ sở</li>
+                  <li><i class="fa-solid fa-check"></i> Quản lý đơn và khung giờ</li>
+                  <li><i class="fa-solid fa-check"></i> Hỗ trợ vận hành 1-1</li>
+                </ul>
+                <a class="btn btn-light contact-owner-btn" href="tel:0912345678">
+                  <i class="fa-solid fa-phone"></i> Gọi tư vấn hợp tác
+                </a>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- BẢN ĐỒ -->
+      <section class="info-section info-section-grey contact-map-section">
+        <div class="container">
+          <div class="info-heading">
+            <span class="info-eyebrow">
+              <i class="fa-solid fa-map-location-dot"></i> Ghé thăm
+            </span>
+            <h2 class="info-h2">Văn phòng 4SV.vn</h2>
+            <p class="info-p">
+              Tầng 6, Toà nhà 4SV, 88 Láng Hạ, Đống Đa, Hà Nội. Vui lòng hẹn
+              trước để được đón tiếp chu đáo.
+            </p>
+          </div>
+
+          <div class="contact-map-card">
+            <div id="contactMap" aria-label="Bản đồ văn phòng 4SV.vn"></div>
+            <div class="contact-map-bar">
+              <span class="contact-map-addr">
+                <i class="fa-solid fa-location-dot"></i>
+                88 Láng Hạ, Đống Đa, Hà Nội
+              </span>
+              <div class="contact-map-actions">
+                <span class="contact-map-hours">
+                  <i class="fa-regular fa-clock"></i> T2 – T7: 8:00 – 18:00
+                </span>
+                <a
+                  class="btn-map"
+                  href="https://www.google.com/maps/dir/?api=1&destination=21.0167,105.8155"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i class="fa-solid fa-diamond-turn-right"></i> Chỉ đường
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="info-section" id="faq">
+        <div class="container">
+          <div class="info-heading center">
+            <span class="info-eyebrow">
+              <i class="fa-solid fa-circle-question"></i> Hỏi đáp
+            </span>
+            <h2 class="info-h2">Câu hỏi thường gặp</h2>
+            <p class="info-p">
+              Một vài câu hỏi chúng tôi nhận được nhiều nhất. Nếu chưa có câu
+              trả lời bạn cần, hãy gửi tin nhắn ở trên.
+            </p>
+          </div>
+
+          <div class="faq-grid">
+            <details class="faq-item" open>
+              <summary>Tôi có cần đăng ký tài khoản để đặt sân không?</summary>
+              <div class="faq-answer">
+                Bạn có thể xem và tìm sân mà không cần đăng nhập. Tuy nhiên, để
+                quản lý lịch sử đặt sân, huỷ hoặc đổi lịch, bạn nên tạo tài
+                khoản miễn phí trên 4SV.vn.
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Thanh toán sân bằng cách nào?</summary>
+              <div class="faq-answer">
+                Tuỳ từng cơ sở, bạn có thể thanh toán trực tiếp tại sân hoặc
+                thanh toán online qua trang thanh toán của 4SV. Trạng thái thanh
+                toán luôn được hiển thị trong mục "Tài khoản của tôi".
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Làm sao đổi hoặc huỷ lịch đã đặt?</summary>
+              <div class="faq-answer">
+                Vào "Tài khoản của tôi" → "Lịch sử đặt sân", chọn đơn cần thay
+                đổi. Với đơn chưa bắt đầu, bạn có thể huỷ theo chính sách của
+                từng cơ sở. Nếu cần hỗ trợ thêm, hãy gọi hotline 1900 6868.
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Chủ sân muốn hợp tác thì liên hệ ở đâu?</summary>
+              <div class="faq-answer">
+                Bạn gửi yêu cầu qua form ở trên với chủ đề "Hợp tác chủ sân",
+                hoặc gọi trực tiếp số 0912 345 678. Đội ngũ sẽ tư vấn quy trình
+                đưa sân lên nền tảng và các công cụ quản lý đi kèm.
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>4SV có mặt ở những khu vực nào?</summary>
+              <div class="faq-answer">
+                Danh sách cơ sở được cập nhật liên tục. Bạn có thể dùng ô tìm
+                kiếm theo quận, phường hoặc bật bản đồ để xem những sân gần nhất
+                trong khu vực mình đang ở.
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Tôi góp ý về sản phẩm thì gửi ở đâu?</summary>
+              <div class="faq-answer">
+                Chọn chủ đề "Góp ý sản phẩm" trong form liên hệ. Mọi góp ý đều
+                được đội ngũ sản phẩm đọc và phản hồi — kể cả những ý tưởng nhỏ
+                nhất.
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <div class="footer-brand"><span data-site-name>4SV.vn</span></div>
+            <p class="footer-desc">
+              Nền tảng đặt sân bóng đá trực tuyến. Kết nối người chơi với những
+              cơ sở sân chất lượng trên cả nước.
+            </p>
+            <div class="social-links">
+              <a class="social-link" href="#" aria-label="Facebook"
+                ><i class="fa-brands fa-facebook-f"></i
+              ></a>
+              <a class="social-link" href="#" aria-label="Zalo"
+                ><strong style="font-size: 0.7rem">Zalo</strong></a
+              >
+              <a class="social-link" href="#" aria-label="YouTube"
+                ><i class="fa-brands fa-youtube"></i
+              ></a>
+            </div>
+          </div>
+          <div class="footer-col">
+            <div class="footer-heading">Khám phá</div>
+            <ul class="footer-links">
+              <li><a href="../#tim-san">Tìm sân</a></li>
+              <li><a href="../#ban-do">Bản đồ</a></li>
+              <li><a href="../#san-noi-bat">Sân nổi bật</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-heading">Về 4SV</div>
+            <ul class="footer-links">
+              <li><a href="./gioi-thieu.html">Giới thiệu</a></li>
+              <li><a href="./lien-he.html">Liên hệ</a></li>
+              <li><a href="#faq">Câu hỏi thường gặp</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-heading">Liên hệ nhanh</div>
+            <ul class="footer-links footer-contact">
+              <li>
+                <i class="fa-solid fa-phone"></i>
+                <a href="tel:19006868">1900 6868</a>
+              </li>
+              <li>
+                <i class="fa-solid fa-envelope"></i>
+                <a href="mailto:hotro@4sv.vn">hotro@4sv.vn</a>
+              </li>
+              <li>
+                <i class="fa-solid fa-location-dot"></i>
+                <span>88 Láng Hạ, Đống Đa, Hà Nội</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <hr class="footer-divider" />
+        <div class="footer-bottom">
+          <div class="footer-copy">
+            © <span id="year"></span> <span data-site-name>4SV.vn</span> - All
+            rights reserved.
+          </div>
+          <div class="footer-copy">Đặt sân nhanh · Chơi hết mình</div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script src="/project/js/store.js"></script>
+    <script type="module" src="./lien-he.js"></script>
+  </body>
+</html>

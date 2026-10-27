@@ -1,4 +1,5 @@
 ﻿import './style.css'
+import './info-pages.css'
 import { mountAssistant, takeStashedIntent } from './ai-assistant.js'
 
 // Giờ mở/đóng dùng khi nguồn dữ liệu không có (sân cũ chỉ có id/name/type/price).
