@@ -1,0 +1,1534 @@
+/* ============================================================================
+   TRANG GIỚI THIỆU + LIÊN HỆ
+   Dùng chung biến màu/khoảng cách của style.css để đổi màu thương hiệu ở trang
+   quản trị là hai trang này đổi theo.
+   ========================================================================== */
+
+.info-page {
+  background: #fff;
+}
+
+/* Nút và nhãn dùng lại hệ thống của trang chủ */
+.btn-primary {
+  background: var(--green-primary);
+  color: #fff;
+  border-color: var(--green-primary);
+}
+.btn-primary:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+.btn-ghost {
+  background: #fff;
+  color: var(--grey-800);
+  border-color: var(--grey-200);
+}
+.btn-ghost:hover {
+  border-color: var(--green-primary);
+  color: var(--green-dark);
+  background: var(--green-light);
+}
+.nav-links .nav-link.is-active {
+  color: var(--green-dark);
+  background: var(--green-light);
+  font-weight: 700;
+}
+.txt-green {
+  color: var(--green-primary);
+}
+
+/* ------------------------------- BREADCRUMB ------------------------------- */
+.info-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.8rem;
+  color: var(--grey-600);
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+.info-crumbs a {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+.info-crumbs a:hover {
+  text-decoration: underline;
+}
+.info-crumbs i.fa-angle-right {
+  font-size: 0.62rem;
+  color: var(--grey-400);
+}
+
+/* --------------------------------- HERO ---------------------------------- */
+.info-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 0 82px;
+  background:
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--green-primary) 12%, transparent), transparent 44%),
+    radial-gradient(circle at 94% 76%, color-mix(in srgb, var(--green-primary) 9%, transparent), transparent 40%),
+    #f7fdf9;
+  border-bottom: 1px solid var(--grey-100);
+}
+.info-hero-glow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  right: -140px;
+  top: -180px;
+  background: color-mix(in srgb, var(--green-primary) 18%, transparent);
+  filter: blur(70px);
+  pointer-events: none;
+}
+.info-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  gap: 46px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.info-hero-copy {
+  min-width: 0;
+}
+.info-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 13px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+.info-eyebrow i {
+  font-size: 0.72rem;
+}
+.info-hero h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 4.3vw, 3.15rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: var(--grey-900);
+  margin-bottom: 18px;
+}
+.info-lead {
+  color: var(--grey-600);
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 610px;
+  margin-bottom: 26px;
+}
+.info-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.info-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 0.82rem;
+  color: var(--grey-600);
+}
+.info-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.info-trust i {
+  color: var(--green-primary);
+}
+
+/* Ảnh hero + thẻ nổi */
+.info-hero-art {
+  position: relative;
+  min-width: 0;
+}
+.info-hero-img {
+  width: 100%;
+  height: 430px;
+  object-fit: cover;
+  border-radius: 28px;
+  box-shadow: 0 26px 60px -24px rgba(15, 42, 24, 0.55);
+  border: 6px solid #fff;
+}
+.info-float-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 16px;
+  padding: 11px 15px;
+  box-shadow: var(--shadow-lg);
+  animation: infoFloat 5s ease-in-out infinite;
+}
+.info-float-card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  color: var(--grey-900);
+  line-height: 1.2;
+}
+.info-float-card small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--grey-600);
+  white-space: nowrap;
+}
+.info-float-icon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+.info-float-rating {
+  top: 22px;
+  left: -24px;
+}
+.info-float-rating .info-float-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+.info-float-venues {
+  right: -18px;
+  bottom: 26px;
+  animation-delay: 0.9s;
+}
+@keyframes infoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* -------------------------------- SECTION -------------------------------- */
+.info-section {
+  padding: 72px 0;
+}
+.info-section-grey {
+  background: var(--grey-50);
+}
+.info-heading {
+  max-width: 660px;
+  margin-bottom: 34px;
+}
+.info-heading.center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.info-h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.45rem, 3vw, 2.05rem);
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+  color: var(--grey-900);
+  margin-bottom: 10px;
+}
+.info-p {
+  color: var(--grey-600);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+/* -------------------------------- SỐ LIỆU -------------------------------- */
+.about-stats-wrap {
+  position: relative;
+  z-index: 3;
+  margin-top: -44px;
+}
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+  padding: 22px 10px;
+}
+.about-stat {
+  text-align: center;
+  padding: 4px 14px;
+  border-right: 1px solid var(--grey-100);
+}
+.about-stat:last-child {
+  border-right: none;
+}
+.about-stat strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.15;
+  color: var(--green-primary);
+}
+.about-stat span {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: var(--grey-600);
+}
+
+/* -------------------------------- CÂU CHUYỆN ----------------------------- */
+.about-story {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 48px;
+  align-items: center;
+}
+.about-collage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 190px 190px;
+  gap: 12px;
+  min-width: 0;
+}
+.about-collage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+}
+.about-collage-main {
+  grid-row: 1 / span 2;
+}
+.about-collage-tag {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  box-shadow: var(--shadow-md);
+}
+.about-collage-tag i {
+  color: #ef4444;
+}
+.about-story-copy {
+  min-width: 0;
+}
+.about-story-copy .info-h2 {
+  margin-bottom: 14px;
+}
+.about-story-copy .info-p + .info-p {
+  margin-top: 12px;
+}
+.about-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+}
+.about-check-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.about-check-list > li > i {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+.about-check-list strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--grey-900);
+  margin-bottom: 2px;
+}
+.about-check-list span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--grey-600);
+  line-height: 1.55;
+}
+.info-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: var(--green-primary);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.info-text-link:hover {
+  gap: 12px;
+  color: var(--green-dark);
+}
+
+/* --------------------------------- CARDS --------------------------------- */
+.info-cards-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.info-card {
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 20px;
+  padding: 26px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--green-primary) 35%, #fff);
+}
+.info-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.info-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--grey-900);
+  margin-bottom: 7px;
+}
+.info-card p {
+  font-size: 0.86rem;
+  color: var(--grey-600);
+  line-height: 1.7;
+}
+
+/* --------------------------------- VALUES -------------------------------- */
+.info-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.info-value {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 16px;
+  padding: 18px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.info-value:hover {
+  border-color: color-mix(in srgb, var(--green-primary) 40%, #fff);
+  box-shadow: var(--shadow-sm);
+}
+.info-value > i {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.94rem;
+}
+.info-value h3 {
+  font-size: 0.9rem;
+  color: var(--grey-900);
+  margin-bottom: 3px;
+}
+.info-value p {
+  font-size: 0.8rem;
+  color: var(--grey-600);
+  line-height: 1.6;
+}
+
+/* -------------------------------- TIMELINE ------------------------------- */
+.about-timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  padding-top: 6px;
+}
+.about-timeline::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green-primary), var(--green-light));
+}
+.about-mile {
+  position: relative;
+  padding-top: 50px;
+  min-width: 0;
+}
+.about-mile-dot {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--green-primary);
+  box-shadow: 0 0 0 5px var(--green-light);
+  z-index: 1;
+}
+.about-mile-year {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--green-primary);
+  margin-bottom: 5px;
+}
+.about-mile h3 {
+  font-size: 0.92rem;
+  color: var(--grey-900);
+  margin-bottom: 5px;
+}
+.about-mile p {
+  font-size: 0.82rem;
+  color: var(--grey-600);
+  line-height: 1.65;
+}
+
+/* ---------------------------------- CTA ---------------------------------- */
+.info-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 42px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(74, 222, 128, 0.24), transparent 46%),
+    linear-gradient(135deg, #0b1e13 0%, #143d22 55%, #16a34a 100%);
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+}
+.info-cta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.info-cta h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.6vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+.info-cta p {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  max-width: 620px;
+}
+.info-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ========================================================================== */
+/*                                 LIÊN HỆ                                   */
+/* ========================================================================== */
+
+.contact-hero {
+  padding-bottom: 92px;
+}
+.contact-hero-head {
+  max-width: 720px;
+  position: relative;
+  z-index: 1;
+}
+.contact-hero h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 4.3vw, 3.15rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: var(--grey-900);
+  margin-bottom: 16px;
+}
+.contact-section {
+  padding-top: 26px;
+  margin-top: -42px;
+  position: relative;
+  z-index: 2;
+}
+.contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 20px;
+  align-items: start;
+}
+.contact-card {
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 24px;
+  padding: 26px;
+  box-shadow: var(--shadow-lg);
+}
+.contact-form-card .info-eyebrow {
+  margin-bottom: 12px;
+}
+.contact-card-head .info-h2 {
+  font-size: clamp(1.3rem, 2.5vw, 1.65rem);
+  margin-bottom: 6px;
+}
+.contact-card-head .info-p {
+  margin-bottom: 20px;
+}
+
+/* Form */
+.contact-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 14px;
+}
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 10px;
+}
+.contact-field.full {
+  grid-column: 1 / -1;
+}
+.contact-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--grey-700);
+  margin-bottom: 6px;
+}
+.contact-field label span {
+  color: #dc2626;
+}
+.contact-field input,
+.contact-field select,
+.contact-field textarea {
+  width: 100%;
+  border: 1px solid var(--grey-200);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--grey-900);
+  background: var(--grey-50);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.contact-field textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+.contact-field input:focus,
+.contact-field select:focus,
+.contact-field textarea:focus {
+  border-color: var(--green-primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-primary) 15%, transparent);
+}
+.contact-field.invalid input,
+.contact-field.invalid select,
+.contact-field.invalid textarea {
+  border-color: #dc2626;
+  background: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+.contact-field-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+}
+.contact-error {
+  display: block;
+  min-height: 15px;
+  font-size: 0.72rem;
+  color: #dc2626;
+  line-height: 1.4;
+}
+.contact-count {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--grey-400);
+}
+.contact-count b {
+  color: var(--grey-600);
+  font-weight: 700;
+}
+.contact-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--grey-600);
+  cursor: pointer;
+  margin-top: 4px;
+}
+.contact-check input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  flex: none;
+  accent-color: var(--green-primary);
+  cursor: pointer;
+}
+.contact-check.invalid {
+  color: #b91c1c;
+}
+.contact-error-check {
+  margin-top: 2px;
+}
+.contact-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 14px;
+  padding: 13px 20px;
+}
+.contact-privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--grey-400);
+}
+.contact-privacy i {
+  color: var(--green-primary);
+}
+
+/* Thành công */
+.contact-success {
+  text-align: center;
+  padding: 30px 8px 10px;
+}
+.contact-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+.contact-success h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--grey-900);
+  margin-bottom: 8px;
+}
+.contact-success p {
+  font-size: 0.9rem;
+  color: var(--grey-600);
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+.contact-success p strong {
+  color: var(--green-dark);
+  letter-spacing: 0.04em;
+}
+.contact-success-note {
+  max-width: 440px;
+  margin: 0 auto 20px !important;
+  font-size: 0.82rem !important;
+}
+.contact-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Cột kênh liên hệ */
+.contact-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.contact-side-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--grey-900);
+  margin-bottom: 16px;
+}
+.contact-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.contact-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--grey-100);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--grey-50);
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+.contact-channel:hover {
+  border-color: var(--green-primary);
+  background: var(--green-light);
+  transform: translateX(2px);
+}
+.contact-channel-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 11px;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+}
+.contact-channel-body {
+  flex: 1;
+  min-width: 0;
+}
+.contact-channel-body small {
+  display: block;
+  font-size: 0.71rem;
+  color: var(--grey-600);
+}
+.contact-channel-body strong {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--grey-900);
+  line-height: 1.4;
+  word-break: break-word;
+}
+.contact-channel-go {
+  flex: none;
+  font-size: 0.68rem;
+  color: var(--grey-400);
+}
+.contact-channel:hover .contact-channel-go {
+  color: var(--green-primary);
+}
+.contact-note {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.contact-note i {
+  margin-top: 3px;
+}
+.contact-owner-card {
+  background:
+    radial-gradient(circle at 90% 8%, rgba(74, 222, 128, 0.22), transparent 48%),
+    linear-gradient(140deg, #0b1e13 0%, #123a20 100%);
+  color: #fff;
+  border: none;
+}
+.contact-owner-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #86efac;
+  margin-bottom: 14px;
+}
+.contact-owner-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin-bottom: 7px;
+}
+.contact-owner-card > p {
+  font-size: 0.84rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 14px;
+}
+.contact-owner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 18px;
+  font-size: 0.81rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+.contact-owner-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.contact-owner-list i {
+  color: #86efac;
+  margin-top: 3px;
+  font-size: 0.76rem;
+}
+.contact-owner-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Bản đồ */
+.contact-map-section {
+  padding-top: 60px;
+}
+.contact-map-card {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--grey-200);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+#contactMap {
+  height: 360px;
+  width: 100%;
+  background: var(--grey-100);
+}
+.contact-map-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-600);
+  font-size: 0.86rem;
+}
+.contact-map-fallback i {
+  color: var(--green-primary);
+  margin-right: 6px;
+}
+.contact-map-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 15px 18px;
+  border-top: 1px solid var(--grey-100);
+}
+.contact-map-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--grey-900);
+}
+.contact-map-addr i {
+  color: var(--green-primary);
+}
+.contact-map-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.contact-map-hours {
+  font-size: 0.78rem;
+  color: var(--grey-600);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.contact-map-hours i {
+  color: var(--green-primary);
+}
+
+/* FAQ */
+.faq-grid {
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.faq-item {
+  background: #fff;
+  border: 1px solid var(--grey-200);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.faq-item[open] {
+  border-color: color-mix(in srgb, var(--green-primary) 45%, #fff);
+  box-shadow: var(--shadow-sm);
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--grey-900);
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary::after {
+  content: '+';
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+.faq-item[open] summary::after {
+  content: '–';
+}
+.faq-item summary:hover {
+  color: var(--green-dark);
+}
+.faq-answer {
+  padding: 0 18px 17px;
+  font-size: 0.85rem;
+  color: var(--grey-600);
+  line-height: 1.75;
+  max-width: 780px;
+}
+
+/* Footer contact list */
+.footer-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.footer-contact i {
+  color: var(--green-accent);
+  width: 14px;
+  text-align: center;
+  margin-top: 4px;
+}
+.footer-contact a,
+.footer-contact span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.footer-contact a:hover {
+  color: var(--green-accent);
+}
+
+/* -------------------- KHỐI GIỚI THIỆU NGẮN Ở TRANG CHỦ ------------------- */
+.home-intro-section {
+  background: #fff;
+}
+.home-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 46px;
+  align-items: center;
+}
+.home-intro-media {
+  position: relative;
+  min-width: 0;
+}
+.home-intro-media > img {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+  border-radius: 24px;
+  border: 5px solid #fff;
+  box-shadow: var(--shadow-lg);
+}
+.home-intro-card {
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--grey-100);
+  border-radius: 15px;
+  padding: 11px 15px;
+  box-shadow: var(--shadow-lg);
+}
+.home-intro-card > span {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-intro-card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--grey-900);
+  line-height: 1.2;
+}
+.home-intro-card small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--grey-600);
+}
+.home-intro-copy {
+  min-width: 0;
+}
+.home-intro-copy .section-title {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  margin-bottom: 12px;
+}
+.home-intro-copy .section-sub {
+  font-size: 0.92rem;
+  line-height: 1.75;
+  max-width: 560px;
+}
+.home-intro-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 18px;
+}
+.home-intro-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.86rem;
+  color: var(--grey-700);
+  line-height: 1.55;
+}
+.home-intro-list i {
+  color: var(--green-primary);
+  margin-top: 3px;
+}
+.home-intro-list strong {
+  color: var(--green-dark);
+}
+.home-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+.home-intro-actions .btn {
+  justify-content: center;
+}
+
+/* -------------------------------- DARK MODE ------------------------------ */
+html.dark .info-page,
+html.dark .info-hero,
+html.dark .home-intro-section {
+  background: #0b1220;
+}
+html.dark .info-section-grey {
+  background: #0f172a;
+}
+html.dark .info-hero {
+  border-color: #1f2937;
+}
+html.dark .info-hero-img {
+  border-color: #111827;
+}
+html.dark .info-hero h1,
+html.dark .contact-hero h1,
+html.dark .info-h2,
+html.dark .info-card h3,
+html.dark .info-value h3,
+html.dark .about-mile h3,
+html.dark .about-check-list strong,
+html.dark .contact-side-title,
+html.dark .contact-channel-body strong,
+html.dark .contact-success h3,
+html.dark .faq-item summary,
+html.dark .contact-map-addr {
+  color: #f9fafb;
+}
+html.dark .info-lead,
+html.dark .info-p,
+html.dark .info-card p,
+html.dark .info-value p,
+html.dark .about-mile p,
+html.dark .about-check-list span,
+html.dark .contact-success p,
+html.dark .faq-answer,
+html.dark .info-trust,
+html.dark .contact-channel-body small,
+html.dark .contact-map-hours {
+  color: #9ca3af;
+}
+html.dark .info-float-card,
+html.dark .about-stats,
+html.dark .info-card,
+html.dark .info-value,
+html.dark .contact-card,
+html.dark .faq-item,
+html.dark .contact-map-card,
+html.dark .contact-channel,
+html.dark .home-intro-card,
+html.dark .contact-field input,
+html.dark .contact-field select,
+html.dark .contact-field textarea {
+  background: #111827;
+  border-color: #1f2937;
+}
+html.dark .info-float-card strong,
+html.dark .about-stat strong,
+html.dark .home-intro-card strong,
+html.dark .contact-count b {
+  color: #f9fafb;
+}
+html.dark .about-stat {
+  border-color: #1f2937;
+}
+html.dark .info-float-card small,
+html.dark .about-stat span,
+html.dark .home-intro-card small,
+html.dark .home-intro-list li,
+html.dark .contact-channel-body small {
+  color: #9ca3af;
+}
+html.dark .contact-field label {
+  color: #d1d5db;
+}
+html.dark .contact-channel-icon {
+  background: #0b1220;
+  border-color: #1f2937;
+  color: #86efac;
+}
+html.dark .contact-channel:hover {
+  background: #13251a;
+}
+html.dark .contact-note {
+  background: rgba(22, 163, 74, 0.16);
+  color: #86efac;
+}
+html.dark .contact-map-bar {
+  border-color: #1f2937;
+}
+html.dark .faq-item summary::after {
+  background: rgba(22, 163, 74, 0.18);
+  color: #86efac;
+}
+html.dark .info-crumbs,
+html.dark .info-crumbs span {
+  color: #9ca3af;
+}
+
+/* -------------------------------- RESPONSIVE ----------------------------- */
+/* Trang chủ và hai trang thông tin có thêm mục Giới thiệu/Liên hệ nên navbar
+   thu gọn sớm hơn để không tràn ngang ở màn hình tablet. Các trang còn lại
+   (chi tiết sân, thanh toán, tài khoản) vẫn thu gọn ở 768px như cũ. */
+@media (max-width: 1024px) {
+  .nav-toggle {
+    display: inline-flex;
+  }
+  .nav-menu {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid var(--grey-100);
+    border-bottom: 1px solid var(--grey-100);
+    box-shadow: var(--shadow-md);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 12px 16px 16px;
+    display: none;
+    margin-left: 0;
+  }
+  .nav-menu.open {
+    display: flex;
+  }
+  .nav-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .nav-links .nav-link {
+    padding: 10px 4px;
+  }
+  .dropdown-menu {
+    position: static;
+    box-shadow: none;
+    border: 1px solid var(--grey-100);
+    margin: 4px 0 6px 12px;
+  }
+  .nav-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 12px;
+    border-top: 1px solid var(--grey-100);
+    margin-top: 6px;
+  }
+  .nav-actions .btn-cta {
+    justify-content: center;
+  }
+  .nav-user-btn {
+    width: 100%;
+    justify-content: center;
+    max-width: none;
+  }
+  .nav-user-menu {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .info-hero-grid {
+    gap: 30px;
+  }
+  .info-hero-img {
+    height: 380px;
+  }
+  .info-float-rating {
+    left: -8px;
+  }
+  .info-float-venues {
+    right: -4px;
+  }
+  .about-story {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+  .about-collage {
+    max-width: 640px;
+  }
+  .info-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .about-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 18px;
+  }
+  .about-timeline::before {
+    display: none;
+  }
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+  .contact-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 860px) {
+  .info-hero {
+    padding-bottom: 74px;
+  }
+  .home-intro {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .home-intro-media > img {
+    height: 320px;
+  }
+  .home-intro-card {
+    right: 12px;
+    bottom: -16px;
+  }
+  .info-hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .info-hero-art {
+    max-width: 640px;
+  }
+  .info-hero-img {
+    height: 340px;
+  }
+  .info-cards-3 {
+    grid-template-columns: 1fr;
+  }
+  .about-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 0;
+    padding: 18px 8px;
+  }
+  .about-stat:nth-child(2) {
+    border-right: none;
+  }
+  .about-stat:nth-child(-n + 2) {
+    padding-bottom: 16px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--grey-100);
+  }
+  .info-cta {
+    padding: 30px 26px;
+  }
+  .contact-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .info-section {
+    padding: 52px 0;
+  }
+  .info-section-grey.contact-map-section {
+    padding-top: 46px;
+  }
+  .info-hero {
+    padding-top: 22px;
+    padding-bottom: 64px;
+  }
+  .about-stats-wrap {
+    margin-top: -36px;
+  }
+  .info-hero-actions .btn,
+  .home-intro-actions .btn,
+  .info-cta-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .about-collage {
+    grid-template-rows: 150px 150px;
+  }
+  .info-values {
+    grid-template-columns: 1fr;
+  }
+  .about-timeline {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .about-mile {
+    padding-top: 42px;
+  }
+  .contact-card {
+    padding: 20px;
+  }
+  .contact-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .contact-field.full {
+    grid-column: auto;
+  }
+  .contact-map-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .contact-map-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .info-float-card {
+    padding: 9px 12px;
+  }
+  .info-float-card small {
+    font-size: 0.66rem;
+  }
+  .info-hero-img {
+    height: 280px;
+    border-width: 4px;
+  }
+  .contact-hero {
+    padding-bottom: 78px;
+  }
+}
+
+@media (max-width: 420px) {
+  .about-stats {
+    grid-template-columns: 1fr;
+  }
+  .about-stat {
+    border-right: none;
+    border-bottom: 1px solid var(--grey-100);
+    padding: 12px 4px;
+  }
+  .about-stat:last-child {
+    border-bottom: none;
+  }
+  .about-stat:nth-child(-n + 2) {
+    margin-bottom: 0;
+  }
+  .info-float-rating {
+    left: 8px;
+    top: 12px;
+  }
+  .info-float-venues {
+    right: 8px;
+    bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .info-float-card {
+    animation: none;
+  }
+  .info-card,
+  .info-value,
+  .contact-channel {
+    transition: none;
+  }
+}
